@@ -92,6 +92,8 @@ The approved M1 interpretation is:
 - M1's one-primary-ticker-per-company constraint is a bounded M1 operating rule, not a permanent assertion that one company always equals one tradable instrument.
 - Company identity, research history, and document relationships must not be defined solely by a mutable symbol or exchange code.
 
+The frozen M1 schema's required unique `Company.isin` remains unchanged. In M1, it is a bounded identifier for the primary listed equity represented by the `Company`/`Ticker` relationship. It is not evidence that an ISIN is SPA's permanent universal identifier for the corporate issuer. A future approved `Security`/`Listing` architecture may map or migrate that security identity to the appropriate `Security` while preserving `Company.id`, historical research revisions, and existing relationships. This clarification introduces no `Security`, `Listing`, or other table in M1.
+
 The possible future abstraction is conceptual only:
 
 ```text
@@ -143,11 +145,13 @@ Where a reliable source supplies them, SPA must preserve distinct meanings for:
 - SPA ingestion time; and
 - research revision timestamp.
 
-These timestamps are not interchangeable. Missing source timestamps remain unknown rather than being inferred from ingestion time. Current M1 fields such as disclosure event date, document date, source references, revision effective time, and creation time retain their frozen meanings and must not be overloaded to impersonate a different temporal fact.
+This is a North-Star conceptual model, not an M1 persistence requirement. M1 persists only the date and timestamp fields already approved in the frozen design. This amendment does not add `published_at`, `discovered_at`, `ingested_at`, `evidence_cutoff_at`, or any similar column.
+
+Existing `document_date`, `event_date`, `effective_at`, `created_at`, and `updated_at` fields retain their frozen meanings. They are not interchangeable and must not be overloaded to impersonate another temporal fact. Where M1 has no explicit field for a distinct publication, availability, discovery, ingestion, or evidence-cutoff time, that fact remains unrecorded and unknown in structured M1 storage rather than being fabricated or inferred from another timestamp.
 
 Later information must never silently contaminate an earlier historical thesis. If an investor transaction occurs on June 15 and a policy announcement occurs on July 10, the July announcement is not evidence available to the June 15 research state. A later analysis may compare the two events, but it must preserve the dates, the evidence available at each cutoff, and the fact that chronology alone does not establish causality.
 
-M1 does not build a temporal evidence graph. It preserves immutable revisions, provenance, stable document and disclosure identities, and unambiguous date semantics so a later temporal model can be added without rewriting prior research.
+M1 does not build a temporal evidence graph or add temporal columns through this amendment. It preserves immutable revisions, provenance, stable document and disclosure identities, and the frozen meanings of existing dates so a future approved temporal or evidence model can add the missing distinctions without rewriting prior research.
 
 ## 6. Epistemic separation
 
@@ -174,15 +178,15 @@ Examples:
 - "The trade preceded the policy announcement by 31 days" may be a factual temporal relationship when both dates are supported.
 - "Therefore privileged information was used" is not a valid factual conclusion without direct evidence.
 
-SPA may investigate correlation, timing, policy relationships, and competing explanations. It must retain source provenance, state uncertainty, preserve alternatives, and record confidence. It must never turn suspicion, sequence, or model-generated narrative into an asserted fact.
+SPA may investigate correlation, timing, policy relationships, and competing explanations. The broader future system should retain source provenance, state uncertainty, preserve alternatives, and record confidence where an approved model supports it; this does not add an M1 confidence field. SPA must never turn suspicion, sequence, or model-generated narrative into an asserted fact.
 
 M1's existing distinctions among document source metadata, governance factual evidence and interpretation, forecasts, valuation snapshots, and research conclusions remain valid. This amendment requires disciplined use of those meanings; it does not introduce new M1 tables.
 
 ## 7. Authoritative SPA Research View
 
-`ResearchRevision` is the authoritative immutable point-in-time representation of what SPA believed at that moment. M1 must not introduce a second `InvestmentViewRevision` table.
+`ResearchRevision` remains the authoritative immutable M1 point-in-time representation of what SPA believed at that moment. M1 must not introduce a second `InvestmentViewRevision` table.
 
-A ResearchRevision conceptually preserves separation among:
+The broader SPA Research View conceptually includes separation among:
 
 - factual inputs;
 - thesis and inference;
@@ -193,9 +197,9 @@ A ResearchRevision conceptually preserves separation among:
 - what changed; and
 - evidence cutoff and point-in-time context.
 
-The frozen M1 fields remain the implementation contract. This conceptual separation governs how those fields and their source relationships are interpreted; it does not authorize field or schema expansion in this task.
+M1 persists only the `ResearchRevision` fields already approved in the frozen design. Confidence and explicit evidence cutoff are not new M1 persisted fields. In particular, `effective_at` and `created_at` retain their frozen meanings and must not be reinterpreted as an evidence cutoff. This conceptual separation governs how the broader SPA architecture evolves; it does not authorize field or schema expansion in M1. A future approved evidence or methodology model may add explicit confidence and evidence-cutoff semantics additively while preserving existing revisions.
 
-AI-generated output is not itself the historical record. The stored revision is the record. A later model may analyze, critique, summarize, or explain a prior revision, but it must identify that revision and its evidence cutoff and must not silently change the stored view.
+AI-generated output is not itself the historical record. The stored revision is the record. A later model may analyze, critique, summarize, or explain a prior M1 revision, but it must identify the exact revision and use its actual stored timestamps and provenance. It must not invent an evidence cutoff that M1 never recorded or silently change the stored view.
 
 Creating a later ResearchRevision is the approved way to update SPA's belief. The earlier revision remains immutable and independently interpretable.
 
