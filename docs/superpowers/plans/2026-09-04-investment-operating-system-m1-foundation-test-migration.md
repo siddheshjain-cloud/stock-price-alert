@@ -328,7 +328,7 @@
 
 - [ ] **Step 1: Write failing stamp and immutability tests**
 
-  Build an existing-schema copy by cloning only the six model tables plus `trade_tags` into a fresh `MetaData`, create them without Alembic, stamp `20260904_01`, and assert `alembic_version.version_num == "20260904_01"`. Snapshot every legacy table before and after the stamp and assert equality except for the new `alembic_version` table.
+  Build an existing-schema copy by cloning exactly these six legacy tables — `user`, `ticker`, `trade`, `tag`, `telegram_verification`, and `trade_tags` — into a fresh `MetaData`, create them without Alembic, stamp `20260904_01`, and assert `alembic_version.version_num == "20260904_01"`. Snapshot every legacy table before and after the stamp and assert equality except for the new `alembic_version` table.
 
 - [ ] **Step 2: Run the tests to verify the missing helper failure**
 

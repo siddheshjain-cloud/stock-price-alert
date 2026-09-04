@@ -57,7 +57,7 @@ The following may run locally or in CI against temporary databases:
 - read-only schema inventory against disposable test databases;
 - creation and testing of Alembic revision `20260904_01` on empty temporary databases;
 - construction of a model-equivalent existing-schema copy followed by a stamp rehearsal;
-- domain, policy, service, route, seed, and migration tests against temporary databases.
+- repository-safe generation, review, and testing of revision `20260904_02`, plus domain, policy, service, route, seed, and migration tests, against temporary databases only.
 
 ### Active-database gate
 

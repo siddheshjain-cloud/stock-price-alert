@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- Depends on all tasks in Plans 1–4. Plan 5 Task 1 additionally requires the signed human/deployment baseline gate from Plan 1.
+- Depends on all tasks in Plans 1–4. Plan 5 Task 1 requires the signed human/deployment baseline gate from Plan 1 only before an active-database migration operation; repository-safe generation and testing use disposable databases.
 - Run implementation and tests from `backendtest`; add no frontend application files.
 - Preserve every existing legacy endpoint path, status code, response key, JWT identity rule, model column, websocket subscription, ticker update, trade evaluation, Kite credential, and Telegram notification behavior.
 - Use the existing `@jwt_required()` and `@admin_required` mechanisms; tier comes from `EntitlementService`, not JWT claims.
@@ -39,9 +39,9 @@
 - Consumes: signed `BASELINE_EQUIVALENT=true` deployment gate, baseline revision `20260904_01`, and complete Plan 2/4 SQLAlchemy metadata.
 - Produces: additive Alembic revision `20260904_02` and tested empty-database and existing-schema-copy upgrade paths.
 
-- [ ] **Step 1: Verify the human gate before generating the revision**
+- [ ] **Step 1: Verify the human gate before any active-database migration operation**
 
-  Read `docs/deployment/investment-operating-system-m1-database-gate.md` and inspect the controlled deployment record named by that runbook for each active environment. Confirm each record contains dialect/driver, backup and restore verification, Alembic state, redacted schema inventory, model comparison, resolved drift, reviewer/time, and `BASELINE_EQUIVALENT=true`. If any item is absent or any drift is unresolved, stop this task before running `flask db revision`; Plans 2–4 remain valid, but this task is blocked by deployment evidence.
+  Read `docs/deployment/investment-operating-system-m1-database-gate.md` and inspect the controlled deployment record named by that runbook for each active environment. Confirm each record contains dialect/driver, backup and restore verification, Alembic state, redacted schema inventory, model comparison, resolved drift, reviewer/time, and `BASELINE_EQUIVALENT=true`. This signed gate is mandatory before generating from an active database, stamping an active database, or upgrading an active database. If any item is absent or any drift is unresolved, do not perform any of those active-database operations; Plans 2–4 remain valid. Repository-safe generation, review, and testing of revision `20260904_02` against a disposable temporary database remain allowed and must not contact an active database.
 
 - [ ] **Step 2: Write failing migration-path tests**
 
