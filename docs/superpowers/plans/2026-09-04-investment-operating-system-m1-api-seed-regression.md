@@ -365,6 +365,43 @@
 
   Expected: both migration paths pass and legacy schemas remain identical.
 
+  **Deployment-dialect migration verification (release-blocking).** The preceding
+  runs prove both migration paths on SQLite only. Specification section 14.6
+  requires SQLite coverage *plus* the actual deployment dialect before release,
+  and this task owns that verification. It adds no new numbered task; the
+  Milestone 1 total remains 37 tasks.
+
+  Complete all four items for every active environment before release:
+
+  1. **Identify the real deployment dialect.** Take the dialect and driver from
+     that environment's signed `BASELINE_EQUIVALENT=true` deployment gate record
+     and its redacted schema inventory, as defined in
+     `docs/deployment/investment-operating-system-m1-database-gate.md` in the
+     backend repository. Do not assume, infer, or substitute a dialect. If no
+     signed gate has established the dialect, this verification cannot start and
+     the release is blocked.
+  2. **Run both migration paths against that dialect** in an isolated,
+     disposable, non-production database of the same dialect, driver, and major
+     version. Never run these against an active database. Cover the fresh path
+     (empty database → `20260904_01` → `20260904_02`) and the verified
+     existing-schema path (legacy-schema copy → `stamp 20260904_01` →
+     `upgrade 20260904_02`).
+  3. **Verify legacy preservation and additive-only change.** Capture a schema
+     inventory before and after each upgrade with
+     `scripts/inspect_database_schema.py`, and confirm that the six legacy tables
+     are byte-for-byte unchanged in columns, types, nullability, defaults,
+     indexes, keys, unique constraints, and check constraints; that the dialect's
+     native enum definitions reported under `native_enums` are unchanged; and
+     that the only additions are the exact Milestone 1 table set from Task 1 plus
+     `alembic_version`. Enum representation is dialect-dependent and is not
+     evidenced by the SQLite runs, so it must be compared here.
+  4. **Record the evidence before release.** Store the dialect, driver and
+     version, both inventory artifacts per path, the comparison result, the
+     operator and reviewer identity, and the timestamp in the controlled
+     deployment record alongside the signed gate. Apply the gate's redaction
+     rules: no database URL, credential, or row data. Missing or unreviewed
+     evidence blocks the release.
+
 - [ ] **Step 5: Commit final regression guards**
 
   ```bash
@@ -385,6 +422,8 @@ These commands are not part of automated implementation and run only after Task 
 
 Local or CI downgrade tests may exercise `20260904_02 -> 20260904_01`. No shared or production downgrade runs automatically.
 
+Never downgrade the legacy baseline `20260904_01` itself on a shared, staging, or production database. Its `downgrade()` drops the six legacy tables and destroys all user, ticker, trade, tag, and Telegram data; on a stamped deployment it would drop tables that revision never created. Roll back Milestone 1 through `20260904_02` only, and restore legacy data from the gate-required backup.
+
 ## Completion gate
 
-All tests pass in one clean run; both migration paths pass; only new tables are added; every consumer/admin contract matches the specification; the IKIO seed is sourced and idempotent; free/premium/document-rights leakage matrices pass; `storage_key` never appears; legacy API/import/schema checks pass; and no active database command has run outside the signed deployment procedure.
+All tests pass in one clean run; both migration paths pass on SQLite and on the deployment dialect identified by the signed gate, with that dialect's evidence recorded per Task 8 Step 4; only new tables are added; every consumer/admin contract matches the specification; the IKIO seed is sourced and idempotent; free/premium/document-rights leakage matrices pass; `storage_key` never appears; legacy API/import/schema checks pass; and no active database command has run outside the signed deployment procedure.
