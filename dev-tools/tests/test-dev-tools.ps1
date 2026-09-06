@@ -57,10 +57,61 @@ function Read-ToolText {
     return [System.IO.File]::ReadAllText($Path)
 }
 
-function New-TestGitRepo {
+function New-MockCodexOutput {
     param([Parameter(Mandatory = $true)][string]$Path)
 
+    $content = @(
+        'MODEL_CHECK_OK'
+        'model: deepseek-v4-flash'
+        'provider: deepseek'
+        'reasoning effort: high'
+        'approval: never'
+        'sandbox: read-only'
+    ) -join [System.Environment]::NewLine
+
+    [System.IO.File]::WriteAllText($Path, $content, [System.Text.Encoding]::UTF8)
+}
+
+function Get-TestFingerprint {
+    param([Parameter(Mandatory = $true)][string]$Root)
+
+    $files = @(Get-ChildItem -LiteralPath $Root -File -Filter 'requirements*.txt' | Sort-Object -Property Name)
+    if ($files.Count -eq 0) {
+        throw 'No requirements*.txt files were found.'
+    }
+
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $builder = New-Object System.Text.StringBuilder
+
+    try {
+        foreach ($file in $files) {
+            $bytes = [System.IO.File]::ReadAllBytes($file.FullName)
+            $fileHashBytes = $sha.ComputeHash($bytes)
+            $fileHash = [System.BitConverter]::ToString($fileHashBytes).Replace('-', '')
+            [void]$builder.AppendLine(($file.Name + ':' + $fileHash))
+        }
+
+        $combinedBytes = [System.Text.Encoding]::UTF8.GetBytes($builder.ToString())
+        $combinedHashBytes = $sha.ComputeHash($combinedBytes)
+        return [System.BitConverter]::ToString($combinedHashBytes).Replace('-', '')
+    }
+    finally {
+        $sha.Dispose()
+    }
+}
+
+function New-TestGitRepo {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$BareRemote
+    )
+
     New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    git init --bare -q $BareRemote
+    if ($LASTEXITCODE -ne 0) {
+        throw "git init --bare failed for $BareRemote"
+    }
+
     git -C $Path init -q
     if ($LASTEXITCODE -ne 0) {
         throw "git init failed for $Path"
@@ -78,6 +129,16 @@ function New-TestGitRepo {
     git -C $Path checkout -q -b $expectedBranch
     if ($LASTEXITCODE -ne 0) {
         throw "git checkout failed for $Path"
+    }
+
+    git -C $Path remote add origin $BareRemote
+    if ($LASTEXITCODE -ne 0) {
+        throw "git remote add failed for $Path"
+    }
+
+    git -C $Path push -q -u origin $expectedBranch
+    if ($LASTEXITCODE -ne 0) {
+        throw "git push failed for $Path"
     }
 }
 
@@ -132,7 +193,7 @@ Assert-NotContains $spaModelCheckText '--sandbox workspace-write' 'spa-model-che
 Assert-Contains $spaModelCheckText 'MODEL_CHECK_OK' 'spa-model-check verifies MODEL_CHECK_OK'
 
 Assert-Contains $spaDepsSyncText $permanentPython 'spa-deps-sync references the fixed permanent Python'
-Assert-True ([regex]::IsMatch($spaDepsSyncText, '\bCheckOnly\b', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) 'spa-deps-sync supports CheckOnly'
+Assert-True ([regex]::IsMatch($spaDepsSyncText, '\bRegisterCurrent\b', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) 'spa-deps-sync supports RegisterCurrent'
 Assert-True ([regex]::IsMatch($spaDepsSyncText, '\bForce\b', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) 'spa-deps-sync supports Force'
 $installerPatterns = @('\bwinget\b', '\bchoco\b', '\bmsiexec\b', 'python\.org', 'Install-Python', 'Install-Package')
 foreach ($pattern in $installerPatterns) {
@@ -146,11 +207,31 @@ Assert-Contains $promptHeaderText 'python.exe -m pytest -q' 'prompt header conta
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('spa-dev-tools-test-' + [guid]::NewGuid().ToString('N'))
 $backendRepo = Join-Path $tempRoot 'backend'
+$backendRemote = Join-Path $tempRoot 'backend-remote.git'
 $frontendRepo = Join-Path $tempRoot 'frontend'
+$frontendRemote = Join-Path $tempRoot 'frontend-remote.git'
+$dependencyMarker = Join-Path $tempRoot 'deps-marker.txt'
+$codexMock = Join-Path $tempRoot 'codex-mock.txt'
 
 try {
-    New-TestGitRepo -Path $backendRepo
-    New-TestGitRepo -Path $frontendRepo
+    New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
+    New-MockCodexOutput -Path $codexMock
+    New-TestGitRepo -Path $backendRepo -BareRemote $backendRemote
+    New-TestGitRepo -Path $frontendRepo -BareRemote $frontendRemote
+
+    Set-Content -LiteralPath (Join-Path $backendRepo 'requirements-dev.txt') -Value 'pytest==8.0.0' -NoNewline
+    git -C $backendRepo add -A
+    git -C $backendRepo commit -q -m 'add requirements manifest'
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Backend requirements commit failed.'
+    }
+    git -C $backendRepo push -q origin $expectedBranch
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Backend requirements push failed.'
+    }
+
+    $testFingerprint = Get-TestFingerprint -Root $backendRepo
+    [System.IO.File]::WriteAllText($dependencyMarker, $testFingerprint, [System.Text.Encoding]::ASCII)
 
     $readyArgs = @(
         '-NoProfile',
@@ -162,8 +243,10 @@ try {
         $backendRepo,
         '-FrontendPath',
         $frontendRepo,
-        '-PythonPath',
-        $permanentPython,
+        '-DependencyMarkerPath',
+        $dependencyMarker,
+        '-CodexOutputPath',
+        $codexMock,
         '-ExpectedBranch',
         $expectedBranch
     )
@@ -174,7 +257,7 @@ try {
     Assert-True ($readyCode -eq 0) 'spa-check reports READY YES as exit 0 for clean temporary repos'
     Assert-True ([regex]::IsMatch($readyOutput, 'READY\s+YES')) 'spa-check output contains READY YES'
 
-    Set-Content -LiteralPath (Join-Path $frontendRepo 'dirty.txt') -Value 'dirty' -NoNewline
+    Set-Content -LiteralPath (Join-Path $backendRepo 'dirty.txt') -Value 'dirty' -NoNewline
     $dirtyOutput = & powershell.exe @readyArgs 2>&1 | Out-String
     $dirtyCode = $LASTEXITCODE
 
