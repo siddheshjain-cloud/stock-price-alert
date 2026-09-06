@@ -243,6 +243,58 @@ try {
     Assert-True ($syncedCode -eq 0) 'spa-check reports READY YES as exit 0 for a synced clean temporary repo'
     Assert-True ([regex]::IsMatch($syncedOutput, 'READY\s+YES')) 'spa-check output contains READY YES for a synced clean repo'
 
+    $codexShimDir = Join-Path $tempRoot 'codex-shim'
+    New-Item -ItemType Directory -Path $codexShimDir -Force | Out-Null
+    @'
+@echo off
+echo MODEL_CHECK_OK
+echo model: deepseek-v4-flash
+echo provider: deepseek
+echo reasoning effort: high
+echo approval: never
+echo sandbox: read-only
+exit /b 9
+'@ | Set-Content -LiteralPath (Join-Path $codexShimDir 'codex.cmd') -Encoding ASCII
+    $failedModelArgs = @(
+        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $spaCheck,
+        '-Target', 'Frontend', '-FrontendPath', $frontendRepo,
+        '-ExpectedBranch', $expectedBranch,
+        '-ExpectedModel', 'deepseek-v4-flash', '-ExpectedProvider', 'deepseek', '-ExpectedReasoning', 'high'
+    )
+    $previousPath = $env:PATH
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $previousPath
+    try {
+        $failedModelOutput = & powershell.exe @failedModelArgs 2>&1 | Out-String
+        $failedModelCode = $LASTEXITCODE
+    }
+    finally {
+        $env:PATH = $previousPath
+    }
+    Assert-True ($failedModelCode -ne 0) 'spa-check rejects an otherwise valid model header when the model command exits nonzero'
+    Assert-True ([regex]::IsMatch($failedModelOutput, 'MODEL CHECK\s+FAIL\s+exit=9')) 'spa-check reports the nonzero model command exit code'
+
+    $realGit = (Get-Command git -CommandType Application).Source
+    $gitShimDir = Join-Path $tempRoot 'git-shim'
+    New-Item -ItemType Directory -Path $gitShimDir -Force | Out-Null
+    $gitShim = Join-Path $gitShimDir 'git.cmd'
+    @"
+@echo off
+if /I "%~3"=="status" exit /b 17
+"$realGit" %*
+exit /b %ERRORLEVEL%
+"@ | Set-Content -LiteralPath $gitShim -Encoding ASCII
+    $previousPath = $env:PATH
+    $env:PATH = $gitShimDir + [System.IO.Path]::PathSeparator + $previousPath
+    try {
+        $statusFailureOutput = & powershell.exe @frontendArgs 2>&1 | Out-String
+        $statusFailureCode = $LASTEXITCODE
+    }
+    finally {
+        $env:PATH = $previousPath
+    }
+    Assert-True ($statusFailureCode -ne 0) 'spa-check fails closed when git status fails'
+    Assert-True ([regex]::IsMatch($statusFailureOutput, 'WORKTREE\s+FAIL\s+CHECK FAILED')) 'spa-check reports git status failure instead of CLEAN'
+
     $dirtyFile = Join-Path $frontendRepo 'dirty.txt'
     Set-Content -LiteralPath $dirtyFile -Value 'dirty' -NoNewline
     $dirtyOutput = & powershell.exe @frontendArgs 2>&1 | Out-String

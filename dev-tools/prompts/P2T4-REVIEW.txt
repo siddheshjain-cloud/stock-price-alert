@@ -1,0 +1,25 @@
+Perform an independent, read-only review of SPA Milestone 1 Plan 2 Task 4 in C:\GitHub\backendtest.
+
+Review only the exact Task 4 implementation and its remediation:
+- base implementation commit: 0ed2831a7d64a8bf70d72f9ef7d1e8b4bbe69b79
+- remediation commit: 6c417294e5a060346c2294666a10a4cff610ee82
+- governing task: C:\GitHub\stock-price-alert\docs\superpowers\plans\2026-09-04-investment-operating-system-m1-core-research-domain.md, Plan 2 Task 4
+- semantic clarification: C:\GitHub\stock-price-alert\docs\superpowers\plans\2026-09-05-spa-north-star-m1-impact-assessment.md, sections 4.2 and 5.2
+
+Ignore unrelated later hygiene or tooling commits. Inspect the combined Task 4 implementation plus remediation and verify that all three previously confirmed defects are fixed:
+1. ORM immutability.
+2. Transaction and session cleanup.
+3. Constraint-specific IntegrityError translation.
+
+Inspect concurrency safety. Explicitly separate uniqueness behavior proven by local tests from deployment-dialect-dependent FOR UPDATE semantics. Do not describe deployment behavior as proven merely because local uniqueness tests pass.
+
+Run focused and relevant tests if this read-only repository sandbox permits writable temporary storage. Direct all test caches and temporary files to an OS temporary directory where practical. If sandbox or temporary-storage constraints block a test, report that test as NOT PROVEN and include the blocking evidence; never report an unexecuted or blocked test as passing.
+
+Review efficiency and complexity as well as correctness. Identify unnecessary queries, avoidable transaction work, or complexity that materially affects safety or maintainability.
+
+Make no edits. Make no commits or pushes. Do not close Task 4.
+
+End with exactly one review verdict on its own line:
+SAFE
+SAFE WITH NON-BLOCKING OBSERVATIONS
+CHANGES REQUIRED

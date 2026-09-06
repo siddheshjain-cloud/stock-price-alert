@@ -5,6 +5,12 @@ param(
     [string]$BackendPath = 'C:\GitHub\backendtest',
     [string]$FrontendPath = 'C:\GitHub\stock-price-alert',
     [string]$ExpectedBranch = 'feature/investment-operating-system-m1',
+    [string]$ExpectedModel = '',
+    [string]$ExpectedProvider = '',
+    [string]$ExpectedReasoning = '',
+    [string]$ExpectedApproval = 'never',
+    [string]$ExpectedSandbox = 'read-only',
+    [string]$CodexProfile = '',
     [string]$CodexOutputPath = '',
     [string]$DependencyMarkerPath = ''
 )
@@ -109,7 +115,8 @@ else {
     $localShort = Get-GitValue -Path $repoPath -Arguments @('rev-parse', '--short', 'HEAD')
 
     $porcelain = @(& git -C $repoPath status --porcelain=v1 2>$null)
-    $worktreeClean = ($porcelain.Count -eq 0)
+    $statusCode = $LASTEXITCODE
+    $worktreeClean = ($statusCode -eq 0 -and $porcelain.Count -eq 0)
 
     $branchText = if ([string]::IsNullOrWhiteSpace($branch)) { '-' } else { $branch }
     if ($branch -eq $ExpectedBranch) {
@@ -119,7 +126,10 @@ else {
         Write-Output ('BRANCH     FAIL {0}' -f $branchText)
     }
 
-    if ($worktreeClean) {
+    if ($statusCode -ne 0) {
+        Write-Output 'WORKTREE   FAIL CHECK FAILED'
+    }
+    elseif ($worktreeClean) {
         Write-Output 'WORKTREE   OK   CLEAN'
     }
     else {
@@ -216,36 +226,51 @@ else {
 $model = ''
 $provider = ''
 $reasoning = ''
-$approval = 'never'
-$sandbox = 'read-only'
+$approval = ''
+$sandbox = ''
 $modelOk = $false
 $codexText = ''
+$modelCommandExitCode = 1
 
 if (-not [string]::IsNullOrWhiteSpace($CodexOutputPath)) {
     if (Test-Path -LiteralPath $CodexOutputPath -PathType Leaf) {
         $codexText = [System.IO.File]::ReadAllText($CodexOutputPath)
+        $modelCommandExitCode = 0
     }
 }
 else {
     $codexLauncher = $null
     foreach ($candidate in @('codex.cmd', 'codex.exe')) {
-        $resolved = Get-Command $candidate -CommandType Application -ErrorAction SilentlyContinue
+        $resolved = @(Get-Command $candidate -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1)
         if ($resolved) {
-            $codexLauncher = $resolved.Source
+            $codexLauncher = $resolved[0].Source
             break
         }
     }
 
     if (-not $codexLauncher) {
-        $resolved = Get-Command codex -ErrorAction SilentlyContinue
+        $resolved = @(Get-Command codex -ErrorAction SilentlyContinue | Select-Object -First 1)
         if ($resolved) {
-            $codexLauncher = $resolved.Source
+            $codexLauncher = $resolved[0].Source
         }
     }
 
     if ($codexLauncher) {
         $codexPrompt = 'Reply with exactly: MODEL_CHECK_OK. Do not inspect, modify, or execute anything in the repository.'
-        $codexArgs = @(
+        $codexArgs = @()
+        if (-not [string]::IsNullOrWhiteSpace($CodexProfile)) {
+            $codexArgs += @('--profile', $CodexProfile)
+        }
+        if (-not [string]::IsNullOrWhiteSpace($ExpectedModel)) {
+            $codexArgs += @('--model', $ExpectedModel)
+        }
+        if (-not [string]::IsNullOrWhiteSpace($ExpectedProvider)) {
+            $codexArgs += @('-c', ('model_provider="{0}"' -f $ExpectedProvider))
+        }
+        if (-not [string]::IsNullOrWhiteSpace($ExpectedReasoning)) {
+            $codexArgs += @('-c', ('model_reasoning_effort="{0}"' -f $ExpectedReasoning))
+        }
+        $codexArgs += @(
             '--ask-for-approval',
             'never',
             '--sandbox',
@@ -258,9 +283,11 @@ else {
         try {
             Push-Location -LiteralPath ([System.IO.Path]::GetTempPath())
             $codexText = ($codexPrompt | & $codexLauncher @codexArgs 2>&1 | Out-String)
+            $modelCommandExitCode = $LASTEXITCODE
         }
         catch {
-            $codexText = ''
+            $codexText = "Codex invocation failed: $($_.Exception.Message)"
+            $modelCommandExitCode = if ($LASTEXITCODE -is [int] -and $LASTEXITCODE -ne 0) { $LASTEXITCODE } else { 1 }
         }
         finally {
             Pop-Location
@@ -282,20 +309,58 @@ if ($codexText) {
         $sandbox = $parsedSandbox
     }
 
-    $modelOk = ($codexText.IndexOf('MODEL_CHECK_OK', [System.StringComparison]::Ordinal) -ge 0) -and
+    $expectedModelOk = [string]::IsNullOrWhiteSpace($ExpectedModel) -or $model.Equals($ExpectedModel, [System.StringComparison]::OrdinalIgnoreCase)
+    $expectedProviderOk = [string]::IsNullOrWhiteSpace($ExpectedProvider) -or $provider.Equals($ExpectedProvider, [System.StringComparison]::OrdinalIgnoreCase)
+    $expectedReasoningOk = [string]::IsNullOrWhiteSpace($ExpectedReasoning) -or $reasoning.Equals($ExpectedReasoning, [System.StringComparison]::OrdinalIgnoreCase)
+    $expectedApprovalOk = [string]::IsNullOrWhiteSpace($ExpectedApproval) -or $approval.Equals($ExpectedApproval, [System.StringComparison]::OrdinalIgnoreCase)
+    $expectedSandboxOk = [string]::IsNullOrWhiteSpace($ExpectedSandbox) -or $sandbox.Equals($ExpectedSandbox, [System.StringComparison]::OrdinalIgnoreCase)
+    $modelOk = ($modelCommandExitCode -eq 0) -and
+               ($codexText.IndexOf('MODEL_CHECK_OK', [System.StringComparison]::Ordinal) -ge 0) -and
                (-not [string]::IsNullOrWhiteSpace($model)) -and
-               (-not [string]::IsNullOrWhiteSpace($provider))
+               (-not [string]::IsNullOrWhiteSpace($provider)) -and
+               $expectedModelOk -and $expectedProviderOk -and $expectedReasoningOk -and
+               $expectedApprovalOk -and $expectedSandboxOk
 }
 
 $modelText = if ([string]::IsNullOrWhiteSpace($model)) { 'unavailable' } else { $model }
 $providerText = if ([string]::IsNullOrWhiteSpace($provider)) { 'unavailable' } else { $provider }
 $reasoningText = if ([string]::IsNullOrWhiteSpace($reasoning)) { '-' } else { $reasoning }
+$approvalText = if ([string]::IsNullOrWhiteSpace($approval)) { 'unavailable' } else { $approval }
+$sandboxText = if ([string]::IsNullOrWhiteSpace($sandbox)) { 'unavailable' } else { $sandbox }
 
-Write-Output ('MODEL      {0}' -f $modelText)
-Write-Output ('PROVIDER   {0}' -f $providerText)
-Write-Output ('REASONING  {0}' -f $reasoningText)
-Write-Output ('APPROVAL   {0}' -f $approval)
-Write-Output ('SANDBOX    {0}' -f $sandbox)
+if (-not [string]::IsNullOrWhiteSpace($ExpectedModel) -and -not $modelText.Equals($ExpectedModel, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-Output ('MODEL      FAIL expected={0} actual={1}' -f $ExpectedModel, $modelText)
+}
+else {
+    Write-Output ('MODEL      {0}' -f $modelText)
+}
+if (-not [string]::IsNullOrWhiteSpace($ExpectedProvider) -and -not $providerText.Equals($ExpectedProvider, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-Output ('PROVIDER   FAIL expected={0} actual={1}' -f $ExpectedProvider, $providerText)
+}
+else {
+    Write-Output ('PROVIDER   {0}' -f $providerText)
+}
+if (-not [string]::IsNullOrWhiteSpace($ExpectedReasoning) -and -not $reasoningText.Equals($ExpectedReasoning, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-Output ('REASONING  FAIL expected={0} actual={1}' -f $ExpectedReasoning, $reasoningText)
+}
+else {
+    Write-Output ('REASONING  {0}' -f $reasoningText)
+}
+if ($modelCommandExitCode -ne 0) {
+    Write-Output ('MODEL CHECK FAIL exit={0}' -f $modelCommandExitCode)
+}
+if (-not [string]::IsNullOrWhiteSpace($ExpectedApproval) -and -not $approvalText.Equals($ExpectedApproval, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-Output ('APPROVAL   FAIL expected={0} actual={1}' -f $ExpectedApproval, $approvalText)
+}
+else {
+    Write-Output ('APPROVAL   {0}' -f $approvalText)
+}
+if (-not [string]::IsNullOrWhiteSpace($ExpectedSandbox) -and -not $sandboxText.Equals($ExpectedSandbox, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-Output ('SANDBOX    FAIL expected={0} actual={1}' -f $ExpectedSandbox, $sandboxText)
+}
+else {
+    Write-Output ('SANDBOX    {0}' -f $sandboxText)
+}
 
 $ready = $repoOk -and $remoteOk -and $depsOk -and $modelOk
 
