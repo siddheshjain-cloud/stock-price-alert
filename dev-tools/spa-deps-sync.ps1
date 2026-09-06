@@ -2,8 +2,8 @@
 param(
     [string]$BackendPath = 'C:\GitHub\backendtest',
     [string]$PythonPath = 'C:\venvs\spa-m1\Scripts\python.exe',
-    [switch]$Force,
-    [switch]$CheckOnly
+    [switch]$RegisterCurrent,
+    [switch]$Force
 )
 
 Set-StrictMode -Version Latest
@@ -20,11 +20,6 @@ if (-not (Test-Path -LiteralPath $PythonPath -PathType Leaf)) {
 
 if ([string]::IsNullOrWhiteSpace($BackendPath) -or -not (Test-Path -LiteralPath $BackendPath -PathType Container)) {
     Write-Error "Backend path is missing: $BackendPath"
-    exit 1
-}
-
-if (-not (Test-Path -LiteralPath $requirementsDev -PathType Leaf)) {
-    Write-Error "requirements-dev.txt was not found in the backend root: $requirementsDev"
     exit 1
 }
 
@@ -69,14 +64,29 @@ if (Test-Path -LiteralPath $markerPath -PathType Leaf) {
     $storedFingerprint = ([System.IO.File]::ReadAllText($markerPath)).Trim()
 }
 
+if ($RegisterCurrent) {
+    $pipCheckOutput = & $PythonPath -m pip check 2>&1
+    $pipCheckCode = $LASTEXITCODE
+    Write-Output ($pipCheckOutput | Out-String)
+
+    if ($pipCheckCode -ne 0) {
+        Write-Error 'pip check failed; dependency fingerprint marker was not written.'
+        exit 1
+    }
+
+    [System.IO.File]::WriteAllText($markerPath, $currentFingerprint, [System.Text.Encoding]::ASCII)
+    Write-Output 'DEPENDENCIES REGISTERED'
+    exit 0
+}
+
 if ($storedFingerprint -eq $currentFingerprint -and -not $Force) {
     Write-Output 'DEPENDENCIES CURRENT'
     exit 0
 }
 
-if ($CheckOnly) {
-    Write-Output 'SYNC NEEDED'
-    exit 0
+if (-not (Test-Path -LiteralPath $requirementsDev -PathType Leaf)) {
+    Write-Error "requirements-dev.txt was not found in the backend root: $requirementsDev"
+    exit 1
 }
 
 $installArgs = @(
@@ -105,13 +115,6 @@ if ($checkCode -ne 0) {
     exit 1
 }
 
-try {
-    [System.IO.File]::WriteAllText($markerPath, $currentFingerprint, [System.Text.Encoding]::ASCII)
-}
-catch {
-    Write-Error "Could not write dependency fingerprint marker: $($_.Exception.Message)"
-    exit 1
-}
-
+[System.IO.File]::WriteAllText($markerPath, $currentFingerprint, [System.Text.Encoding]::ASCII)
 Write-Output 'DEPENDENCIES SYNCED'
 exit 0

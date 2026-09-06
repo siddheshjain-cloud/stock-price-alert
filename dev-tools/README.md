@@ -1,37 +1,33 @@
-# SPA development workspace tools
+# SPA development preflight
 
-These commands are for developers working on the SPA workspace. They are safe, read-only checks and dependency helpers. They do not change application code.
-
-## Start-of-task workspace check
-
-Run this before editing:
+Run this one command before a development task:
 
 ```powershell
 & C:\GitHub\stock-price-alert\dev-tools\spa-check.ps1
 ```
 
-This checks the backend and frontend repositories, the permanent Python version, and pytest. It is read-only and will never pull, reset, checkout, switch, clean, commit, push, or change code.
+Current M1 work uses the Backend target by default. The command already includes an actual Codex model check, so no separate model-check step is needed.
 
-## Before an expensive model run
+## What to do with the result
 
-Run this to verify the active Codex model and read-only sandbox settings:
+1. If the output ends with `READY YES`, run the approved task prompt.
+2. If the output ends with `READY NO`, stop and fix only the named issue.
+
+## What this command checks
+
+- active repo Git branch and working tree
+- remote synchronization with GitHub, read-only
+- dependency-manifest fingerprint for the Backend target
+- the actual Codex model, provider, and reasoning effort
+
+Stable machine setup is not rechecked every task. `spa-check.ps1` never changes code, Git history, execution policy, or the selected model. The remote Git check is read-only. Dependencies are only touched when their manifest has changed.
+
+## One-time dependency registration
+
+Before the first real Backend check, register the current permanent dependency environment once:
 
 ```powershell
-& C:\GitHub\stock-price-alert\dev-tools\spa-model-check.ps1
+& C:\GitHub\stock-price-alert\dev-tools\spa-deps-sync.ps1 -RegisterCurrent
 ```
 
-This does not inspect, modify, or execute anything in the repository. It only sends a harmless confirmation prompt to Codex.
-
-## Only when dependencies changed
-
-Run this when the Python dependency manifest has changed or when a package is genuinely missing:
-
-```powershell
-& C:\GitHub\stock-price-alert\dev-tools\spa-deps-sync.ps1
-```
-
-It reuses the existing permanent Python environment. It does not download or install Python and does not create another virtual environment.
-
-## Important note
-
-Pulling the latest code is a separate manual action. These tools never run `git pull` or any other Git command that changes repository state. If a workspace check reports a branch or clean-state problem, stop and ask a developer before continuing.
+This verifies the permanent Python environment with `pip check` and records its requirements fingerprint. It does not reinstall packages.

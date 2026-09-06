@@ -1,14 +1,20 @@
-Backend: C:\GitHub\backendtest
-Frontend/docs: C:\GitHub\stock-price-alert
-Python: C:\venvs\spa-m1\Scripts\python.exe
+Backend:
+C:\GitHub\backendtest
+
+Frontend/docs:
+C:\GitHub\stock-price-alert
+
+Python:
+C:\venvs\spa-m1\Scripts\python.exe
+
 Canonical full test:
 C:\venvs\spa-m1\Scripts\python.exe -m pytest -q
 
 Rules:
-- use the permanent Python for all Python/pytest commands
-- do not search for/download/install/provision another Python unless it is demonstrably unusable
-- do not reinstall dependencies merely as exploration; use spa-deps-sync.ps1 when dependency manifests changed or packages are genuinely missing
-- TDD: RED -> verify RED -> minimal GREEN -> regression
-- inspect branch/status before edits
-- no active DB, Kite, Telegram, websocket/live trading, deployment, secrets, ACL/config changes, main/master unless a task explicitly authorizes them
+- permanent Python only
+- do not search/download/install/provision another Python unless demonstrably unusable
+- do not reinstall dependencies as exploration
+- TDD RED -> verify RED -> minimal GREEN -> regression
+- inspect active repo branch/status before edits
+- no active DB, Kite, Telegram, websocket/live trading, deployment, secrets, ACL/config, main/master unless explicitly authorized
 - commit/push only after fresh verification
