@@ -9,11 +9,18 @@ param(
     [string]$FrontendPath = '',
     [string]$DependencyMarkerPath = '',
     [string]$TestModelCheckOutputPath = '',
-    [string]$TestTaskOutputPath = ''
+    [string]$TestTaskOutputPath = '',
+    [string]$StatePath = '',
+    [Nullable[double]]$MaxMinutes,
+    [string]$Until = '',
+    [ValidateRange(0, 1440)]
+    [int]$SafetyBufferMinutes = 15,
+    [string]$TestNow = ''
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$script:SpaMaxMinutesSpecified = $PSBoundParameters.ContainsKey('MaxMinutes')
 
 if ([string]::IsNullOrWhiteSpace($RoutingPath)) {
     $RoutingPath = Join-Path $PSScriptRoot 'm1-model-routing.psd1'
@@ -64,13 +71,249 @@ function Get-ReviewVerdict {
     return $verdict
 }
 
-$testOnlyOverrides = @('RoutingPath', 'BackendPath', 'FrontendPath', 'DependencyMarkerPath', 'TestModelCheckOutputPath', 'TestTaskOutputPath')
+function Get-M1ChildVerdict {
+    param([Parameter(Mandatory = $true)][string]$Text)
+
+    $matches = @([regex]::Matches($Text, '(?im)^VERDICT\s+(SAFE WITH NON-BLOCKING OBSERVATIONS|SAFE|CHANGES REQUIRED)\s*$'))
+    if ($matches.Count -ne 1) {
+        throw 'Completed child route did not report exactly one validated SPA TASK RESULT verdict.'
+    }
+    return $matches[0].Groups[1].Value.ToUpperInvariant()
+}
+
+function Get-M1TaskRecord {
+    param([Parameter(Mandatory = $true)][object]$State, [Parameter(Mandatory = $true)][string]$TaskId)
+
+    $matches = @($State.tasks | Where-Object { ([string]$_.id).Equals($TaskId, [System.StringComparison]::OrdinalIgnoreCase) })
+    if ($matches.Count -ne 1) {
+        throw "M1 state must contain exactly one task record for '$TaskId'."
+    }
+    return $matches[0]
+}
+
+function Set-M1Property {
+    param([Parameter(Mandatory = $true)][object]$InputObject, [Parameter(Mandatory = $true)][string]$Name, $Value)
+
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        $InputObject[$Name] = $Value
+    }
+    elseif ($null -ne $InputObject.PSObject.Properties[$Name]) {
+        $InputObject.$Name = $Value
+    }
+    else {
+        $InputObject | Add-Member -NotePropertyName $Name -NotePropertyValue $Value
+    }
+}
+
+function Publish-M1StateCheckpoint {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][string]$StateFile,
+        [Parameter(Mandatory = $true)][string]$ToolingRepository,
+        [Parameter(Mandatory = $true)][string]$TaskId,
+        [Parameter(Mandatory = $true)][string]$Status
+    )
+
+    $repositoryRoot = [System.IO.Path]::GetFullPath($ToolingRepository).TrimEnd('\', '/')
+    $fullStatePath = [System.IO.Path]::GetFullPath($StateFile)
+    if (-not $fullStatePath.StartsWith($repositoryRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'M1 state path must be inside the tooling repository before it can be checkpointed.'
+    }
+    $relativeStatePath = $fullStatePath.Substring($repositoryRoot.Length + 1).Replace('\', '/')
+
+    Write-M1StateAtomic -State $State -Path $fullStatePath
+    $changes = (Invoke-M1Git -Path $repositoryRoot -Arguments @('status', '--porcelain=v1', '--untracked-files=normal')).Output
+    $changeLines = @($changes -split '\r?\n' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($changeLines.Count -ne 1 -or $changeLines[0].Substring(3).Replace('\', '/') -ne $relativeStatePath) {
+        throw "Checkpoint refused because the tooling repository has changes other than '$relativeStatePath'."
+    }
+
+    Invoke-M1Git -Path $repositoryRoot -Arguments @('add', '--', $relativeStatePath) | Out-Null
+    Invoke-M1Git -Path $repositoryRoot -Arguments @('commit', '-m', ("chore: checkpoint SPA M1 $TaskId $Status")) | Out-Null
+    $push = Invoke-M1Git -Path $repositoryRoot -Arguments @('push', 'origin', ([string]$State.branch)) -AllowFailure
+    if ($push.Code -ne 0) {
+        throw "Checkpoint commit exists locally but push failed; '$TaskId' is not a durable cross-PC checkpoint."
+    }
+    $counts = (Invoke-M1Git -Path $repositoryRoot -Arguments @('rev-list', '--left-right', '--count', ('HEAD...refs/remotes/origin/' + [string]$State.branch))).Output
+    if ($counts -notmatch '^0\s+0$') { throw 'Checkpoint push returned successfully but local/remote synchronization is not 0/0.' }
+}
+
+function Invoke-M1ChildRoute {
+    param(
+        [Parameter(Mandatory = $true)][string]$RouteId,
+        [switch]$ChildDryRun
+    )
+
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath, '-Task', $RouteId)
+    if ($ChildDryRun) { $arguments += '-DryRun' }
+    if ($TestMode) {
+        $arguments += @('-TestMode', '-RoutingPath', $RoutingPath)
+        if (-not [string]::IsNullOrWhiteSpace($BackendPath)) { $arguments += @('-BackendPath', $BackendPath) }
+        if (-not [string]::IsNullOrWhiteSpace($FrontendPath)) { $arguments += @('-FrontendPath', $FrontendPath) }
+        if (-not [string]::IsNullOrWhiteSpace($DependencyMarkerPath)) { $arguments += @('-DependencyMarkerPath', $DependencyMarkerPath) }
+        if (-not [string]::IsNullOrWhiteSpace($TestModelCheckOutputPath)) { $arguments += @('-TestModelCheckOutputPath', $TestModelCheckOutputPath) }
+        if (-not [string]::IsNullOrWhiteSpace($TestTaskOutputPath)) { $arguments += @('-TestTaskOutputPath', $TestTaskOutputPath) }
+    }
+    $output = & powershell.exe @arguments 2>&1 | Out-String
+    return [pscustomobject]@{ Code = $LASTEXITCODE; Output = $output.TrimEnd() }
+}
+
+function Invoke-M1Remaining {
+    $stateToolsPath = Join-Path $PSScriptRoot 'm1-state.ps1'
+    if (-not (Test-Path -LiteralPath $stateToolsPath -PathType Leaf)) {
+        Stop-SpaRun "M1 state helper is missing: $stateToolsPath"
+    }
+    . $stateToolsPath
+
+    if ([string]::IsNullOrWhiteSpace($StatePath)) {
+        $script:StatePath = Join-Path $PSScriptRoot 'state\m1-state.json'
+    }
+    $toolingPath = if ([string]::IsNullOrWhiteSpace($FrontendPath)) { Split-Path -Parent $PSScriptRoot } else { $FrontendPath }
+    $backendRepositoryPath = if ([string]::IsNullOrWhiteSpace($BackendPath)) { 'C:\GitHub\backendtest' } else { $BackendPath }
+
+    try {
+        $state = Read-M1State -Path $StatePath
+        $requiredBranch = 'feature/investment-operating-system-m1'
+        if (-not ([string]$state.branch).Equals($requiredBranch, [System.StringComparison]::Ordinal)) {
+            throw "M1 state branch '$($state.branch)' does not match required branch '$requiredBranch'."
+        }
+
+        $now = if ([string]::IsNullOrWhiteSpace($TestNow)) { [datetimeoffset]::Now } else { [datetimeoffset]::Parse($TestNow, [System.Globalization.CultureInfo]::InvariantCulture) }
+        if ($script:SpaMaxMinutesSpecified) {
+            $deadline = Get-M1Deadline -Now $now -MaxMinutes $MaxMinutes
+        }
+        elseif (-not [string]::IsNullOrWhiteSpace($Until)) {
+            $deadline = Get-M1Deadline -Now $now -Until $Until
+        }
+        else {
+            $deadline = $null
+        }
+
+        # Validate both local repositories before either one is fetched or fast-forwarded.
+        Test-M1RepositoryLocalState -Name 'Backend' -Path $backendRepositoryPath -ExpectedBranch $requiredBranch | Out-Null
+        Test-M1RepositoryLocalState -Name 'Frontend' -Path $toolingPath -ExpectedBranch $requiredBranch | Out-Null
+        $backendSync = Sync-M1Repository -Name 'Backend' -Path $backendRepositoryPath -ExpectedBranch $requiredBranch
+        $frontendSync = Sync-M1Repository -Name 'Frontend' -Path $toolingPath -ExpectedBranch $requiredBranch
+        Test-M1RecordedShas -State $state -BackendPath $backendRepositoryPath -FrontendPath $toolingPath -Branch $requiredBranch | Out-Null
+
+        Write-Output 'SPA M1 ORCHESTRATOR'
+        Write-Output ('MODE       M1-REMAINING')
+        Write-Output ('BRANCH     {0}' -f $requiredBranch)
+        Write-Output ('BACKEND    SYNCED {0}' -f $backendSync.Head)
+        Write-Output ('FRONTEND   SYNCED {0}' -f $frontendSync.Head)
+
+        while ($true) {
+            $unit = Get-M1NextUnit -State $state
+            if ($null -eq $unit) {
+                Write-Output 'STATUS     ALL MACHINE-VERIFIED UNITS COMPLETE'
+                Write-Output 'HUMAN GATE REQUIRED before M1 release.'
+                return
+            }
+            Write-Output ('NEXT       {0}' -f $unit.RouteId)
+            Write-Output ('TASK       {0}' -f $unit.TaskId)
+            Write-Output ('STATE      {0}' -f $unit.Status)
+            if ($unit.IsRecovery) { Write-Output 'RECOVERY   RESTART FROM LAST VERIFIED GIT CHECKPOINT' }
+
+            $checkNow = if ([string]::IsNullOrWhiteSpace($TestNow)) { [datetimeoffset]::Now } else { [datetimeoffset]::Parse($TestNow, [System.Globalization.CultureInfo]::InvariantCulture) }
+            if (Test-M1ShouldSoftStop -Now $checkNow -Deadline $deadline -SafetyBufferMinutes $SafetyBufferMinutes) {
+                Write-Output 'SOFT STOP  SAFETY BUFFER REACHED'
+                Write-Output ('CHECKPOINT backend={0} frontend={1}' -f $backendSync.Head, $frontendSync.Head)
+                Write-Output ('RESUME     spa-run M1-REMAINING')
+                return
+            }
+
+            if ($DryRun) {
+                $preview = Invoke-M1ChildRoute -RouteId $unit.RouteId -ChildDryRun
+                if ($preview.Output) { Write-Output $preview.Output }
+                if ($preview.Code -ne 0) { throw "Dry-run route resolution failed for '$($unit.RouteId)'." }
+                Write-Output 'TOKENS     NONE (DRY RUN)'
+                return
+            }
+
+            $taskRecord = Get-M1TaskRecord -State $state -TaskId $unit.TaskId
+            if (([string]$taskRecord.action).Equals('HUMAN_GATE', [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw "Final M1 release human gate reached at '$($unit.TaskId)'."
+            }
+            if ($unit.Stage -eq 'REMEDIATE' -and [int]$taskRecord.remediationAttempts -ge 2) {
+                throw "Repeated remediation failure after 2 attempts for '$($unit.TaskId)'."
+            }
+
+            Set-M1Property -InputObject $taskRecord -Name 'status' -Value 'RUNNING_LOCAL'
+            Set-M1Property -InputObject $taskRecord -Name 'activeRoute' -Value $unit.RouteId
+            Set-M1Property -InputObject $taskRecord -Name 'updatedUtc' -Value ([datetimeoffset]::UtcNow.ToString('o'))
+            Publish-M1StateCheckpoint -State $state -StateFile $StatePath -ToolingRepository $toolingPath -TaskId $unit.TaskId -Status 'RUNNING_LOCAL'
+
+            $result = Invoke-M1ChildRoute -RouteId $unit.RouteId
+            if ($result.Output) { Write-Output $result.Output }
+            if ($result.Code -ne 0) { throw "Unit '$($unit.RouteId)' failed; RUNNING_LOCAL remains the durable non-complete state." }
+            $verdict = Get-M1ChildVerdict -Text $result.Output
+
+            $backendSync = Sync-M1Repository -Name 'Backend' -Path $backendRepositoryPath -ExpectedBranch $requiredBranch
+            $frontendSync = Sync-M1Repository -Name 'Frontend' -Path $toolingPath -ExpectedBranch $requiredBranch
+            $hardStopAfterCheckpoint = $false
+            if ($verdict -eq 'CHANGES REQUIRED') {
+                Set-M1Property -InputObject $taskRecord -Name 'status' -Value 'REMEDIATION_REQUIRED'
+                Set-M1Property -InputObject $taskRecord -Name 'activeRoute' -Value $null
+                if ([int]$taskRecord.remediationAttempts -ge 2) {
+                    $hardStopAfterCheckpoint = $true
+                }
+            }
+            elseif ($unit.Stage -eq 'REVIEW' -or ([string]$taskRecord.action).Equals('REVIEW', [System.StringComparison]::OrdinalIgnoreCase)) {
+                Set-M1Property -InputObject $taskRecord -Name 'lastSuccessfulReviewVerdict' -Value $verdict
+                Set-M1Property -InputObject $taskRecord.evidence -Name 'reviewSucceeded' -Value $true
+                Set-M1Property -InputObject $taskRecord.evidence -Name 'implementationSucceeded' -Value $true
+                Set-M1Property -InputObject $taskRecord.evidence -Name 'testsSucceeded' -Value $true
+                Set-M1Property -InputObject $taskRecord.evidence -Name 'relevantCommitsPushed' -Value $true
+                Set-M1Property -InputObject $taskRecord -Name 'status' -Value 'COMPLETE'
+                Set-M1Property -InputObject $taskRecord -Name 'activeRoute' -Value $null
+            }
+            else {
+                Set-M1Property -InputObject $taskRecord.evidence -Name 'implementationSucceeded' -Value $true
+                Set-M1Property -InputObject $taskRecord.evidence -Name 'testsSucceeded' -Value $true
+                Set-M1Property -InputObject $taskRecord.evidence -Name 'relevantCommitsPushed' -Value $true
+                if ($unit.Stage -eq 'REMEDIATE') {
+                    Set-M1Property -InputObject $taskRecord -Name 'remediationCommitSha' -Value $backendSync.Head
+                    Set-M1Property -InputObject $taskRecord -Name 'remediationAttempts' -Value ([int]$taskRecord.remediationAttempts + 1)
+                }
+                else {
+                    Set-M1Property -InputObject $taskRecord -Name 'implementationCommitSha' -Value $backendSync.Head
+                }
+                Set-M1Property -InputObject $taskRecord -Name 'lastVerifiedBackendSha' -Value $backendSync.Head
+                Set-M1Property -InputObject $taskRecord -Name 'activeRoute' -Value $null
+                $nextStatus = if ([bool]$taskRecord.evidence.reviewRequired) { 'REVIEW_PENDING' } else { 'COMPLETE' }
+                Set-M1Property -InputObject $taskRecord -Name 'status' -Value $nextStatus
+            }
+            Set-M1Property -InputObject $taskRecord -Name 'updatedUtc' -Value ([datetimeoffset]::UtcNow.ToString('o'))
+            Set-M1Property -InputObject $state.repositories.backend -Name 'lastVerifiedSha' -Value $backendSync.Head
+            Set-M1Property -InputObject $state.repositories.frontend -Name 'lastVerifiedSha' -Value $frontendSync.Head
+            Publish-M1StateCheckpoint -State $state -StateFile $StatePath -ToolingRepository $toolingPath -TaskId $unit.TaskId -Status ([string]$taskRecord.status)
+            Write-Output ('CHECKPOINT {0} {1} PUSHED' -f $unit.TaskId, $taskRecord.status)
+            if ($hardStopAfterCheckpoint) {
+                throw "Repeated remediation failure after 2 attempts for '$($unit.TaskId)'."
+            }
+        }
+    }
+    catch {
+        Stop-SpaRun $_.Exception.Message
+    }
+}
+
+$testOnlyOverrides = @('RoutingPath', 'BackendPath', 'FrontendPath', 'DependencyMarkerPath', 'TestModelCheckOutputPath', 'TestTaskOutputPath', 'StatePath', 'TestNow')
 $usedTestOnlyOverrides = @($testOnlyOverrides | Where-Object { $PSBoundParameters.ContainsKey($_) })
 if ($TestMode -and -not $DryRun) {
     Stop-SpaRun '-TestMode requires -DryRun and can never invoke a task.'
 }
 if (-not $TestMode -and $usedTestOnlyOverrides.Count -gt 0) {
     Stop-SpaRun 'Test-only overrides require both -TestMode and -DryRun.'
+}
+
+$taskId = $Task.Trim().ToUpperInvariant()
+if ($taskId -eq 'M1-REMAINING') {
+    Invoke-M1Remaining
+    exit 0
+}
+if ($PSBoundParameters.ContainsKey('MaxMinutes') -or -not [string]::IsNullOrWhiteSpace($Until) -or $PSBoundParameters.ContainsKey('SafetyBufferMinutes')) {
+    Stop-SpaRun '-MaxMinutes, -Until, and -SafetyBufferMinutes are available only with M1-REMAINING.'
 }
 
 if (-not (Test-Path -LiteralPath $RoutingPath -PathType Leaf)) {
@@ -84,7 +327,6 @@ catch {
     Stop-SpaRun "Routing file could not be loaded: $($_.Exception.Message)"
 }
 
-$taskId = $Task.Trim().ToUpperInvariant()
 if (-not $routing.ContainsKey('Routes') -or -not $routing.Routes.ContainsKey($taskId)) {
     Stop-SpaRun "Unknown SPA task ID: $taskId"
 }
