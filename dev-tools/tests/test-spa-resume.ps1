@@ -153,6 +153,58 @@ try {
     try { Read-M1State -Path $malformedPath | Out-Null } catch { $malformedFailed = ($_.Exception.Message -match 'malformed') }
     Assert-True $malformedFailed 'malformed state fails closed'
 
+    $safeState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $safeState.tasks[0].remediationCommitSha = $backend.Sha
+    Complete-M1ReviewTransition -State $safeState -TaskId 'P2T4' -ReviewRoute 'P2T4-REVIEW' -Verdict 'SAFE' `
+        -ReviewerProvider 'deepseek' -ReviewerModel 'deepseek-v4-pro' `
+        -BackendHead $backend.Sha -FrontendHead $frontend.Sha -ReviewedCommitSha $backend.Sha | Out-Null
+    Assert-True (([string]$safeState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'accepted SAFE review completes the task'
+    Assert-True ([string]$safeState.tasks[0].lastSuccessfulReviewVerdict -eq 'SAFE') 'accepted SAFE review records the exact verdict'
+    Assert-True (([string]$safeState.tasks[0].reviewerProvider -eq 'deepseek') -and ([string]$safeState.tasks[0].reviewerModel -eq 'deepseek-v4-pro')) 'accepted review preserves reviewer metadata'
+    Assert-True ((Get-M1NextUnit -State $safeState).RouteId -eq 'P2T5') 'accepted SAFE review advances to P2T5'
+
+    $observedState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $observedState.tasks[0].remediationCommitSha = $backend.Sha
+    Complete-M1ReviewTransition -State $observedState -TaskId 'P2T4' -ReviewRoute 'P2T4-REVIEW' -Verdict 'SAFE WITH NON-BLOCKING OBSERVATIONS' `
+        -ReviewerProvider 'deepseek' -ReviewerModel 'deepseek-v4-pro' `
+        -BackendHead $backend.Sha -FrontendHead $frontend.Sha -ReviewedCommitSha $backend.Sha | Out-Null
+    Assert-True (([string]$observedState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'accepted SAFE WITH NON-BLOCKING OBSERVATIONS review completes the task'
+    Assert-True ([string]$observedState.tasks[0].lastSuccessfulReviewVerdict -eq 'SAFE WITH NON-BLOCKING OBSERVATIONS') 'observed accepted review records the exact verdict'
+    Assert-True ((Get-M1NextUnit -State $observedState).RouteId -eq 'P2T5') 'accepted observed review advances to P2T5'
+
+    $rejectedState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $rejectedState.tasks[0].remediationCommitSha = $backend.Sha
+    Complete-M1ReviewTransition -State $rejectedState -TaskId 'P2T4' -ReviewRoute 'P2T4-REVIEW' -Verdict 'CHANGES REQUIRED' `
+        -ReviewerProvider 'deepseek' -ReviewerModel 'deepseek-v4-pro' `
+        -BackendHead $backend.Sha -FrontendHead $frontend.Sha -ReviewedCommitSha $backend.Sha | Out-Null
+    Assert-True (([string]$rejectedState.tasks[0].status).Equals('REMEDIATION_REQUIRED', [System.StringComparison]::OrdinalIgnoreCase)) 'CHANGES REQUIRED review marks remediation required'
+    Assert-True ([string]$rejectedState.tasks[0].lastSuccessfulReviewVerdict -eq 'CHANGES REQUIRED') 'rejected review preserves the verdict'
+    Assert-True ((Get-M1NextUnit -State $rejectedState).RouteId -eq 'P2T4') 'CHANGES REQUIRED review does not advance to P2T5'
+
+    $inconsistentState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $inconsistentState.tasks[0].remediationCommitSha = $backend.Sha
+    $inconsistentFailed = $false
+    try {
+        Complete-M1ReviewTransition -State $inconsistentState -TaskId 'P2T4' -ReviewRoute 'P2T4-OTHER' -Verdict 'SAFE' `
+            -BackendHead $backend.Sha -FrontendHead $frontend.Sha -ReviewedCommitSha $backend.Sha | Out-Null
+    }
+    catch {
+        $inconsistentFailed = ($_.Exception.Message -match 'does not match mapped review route')
+    }
+    Assert-True $inconsistentFailed 'inconsistent review route fails closed'
+
     $advanceState = New-TestState @(
         (New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha),
         (New-TestTask -Id 'P2T6' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
@@ -295,6 +347,64 @@ exit /b 99
     Assert-True ($dryRun.Output.IndexOf($secretSentinel, [System.StringComparison]::Ordinal) -lt 0) 'dry-run prints no secrets'
     Assert-Match $dryRun.Output '(?ms)^COMPLETED\s+NONE\r?$.*^NEXT\s+P2T4-REVIEW\r?$.*^REMOTE\s+SYNCED\r?$.*^STOP REASON\s+DRY RUN\r?$.*^RESUME\s+spa-run M1-REMAINING\r?$' 'M1-REMAINING dry-run prints the required session fields'
     Assert-FinalSessionSummary $dryRun.Output 'M1-REMAINING dry-run prints exactly one session summary at the bottom'
+
+    $applyBackend = Initialize-RemotePair -Root $tempRoot -Name 'apply-backend'
+    $applyFrontend = Initialize-RemotePair -Root $tempRoot -Name 'apply-frontend'
+    $applyStatePath = Join-Path $applyFrontend.Home 'state.json'
+    $applyState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $applyBackend.Sha -FrontendSha $applyFrontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $applyState.tasks[0].remediationCommitSha = $applyBackend.Sha
+    $applyState.repositories.backend.lastVerifiedSha = $applyBackend.Sha
+    $applyState.repositories.frontend.lastVerifiedSha = $applyFrontend.Sha
+    Write-M1StateAtomic -State $applyState -Path $applyStatePath
+    Invoke-Git $applyFrontend.Home @('add', '-A') | Out-Null
+    Invoke-Git $applyFrontend.Home @('commit', '-q', '-m', 'checkpoint state') | Out-Null
+    Invoke-Git $applyFrontend.Home @('push', '-q', 'origin', $expectedBranch) | Out-Null
+
+    $oldApplyPath = $env:PATH
+    $oldApplySecret = $env:DEEPSEEK_API_KEY
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldApplyPath
+    $env:DEEPSEEK_API_KEY = $secretSentinel
+    try {
+        $applyReview = Invoke-SpaRun @(
+            '-Task', 'P2T4', '-ApplyReview', '-ReviewVerdict', 'SAFE WITH NON-BLOCKING OBSERVATIONS', '-TestMode',
+            '-StatePath', $applyStatePath, '-BackendPath', $applyBackend.Home, '-FrontendPath', $applyFrontend.Home
+        )
+    }
+    finally {
+        $env:PATH = $oldApplyPath
+        $env:DEEPSEEK_API_KEY = $oldApplySecret
+    }
+    Assert-True ($applyReview.Code -eq 0) 'already-valid P2T4 review applies once through the generic transition'
+    Assert-Match $applyReview.Output 'STATE\s+COMPLETE' 'applied P2T4 review marks the task complete'
+    Assert-Match $applyReview.Output 'VERDICT\s+SAFE WITH NON-BLOCKING OBSERVATIONS' 'applied P2T4 review preserves the exact verdict'
+    Assert-Match $applyReview.Output 'NEXT\s+P2T5' 'applied P2T4 review exposes P2T5 as the next task'
+    Assert-Match $applyReview.Output 'TOKENS\s+NONE' 'applied P2T4 review consumes no model tokens'
+    Assert-True (-not (Test-Path -LiteralPath $tokenMarker)) 'apply-review does not invoke the reviewer CLI'
+
+    $appliedState = Read-M1State -Path $applyStatePath
+    Assert-True (([string]$appliedState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'applied P2T4 state is durable'
+    Assert-True ([string]$appliedState.tasks[0].lastSuccessfulReviewVerdict -eq 'SAFE WITH NON-BLOCKING OBSERVATIONS') 'applied P2T4 verdict is durable'
+
+    $oldAfterPath = $env:PATH
+    $oldAfterSecret = $env:DEEPSEEK_API_KEY
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldAfterPath
+    $env:DEEPSEEK_API_KEY = $secretSentinel
+    try {
+        $afterDryRun = Invoke-SpaRun @(
+            '-Task', 'M1-REMAINING', '-DryRun', '-TestMode',
+            '-StatePath', $applyStatePath, '-RoutingPath', $routingPath,
+            '-BackendPath', $applyBackend.Home, '-FrontendPath', $applyFrontend.Home
+        )
+    }
+    finally {
+        $env:PATH = $oldAfterPath
+        $env:DEEPSEEK_API_KEY = $oldAfterSecret
+    }
+    Assert-Match $afterDryRun.Output 'NEXT\s+P2T5' 'M1 dry-run identifies P2T5 after P2T4 is applied'
+    Assert-True (-not (Test-Path -LiteralPath $tokenMarker)) 'post-apply M1 dry-run consumes no model tokens'
 }
 finally {
     if (Test-Path -LiteralPath $tempRoot) {

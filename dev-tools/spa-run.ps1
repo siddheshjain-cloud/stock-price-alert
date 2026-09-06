@@ -1,8 +1,10 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
-    [string]$Task,
+    [string]$Task = '',
     [switch]$DryRun,
+    [switch]$Status,
+    [switch]$ApplyReview,
+    [string]$ReviewVerdict = '',
     [switch]$TestMode,
     [string]$RoutingPath = '',
     [string]$BackendPath = '',
@@ -11,6 +13,7 @@ param(
     [string]$TestModelCheckOutputPath = '',
     [string]$TestTaskOutputPath = '',
     [string]$StatePath = '',
+    [string]$TestHealthPath = '',
     [Nullable[double]]$MaxMinutes,
     [string]$Until = '',
     [ValidateRange(0, 1440)]
@@ -21,17 +24,25 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:SpaMaxMinutesSpecified = $PSBoundParameters.ContainsKey('MaxMinutes')
-$script:SpaTaskId = $Task.Trim().ToUpperInvariant()
+$script:SpaTaskId = if ([string]::IsNullOrWhiteSpace($Task)) { '' } else { $Task.Trim().ToUpperInvariant() }
 $script:SpaSummaryAction = 'NOT AVAILABLE'
 $script:SpaSummaryModel = 'NOT AVAILABLE'
 $script:SpaSummaryReasoning = 'NOT AVAILABLE'
 $script:SpaLastSafe = 'NOT AVAILABLE'
 $script:SpaRemoteStatus = 'NOT AVAILABLE'
+$script:M1StateToolsPath = Join-Path $PSScriptRoot 'm1-state.ps1'
+$script:M1StateToolsLoaded = $false
 
 # Keep all Git calls made by this process and its child scripts unattended.
 $env:GIT_PAGER = 'cat'
 $env:PAGER = 'cat'
 $env:GIT_TERMINAL_PROMPT = '0'
+
+if (-not (Test-Path -LiteralPath $script:M1StateToolsPath -PathType Leaf)) {
+    throw "M1 state helper is missing: $script:M1StateToolsPath"
+}
+. $script:M1StateToolsPath
+$script:M1StateToolsLoaded = $true
 
 if ([string]::IsNullOrWhiteSpace($RoutingPath)) {
     $RoutingPath = Join-Path $PSScriptRoot 'm1-model-routing.psd1'
@@ -116,6 +127,15 @@ function Stop-SpaRun {
     Write-Output ('SPA-RUN FAIL: {0}' -f $Message)
     Write-SpaTaskSummary -Result 'STOPPED' -Reason $Message -Next ('Resolve failure and rerun spa-run {0}' -f $script:SpaTaskId)
     exit 1
+}
+
+function Import-M1StateTools {
+    if ($script:M1StateToolsLoaded) { return }
+    if (-not (Test-Path -LiteralPath $script:M1StateToolsPath -PathType Leaf)) {
+        Stop-SpaRun "M1 state helper is missing: $script:M1StateToolsPath"
+    }
+    . $script:M1StateToolsPath
+    $script:M1StateToolsLoaded = $true
 }
 
 function Get-RequiredValue {
@@ -209,7 +229,11 @@ function Publish-M1StateCheckpoint {
     Write-M1StateAtomic -State $State -Path $fullStatePath
     $changes = (Invoke-M1Git -Path $repositoryRoot -Arguments @('status', '--porcelain=v1', '--untracked-files=normal')).Output
     $changeLines = @($changes -split '\r?\n' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-    if ($changeLines.Count -ne 1 -or $changeLines[0].Substring(3).Replace('\', '/') -ne $relativeStatePath) {
+    $singleChangePath = $null
+    if ($changeLines.Count -eq 1 -and $changeLines[0] -match '^[MARCU?]{1,2}\s+(.+)$') {
+        $singleChangePath = $Matches[1].Replace('\', '/')
+    }
+    if ($changeLines.Count -ne 1 -or $singleChangePath -ne $relativeStatePath) {
         throw "Checkpoint refused because the tooling repository has changes other than '$relativeStatePath'."
     }
 
@@ -223,10 +247,198 @@ function Publish-M1StateCheckpoint {
     if ($counts -notmatch '^0\s+0$') { throw 'Checkpoint push returned successfully but local/remote synchronization is not 0/0.' }
 }
 
+function Format-ProcessArgument {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    if ($Value -notmatch "[\s`"]") { return $Value }
+    return '"' + $Value.Replace('"', '\"') + '"'
+}
+
+function Read-SpaFileDelta {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][ref]$Offset
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return '' }
+    try {
+        $stream = [System.IO.File]::Open(
+            $Path,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::Read,
+            [System.IO.FileShare]::ReadWrite
+        )
+        $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::UTF8)
+        try {
+            if ($Offset.Value -gt $stream.Length) { $Offset.Value = $stream.Length }
+            $stream.Seek($Offset.Value, [System.IO.SeekOrigin]::Begin) | Out-Null
+            $reader.DiscardBufferedData()
+            $text = $reader.ReadToEnd()
+            $Offset.Value = $stream.Position
+            return $text
+        }
+        finally {
+            $reader.Dispose()
+            $stream.Dispose()
+        }
+    }
+    catch {
+        return ''
+    }
+}
+
+function Invoke-SpaTrackedProcessLegacy {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(Mandatory = $true)][string[]]$ArgumentList,
+        [Parameter(Mandatory = $true)][string]$WorkingDirectory,
+        [Parameter(Mandatory = $true)][string]$HealthRoot,
+        [string]$Task = 'NOT AVAILABLE',
+        [string]$Phase = 'NOT AVAILABLE',
+        [string]$Model = 'NOT AVAILABLE',
+        [string]$Provider = 'NOT AVAILABLE',
+        [string]$LastSafe = 'NOT AVAILABLE',
+        [int]$HeartbeatSeconds = 120
+    )
+
+    Import-M1StateTools
+    $tempDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ('spa-run-track-' + [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $tempDirectory -Force | Out-Null
+    $stdoutPath = Join-Path $tempDirectory 'stdout.txt'
+    $stderrPath = Join-Path $tempDirectory 'stderr.txt'
+    $startedAt = [datetimeoffset]::UtcNow
+    $lastOutputAt = $startedAt
+    $stdoutOffset = 0
+    $stderrOffset = 0
+    $outputBuilder = New-Object System.Text.StringBuilder
+
+    $quotedArguments = @($ArgumentList | ForEach-Object { Format-ProcessArgument -Value $_ })
+    $process = Start-Process `
+        -FilePath $FilePath `
+        -ArgumentList $quotedArguments `
+        -WorkingDirectory $WorkingDirectory `
+        -RedirectStandardOutput $stdoutPath `
+        -RedirectStandardError $stderrPath `
+        -PassThru `
+        -WindowStyle Hidden
+
+    Write-SpaHealthRecord `
+        -Task $Task `
+        -Phase $Phase `
+        -Model $Model `
+        -Provider $Provider `
+        -StartedAt $startedAt `
+        -LastOutputAt $lastOutputAt `
+        -ProcessId $process.Id `
+        -ProcessAlive $true `
+        -LastSafe $LastSafe `
+        -HealthRoot $HealthRoot | Out-Null
+
+    $nextHeartbeat = ([datetimeoffset]::UtcNow).AddSeconds($HeartbeatSeconds)
+    try {
+        while (-not $process.HasExited) {
+            Start-Sleep -Seconds 2
+            $process.Refresh()
+            $now = [datetimeoffset]::UtcNow
+            $receivedOutput = $false
+
+            $stdoutDelta = Read-SpaFileDelta -Path $stdoutPath -Offset ([ref]$stdoutOffset)
+            if (-not [string]::IsNullOrEmpty($stdoutDelta)) {
+                [void]$outputBuilder.Append($stdoutDelta)
+                $receivedOutput = $true
+            }
+
+            $stderrDelta = Read-SpaFileDelta -Path $stderrPath -Offset ([ref]$stderrOffset)
+            if (-not [string]::IsNullOrEmpty($stderrDelta)) {
+                [void]$outputBuilder.Append($stderrDelta)
+                $receivedOutput = $true
+            }
+
+            if ($receivedOutput) {
+                $lastOutputAt = $now
+                Write-SpaHealthRecord `
+                    -Task $Task `
+                    -Phase $Phase `
+                    -Model $Model `
+                    -Provider $Provider `
+                    -StartedAt $startedAt `
+                    -LastOutputAt $lastOutputAt `
+                    -ProcessId $process.Id `
+                    -ProcessAlive $true `
+                    -LastSafe $LastSafe `
+                    -HealthRoot $HealthRoot `
+                    -Now $now | Out-Null
+                $nextHeartbeat = $now.AddSeconds($HeartbeatSeconds)
+            }
+            elseif ($now -ge $nextHeartbeat) {
+                Write-SpaHealthRecord `
+                    -Task $Task `
+                    -Phase $Phase `
+                    -Model $Model `
+                    -Provider $Provider `
+                    -StartedAt $startedAt `
+                    -LastOutputAt $lastOutputAt `
+                    -ProcessId $process.Id `
+                    -ProcessAlive $true `
+                    -LastSafe $LastSafe `
+                    -HealthRoot $HealthRoot `
+                    -Now $now | Out-Null
+                $nextHeartbeat = $now.AddSeconds($HeartbeatSeconds)
+            }
+        }
+
+        $process.WaitForExit()
+        $process.Refresh()
+        $stdoutDelta = Read-SpaFileDelta -Path $stdoutPath -Offset ([ref]$stdoutOffset)
+        if (-not [string]::IsNullOrEmpty($stdoutDelta)) {
+            [void]$outputBuilder.Append($stdoutDelta)
+            $lastOutputAt = [datetimeoffset]::UtcNow
+        }
+        $stderrDelta = Read-SpaFileDelta -Path $stderrPath -Offset ([ref]$stderrOffset)
+        if (-not [string]::IsNullOrEmpty($stderrDelta)) {
+            [void]$outputBuilder.Append($stderrDelta)
+            $lastOutputAt = [datetimeoffset]::UtcNow
+        }
+
+        $code = $process.ExitCode
+        $finalHealth = if ($code -eq 0) { 'COMPLETE' } else { 'STOPPED' }
+        Write-SpaHealthRecord `
+            -Task $Task `
+            -Phase $Phase `
+            -Model $Model `
+            -Provider $Provider `
+            -StartedAt $startedAt `
+            -LastOutputAt $lastOutputAt `
+            -ProcessId $process.Id `
+            -ProcessAlive $false `
+            -LastSafe $LastSafe `
+            -HealthRoot $HealthRoot `
+            -FinalHealth $finalHealth `
+            -Now ([datetimeoffset]::UtcNow) | Out-Null
+
+        return [pscustomobject]@{
+            Code = $code
+            Output = $outputBuilder.ToString().TrimEnd()
+            DisplayOutput = Remove-SpaFinalTaskSummary -Text ($outputBuilder.ToString().TrimEnd())
+        }
+    }
+    finally {
+        if (Test-Path -LiteralPath $tempDirectory) {
+            Remove-Item -LiteralPath $tempDirectory -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 function Invoke-M1ChildRoute {
     param(
         [Parameter(Mandatory = $true)][string]$RouteId,
-        [switch]$ChildDryRun
+        [switch]$ChildDryRun,
+        [string]$HealthRoot = $env:TEMP,
+        [string]$HealthTask = 'NOT AVAILABLE',
+        [string]$HealthPhase = 'NOT AVAILABLE',
+        [string]$HealthModel = 'NOT AVAILABLE',
+        [string]$HealthProvider = 'NOT AVAILABLE',
+        [string]$HealthLastSafe = 'NOT AVAILABLE'
     )
 
     $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath, '-Task', $RouteId)
@@ -239,21 +451,31 @@ function Invoke-M1ChildRoute {
         if (-not [string]::IsNullOrWhiteSpace($TestModelCheckOutputPath)) { $arguments += @('-TestModelCheckOutputPath', $TestModelCheckOutputPath) }
         if (-not [string]::IsNullOrWhiteSpace($TestTaskOutputPath)) { $arguments += @('-TestTaskOutputPath', $TestTaskOutputPath) }
     }
-    $output = & powershell.exe @arguments 2>&1 | Out-String
-    $trimmedOutput = $output.TrimEnd()
-    return [pscustomobject]@{
-        Code = $LASTEXITCODE
-        Output = $trimmedOutput
-        DisplayOutput = Remove-SpaFinalTaskSummary -Text $trimmedOutput
+    if ($ChildDryRun) {
+        $output = & powershell.exe @arguments 2>&1 | Out-String
+        $trimmedOutput = $output.TrimEnd()
+        return [pscustomobject]@{
+            Code = $LASTEXITCODE
+            Output = $trimmedOutput
+            DisplayOutput = Remove-SpaFinalTaskSummary -Text $trimmedOutput
+        }
     }
+
+    $powershellPath = (Get-Command powershell.exe -CommandType Application).Source
+    return Invoke-SpaTrackedProcess `
+        -FilePath $powershellPath `
+        -ArgumentList $arguments `
+        -WorkingDirectory $PSScriptRoot `
+        -HealthRoot $HealthRoot `
+        -Task $HealthTask `
+        -Phase $HealthPhase `
+        -Model $HealthModel `
+        -Provider $HealthProvider `
+        -LastSafe $HealthLastSafe
 }
 
 function Invoke-M1Remaining {
-    $stateToolsPath = Join-Path $PSScriptRoot 'm1-state.ps1'
-    if (-not (Test-Path -LiteralPath $stateToolsPath -PathType Leaf)) {
-        Stop-SpaRun "M1 state helper is missing: $stateToolsPath"
-    }
-    . $stateToolsPath
+    Import-M1StateTools
 
     if ([string]::IsNullOrWhiteSpace($StatePath)) {
         $script:StatePath = Join-Path $PSScriptRoot 'state\m1-state.json'
@@ -341,7 +563,17 @@ function Invoke-M1Remaining {
             Set-M1Property -InputObject $taskRecord -Name 'updatedUtc' -Value ([datetimeoffset]::UtcNow.ToString('o'))
             Publish-M1StateCheckpoint -State $state -StateFile $StatePath -ToolingRepository $toolingPath -TaskId $unit.TaskId -Status 'RUNNING_LOCAL'
 
-            $result = Invoke-M1ChildRoute -RouteId $unit.RouteId
+            $healthRoot = if ([string]::IsNullOrWhiteSpace($TestHealthPath)) { $env:TEMP } else { $TestHealthPath }
+            $healthModel = if ($unit.Stage -eq 'REVIEW') { [string]$taskRecord.reviewerModel } else { [string]$taskRecord.implementationModel }
+            $healthProvider = if ($unit.Stage -eq 'REVIEW') { [string]$taskRecord.reviewerProvider } else { [string]$taskRecord.implementationProvider }
+            $result = Invoke-M1ChildRoute `
+                -RouteId $unit.RouteId `
+                -HealthRoot $healthRoot `
+                -HealthTask $unit.TaskId `
+                -HealthPhase $unit.Stage `
+                -HealthModel $healthModel `
+                -HealthProvider $healthProvider `
+                -HealthLastSafe $script:SpaLastSafe
             if ($result.DisplayOutput) { Write-Output $result.DisplayOutput }
             if ($result.Code -ne 0) { throw "Unit '$($unit.RouteId)' failed; RUNNING_LOCAL remains the durable non-complete state." }
             $verdict = Get-M1ChildVerdict -Text $result.Output
@@ -349,21 +581,21 @@ function Invoke-M1Remaining {
             $backendSync = Sync-M1Repository -Name 'Backend' -Path $backendRepositoryPath -ExpectedBranch $requiredBranch
             $frontendSync = Sync-M1Repository -Name 'Frontend' -Path $toolingPath -ExpectedBranch $requiredBranch
             $hardStopAfterCheckpoint = $false
-            if ($verdict -eq 'CHANGES REQUIRED') {
-                Set-M1Property -InputObject $taskRecord -Name 'status' -Value 'REMEDIATION_REQUIRED'
-                Set-M1Property -InputObject $taskRecord -Name 'activeRoute' -Value $null
-                if ([int]$taskRecord.remediationAttempts -ge 2) {
+            if ($unit.Stage -eq 'REVIEW' -or ([string]$taskRecord.action).Equals('REVIEW', [System.StringComparison]::OrdinalIgnoreCase)) {
+                Complete-M1ReviewTransition `
+                    -State $state `
+                    -TaskId $unit.TaskId `
+                    -ReviewRoute $unit.RouteId `
+                    -Verdict $verdict `
+                    -ReviewerProvider ([string]$taskRecord.reviewerProvider) `
+                    -ReviewerModel ([string]$taskRecord.reviewerModel) `
+                    -BackendHead $backendSync.Head `
+                    -FrontendHead $frontendSync.Head `
+                    -ReviewedCommitSha ([string]$taskRecord.remediationCommitSha) | Out-Null
+                if (([string]$taskRecord.status).Equals('REMEDIATION_REQUIRED', [System.StringComparison]::OrdinalIgnoreCase) -and
+                    [int]$taskRecord.remediationAttempts -ge 2) {
                     $hardStopAfterCheckpoint = $true
                 }
-            }
-            elseif ($unit.Stage -eq 'REVIEW' -or ([string]$taskRecord.action).Equals('REVIEW', [System.StringComparison]::OrdinalIgnoreCase)) {
-                Set-M1Property -InputObject $taskRecord -Name 'lastSuccessfulReviewVerdict' -Value $verdict
-                Set-M1Property -InputObject $taskRecord.evidence -Name 'reviewSucceeded' -Value $true
-                Set-M1Property -InputObject $taskRecord.evidence -Name 'implementationSucceeded' -Value $true
-                Set-M1Property -InputObject $taskRecord.evidence -Name 'testsSucceeded' -Value $true
-                Set-M1Property -InputObject $taskRecord.evidence -Name 'relevantCommitsPushed' -Value $true
-                Set-M1Property -InputObject $taskRecord -Name 'status' -Value 'COMPLETE'
-                Set-M1Property -InputObject $taskRecord -Name 'activeRoute' -Value $null
             }
             else {
                 Set-M1Property -InputObject $taskRecord.evidence -Name 'implementationSucceeded' -Value $true
@@ -398,8 +630,125 @@ function Invoke-M1Remaining {
     }
 }
 
-$testOnlyOverrides = @('RoutingPath', 'BackendPath', 'FrontendPath', 'DependencyMarkerPath', 'TestModelCheckOutputPath', 'TestTaskOutputPath', 'StatePath', 'TestNow')
+function Invoke-SpaStatus {
+    Import-M1StateTools
+
+    $healthRoot = if ([string]::IsNullOrWhiteSpace($TestHealthPath)) { $env:TEMP } else { $TestHealthPath }
+    $record = Get-SpaLatestHealthRecord -HealthRoot $healthRoot
+    if ($null -eq $record) {
+        Write-Output 'NO ACTIVE SPA WORKER'
+        return
+    }
+
+    $task = if ([string]::IsNullOrWhiteSpace([string]$record.task)) { 'NOT AVAILABLE' } else { [string]$record.task }
+    $phase = if ([string]::IsNullOrWhiteSpace([string]$record.phase)) { 'NOT AVAILABLE' } else { [string]$record.phase }
+    $model = if ([string]::IsNullOrWhiteSpace([string]$record.model)) { 'NOT AVAILABLE' } else { [string]$record.model }
+    $provider = if ([string]::IsNullOrWhiteSpace([string]$record.provider)) { 'NOT AVAILABLE' } else { [string]$record.provider }
+    $started = if ([string]::IsNullOrWhiteSpace([string]$record.started_at)) { 'NOT AVAILABLE' } else { [string]$record.started_at }
+    $elapsed = if ($null -ne $record.elapsed) { Format-SpaDuration -TotalSeconds ([double]$record.elapsed) } else { 'NOT AVAILABLE' }
+    $lastOutput = if ([string]::IsNullOrWhiteSpace([string]$record.last_output_at)) { 'NOT AVAILABLE' } else { [string]$record.last_output_at }
+    $process = if ($null -ne $record.process_id) { [string]$record.process_id } else { 'NOT AVAILABLE' }
+    $process = $process + ' ' + $(if ([bool]$record.process_alive) { 'ALIVE' } else { 'EXITED' })
+    $health = if ([string]::IsNullOrWhiteSpace([string]$record.health)) { 'NOT AVAILABLE' } else { [string]$record.health }
+    $lastSafe = if ([string]::IsNullOrWhiteSpace([string]$record.last_safe)) { 'NOT AVAILABLE' } else { [string]$record.last_safe }
+    $updated = if ([string]::IsNullOrWhiteSpace([string]$record.updated_at)) { 'NOT AVAILABLE' } else { [string]$record.updated_at }
+
+    Write-Output 'SPA STATUS'
+    Write-Output ('TASK       {0}' -f $task)
+    Write-Output ('PHASE      {0}' -f $phase)
+    Write-Output ('MODEL      {0}' -f $model)
+    Write-Output ('PROVIDER   {0}' -f $provider)
+    Write-Output ('STARTED    {0}' -f $started)
+    Write-Output ('ELAPSED    {0}' -f $elapsed)
+    Write-Output ('LAST OUTPUT {0}' -f $lastOutput)
+    Write-Output ('PROCESS    {0}' -f $process)
+    Write-Output ('HEALTH     {0}' -f $health)
+    Write-Output ('LAST SAFE  {0}' -f $lastSafe)
+    Write-Output ('UPDATED    {0}' -f $updated)
+}
+
+function Invoke-M1ReviewApplication {
+    param([Parameter(Mandatory = $true)][string]$Verdict)
+
+    Import-M1StateTools
+    $statePath = if ([string]::IsNullOrWhiteSpace($StatePath)) {
+        Join-Path $PSScriptRoot 'state\m1-state.json'
+    }
+    else {
+        $StatePath
+    }
+    $toolingPath = if ([string]::IsNullOrWhiteSpace($FrontendPath)) { Split-Path -Parent $PSScriptRoot } else { $FrontendPath }
+    $backendRepositoryPath = if ([string]::IsNullOrWhiteSpace($BackendPath)) { 'C:\GitHub\backendtest' } else { $BackendPath }
+    $requiredBranch = 'feature/investment-operating-system-m1'
+
+    try {
+        $state = Read-M1State -Path $statePath
+        if (-not ([string]$state.branch).Equals($requiredBranch, [System.StringComparison]::Ordinal)) {
+            throw "M1 state branch '$($state.branch)' does not match required branch '$requiredBranch'."
+        }
+
+        Test-M1RepositoryLocalState -Name 'Backend' -Path $backendRepositoryPath -ExpectedBranch $requiredBranch | Out-Null
+        Test-M1RepositoryLocalState -Name 'Frontend' -Path $toolingPath -ExpectedBranch $requiredBranch | Out-Null
+        $backendSync = Sync-M1Repository -Name 'Backend' -Path $backendRepositoryPath -ExpectedBranch $requiredBranch
+        $frontendSync = Sync-M1Repository -Name 'Frontend' -Path $toolingPath -ExpectedBranch $requiredBranch
+        Test-M1RecordedShas -State $state -BackendPath $backendRepositoryPath -FrontendPath $toolingPath -Branch $requiredBranch | Out-Null
+
+        $taskRecord = Get-M1TaskRecord -State $state -TaskId $script:SpaTaskId
+        Complete-M1ReviewTransition `
+            -State $state `
+            -TaskId $script:SpaTaskId `
+            -ReviewRoute ([string]$taskRecord.reviewRoute) `
+            -Verdict $Verdict `
+            -ReviewerProvider ([string]$taskRecord.reviewerProvider) `
+            -ReviewerModel ([string]$taskRecord.reviewerModel) `
+            -BackendHead $backendSync.Head `
+            -FrontendHead $frontendSync.Head `
+            -ReviewedCommitSha ([string]$taskRecord.remediationCommitSha) | Out-Null
+
+        Publish-M1StateCheckpoint `
+            -State $state `
+            -StateFile $statePath `
+            -ToolingRepository $toolingPath `
+            -TaskId $script:SpaTaskId `
+            -Status ([string]$taskRecord.status)
+
+        $next = Get-M1NextUnit -State $state
+        $nextLabel = if ($null -eq $next) { 'NONE' } else { $next.RouteId }
+        Write-Output 'SPA REVIEW APPLIED'
+        Write-Output ('TASK       {0}' -f $script:SpaTaskId)
+        Write-Output ('ROUTE      {0}' -f ([string]$taskRecord.reviewRoute))
+        Write-Output ('VERDICT    {0}' -f ([string]$taskRecord.lastSuccessfulReviewVerdict))
+        Write-Output ('STATE      {0}' -f ([string]$taskRecord.status))
+        Write-Output ('CHECKPOINT {0} {1} PUSHED' -f $script:SpaTaskId, $taskRecord.status)
+        Write-Output ('NEXT       {0}' -f $nextLabel)
+        Write-Output 'TOKENS     NONE'
+    }
+    catch {
+        Stop-SpaRun $_.Exception.Message
+    }
+}
+
+$testOnlyOverrides = @('RoutingPath', 'BackendPath', 'FrontendPath', 'DependencyMarkerPath', 'TestModelCheckOutputPath', 'TestTaskOutputPath', 'StatePath', 'TestNow', 'TestHealthPath')
 $usedTestOnlyOverrides = @($testOnlyOverrides | Where-Object { $PSBoundParameters.ContainsKey($_) })
+
+$taskId = $script:SpaTaskId
+if ($Status) {
+    Invoke-SpaStatus
+    exit 0
+}
+if ($ApplyReview) {
+    if ([string]::IsNullOrWhiteSpace($taskId) -or $taskId -eq 'M1-REMAINING') {
+        Stop-SpaRun '-ApplyReview requires a known M1 task ID other than M1-REMAINING.'
+    }
+    if ($DryRun) {
+        Stop-SpaRun '-ApplyReview persists a reviewed state transition and cannot be combined with -DryRun.'
+    }
+    if ([string]::IsNullOrWhiteSpace($ReviewVerdict)) {
+        Stop-SpaRun '-ApplyReview requires -ReviewVerdict.'
+    }
+    Invoke-M1ReviewApplication -Verdict $ReviewVerdict
+    exit 0
+}
 if ($TestMode -and -not $DryRun) {
     Stop-SpaRun '-TestMode requires -DryRun and can never invoke a task.'
 }
@@ -407,7 +756,6 @@ if (-not $TestMode -and $usedTestOnlyOverrides.Count -gt 0) {
     Stop-SpaRun 'Test-only overrides require both -TestMode and -DryRun.'
 }
 
-$taskId = $script:SpaTaskId
 if ($taskId -eq 'M1-REMAINING') {
     Invoke-M1Remaining
     exit 0

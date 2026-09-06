@@ -18,6 +18,24 @@ function Test-M1HasProperty {
     return ($null -ne $InputObject.PSObject.Properties[$Name])
 }
 
+function Set-M1ObjectProperty {
+    param(
+        [Parameter(Mandatory = $true)][object]$InputObject,
+        [Parameter(Mandatory = $true)][string]$Name,
+        $Value
+    )
+
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        $InputObject[$Name] = $Value
+    }
+    elseif ($null -ne $InputObject.PSObject.Properties[$Name]) {
+        $InputObject.$Name = $Value
+    }
+    else {
+        $InputObject | Add-Member -NotePropertyName $Name -NotePropertyValue $Value
+    }
+}
+
 function Assert-M1State {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -185,6 +203,390 @@ function Get-M1NextUnit {
         }
     }
     return $null
+}
+
+function Read-SpaReviewVerdict {
+    param([Parameter(Mandatory = $true)][string]$Text)
+
+    $matches = @([regex]::Matches(
+        $Text,
+        '(?im)^\s*(SAFE WITH NON-BLOCKING OBSERVATIONS|SAFE|CHANGES REQUIRED)\s*$'
+    ))
+    if ($matches.Count -ne 1) {
+        throw 'Review result did not contain exactly one recognized verdict. No state transition was accepted.'
+    }
+
+    $nonblankLines = @($Text -split '\r?\n' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    $verdict = $matches[0].Groups[1].Value.ToUpperInvariant()
+    if ($nonblankLines.Count -eq 0 -or -not $nonblankLines[-1].Trim().Equals($verdict, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'The review verdict was not the final nonblank line. No state transition was accepted.'
+    }
+    return $verdict
+}
+
+function Get-M1StateTaskRecord {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][string]$TaskId
+    )
+
+    Assert-M1State -State $State | Out-Null
+    $matches = @($State.tasks | Where-Object { ([string]$_.id).Equals($TaskId, [System.StringComparison]::OrdinalIgnoreCase) })
+    if ($matches.Count -ne 1) {
+        throw "M1 state must contain exactly one task record for '$TaskId'."
+    }
+    return $matches[0]
+}
+
+function Complete-M1ReviewTransition {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][string]$TaskId,
+        [Parameter(Mandatory = $true)][string]$ReviewRoute,
+        [Parameter(Mandatory = $true)][string]$Verdict,
+        [string]$ReviewerProvider = '',
+        [string]$ReviewerModel = '',
+        [Parameter(Mandatory = $true)][string]$BackendHead,
+        [Parameter(Mandatory = $true)][string]$FrontendHead,
+        [Parameter(Mandatory = $true)][string]$ReviewedCommitSha
+    )
+
+    $task = Get-M1StateTaskRecord -State $State -TaskId $TaskId
+    $status = ([string]$task.status).ToUpperInvariant()
+    if ($status -ne 'REVIEW_PENDING') {
+        throw "Review transition for '$TaskId' requires REVIEW_PENDING; current status is '$status'."
+    }
+
+    $taskRoute = [string]$task.reviewRoute
+    if ([string]::IsNullOrWhiteSpace($taskRoute) -or
+        -not $taskRoute.Equals($ReviewRoute, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Review transition for '$TaskId' does not match mapped review route '$ReviewRoute'."
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ReviewedCommitSha)) {
+        throw "Review transition for '$TaskId' has no reviewed remediation commit."
+    }
+    if (-not [string]::IsNullOrWhiteSpace($BackendHead) -and
+        -not $ReviewedCommitSha.Equals($BackendHead, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Review transition for '$TaskId' refuses a reviewed commit mismatch."
+    }
+
+    $parsedVerdict = Read-SpaReviewVerdict -Text $Verdict
+    $isAccepted = ($parsedVerdict -ne 'CHANGES REQUIRED')
+    if ($isAccepted -and -not [bool]$task.evidence.reviewRequired) {
+        throw "Review transition for '$TaskId' cannot complete a task that does not require review."
+    }
+
+    if ($isAccepted) {
+        Set-M1ObjectProperty -InputObject $task.evidence -Name 'reviewSucceeded' -Value $true
+        Set-M1ObjectProperty -InputObject $task -Name 'status' -Value 'COMPLETE'
+        Set-M1ObjectProperty -InputObject $task -Name 'activeRoute' -Value $null
+    }
+    else {
+        Set-M1ObjectProperty -InputObject $task.evidence -Name 'reviewSucceeded' -Value $false
+        Set-M1ObjectProperty -InputObject $task -Name 'status' -Value 'REMEDIATION_REQUIRED'
+        Set-M1ObjectProperty -InputObject $task -Name 'activeRoute' -Value $null
+    }
+
+    Set-M1ObjectProperty -InputObject $task -Name 'lastSuccessfulReviewVerdict' -Value $parsedVerdict
+    if (-not [string]::IsNullOrWhiteSpace($ReviewerProvider)) {
+        Set-M1ObjectProperty -InputObject $task -Name 'reviewerProvider' -Value $ReviewerProvider
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ReviewerModel)) {
+        Set-M1ObjectProperty -InputObject $task -Name 'reviewerModel' -Value $ReviewerModel
+    }
+    Set-M1ObjectProperty -InputObject $task -Name 'updatedUtc' -Value ([datetimeoffset]::UtcNow.ToString('o'))
+    if (-not [string]::IsNullOrWhiteSpace($BackendHead)) {
+        Set-M1ObjectProperty -InputObject $State.repositories.backend -Name 'lastVerifiedSha' -Value $BackendHead
+    }
+    if (-not [string]::IsNullOrWhiteSpace($FrontendHead)) {
+        Set-M1ObjectProperty -InputObject $State.repositories.frontend -Name 'lastVerifiedSha' -Value $FrontendHead
+    }
+
+    Assert-M1State -State $State | Out-Null
+    return $task
+}
+
+function Get-SpaHealthStatus {
+    param(
+        [Parameter(Mandatory = $true)][datetimeoffset]$Now,
+        [Parameter(Mandatory = $true)][datetimeoffset]$StartedAt,
+        [Parameter(Mandatory = $true)][datetimeoffset]$LastOutputAt,
+        [Parameter(Mandatory = $true)][bool]$ProcessAlive,
+        [string]$FinalHealth = ''
+    )
+
+    if (-not $ProcessAlive) {
+        if ([string]::IsNullOrWhiteSpace($FinalHealth)) { return 'STOPPED' }
+        return $FinalHealth.ToUpperInvariant()
+    }
+
+    if ($LastOutputAt -lt $StartedAt) {
+        throw 'Health record last_output_at cannot precede started_at.'
+    }
+
+    $silenceMinutes = ($Now - $LastOutputAt).TotalMinutes
+    if ($silenceMinutes -gt 30) { return 'SUSPECTED_STALL' }
+    if ($silenceMinutes -ge 15) { return 'LONG_SILENCE' }
+    if (($LastOutputAt - $StartedAt).TotalSeconds -lt 1) { return 'SILENT' }
+    return 'ACTIVE'
+}
+
+function Format-SpaDuration {
+    param([Parameter(Mandatory = $true)][double]$TotalSeconds)
+
+    if ($TotalSeconds -lt 0) { $TotalSeconds = 0 }
+    $time = [TimeSpan]::FromSeconds($TotalSeconds)
+    return ('{0:00}:{1:00}:{2:00}' -f [math]::Floor($time.TotalHours), $time.Minutes, $time.Seconds)
+}
+
+function Write-SpaHealthRecord {
+    param(
+        [Parameter(Mandatory = $true)][string]$Task,
+        [Parameter(Mandatory = $true)][string]$Phase,
+        [Parameter(Mandatory = $true)][string]$Model,
+        [Parameter(Mandatory = $true)][string]$Provider,
+        [Parameter(Mandatory = $true)][datetimeoffset]$StartedAt,
+        [Parameter(Mandatory = $true)][datetimeoffset]$LastOutputAt,
+        [Parameter(Mandatory = $true)][int]$ProcessId,
+        [Parameter(Mandatory = $true)][bool]$ProcessAlive,
+        [Parameter(Mandatory = $true)][string]$LastSafe,
+        [string]$HealthRoot = $env:TEMP,
+        [string]$FinalHealth = '',
+        [datetimeoffset]$Now = [datetimeoffset]::UtcNow
+    )
+
+    $health = Get-SpaHealthStatus -Now $Now -StartedAt $StartedAt -LastOutputAt $LastOutputAt -ProcessAlive $ProcessAlive -FinalHealth $FinalHealth
+    $record = [ordered]@{
+        task = $Task
+        phase = $Phase
+        model = $Model
+        provider = $Provider
+        started_at = $StartedAt.ToString('o')
+        elapsed = [math]::Round((($Now - $StartedAt).TotalSeconds), 1)
+        last_output_at = $LastOutputAt.ToString('o')
+        process_id = $ProcessId
+        process_alive = $ProcessAlive
+        health = $health
+        last_safe = $LastSafe
+        updated_at = $Now.ToString('o')
+    }
+
+    $root = [System.IO.Path]::GetFullPath($HealthRoot)
+    if (-not (Test-Path -LiteralPath $root -PathType Container)) {
+        New-Item -ItemType Directory -Path $root -Force | Out-Null
+    }
+    $path = Join-Path $root ('spa-run-health-' + $ProcessId + '.json')
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($path, ($record | ConvertTo-Json -Depth 5), $encoding)
+    return $path
+}
+
+function Read-SpaHealthRecord {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $null
+    }
+    try {
+        return ([System.IO.File]::ReadAllText($Path) | ConvertFrom-Json)
+    }
+    catch {
+        return $null
+    }
+}
+
+function Get-SpaLatestHealthRecord {
+    param([string]$HealthRoot = $env:TEMP)
+
+    if ([string]::IsNullOrWhiteSpace($HealthRoot) -or -not (Test-Path -LiteralPath $HealthRoot -PathType Container)) {
+        return $null
+    }
+
+    $files = @(Get-ChildItem -LiteralPath $HealthRoot -Filter 'spa-run-health-*.json' -File -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTimeUtc -Descending)
+    foreach ($file in $files) {
+        $record = Read-SpaHealthRecord -Path $file.FullName
+        if ($null -ne $record) { return $record }
+    }
+    return $null
+}
+
+function Format-ProcessArgument {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    if ($Value -notmatch "[\s`"]") { return $Value }
+    return '"' + $Value.Replace('"', '\"') + '"'
+}
+
+function Read-SpaFileDelta {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][ref]$Offset
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return '' }
+    try {
+        $stream = [System.IO.File]::Open(
+            $Path,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::Read,
+            [System.IO.FileShare]::ReadWrite
+        )
+        $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::UTF8)
+        try {
+            if ($Offset.Value -gt $stream.Length) { $Offset.Value = $stream.Length }
+            $stream.Seek($Offset.Value, [System.IO.SeekOrigin]::Begin) | Out-Null
+            $reader.DiscardBufferedData()
+            $text = $reader.ReadToEnd()
+            $Offset.Value = $stream.Position
+            return $text
+        }
+        finally {
+            $reader.Dispose()
+            $stream.Dispose()
+        }
+    }
+    catch {
+        return ''
+    }
+}
+
+function Invoke-SpaTrackedProcess {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(Mandatory = $true)][string[]]$ArgumentList,
+        [Parameter(Mandatory = $true)][string]$WorkingDirectory,
+        [Parameter(Mandatory = $true)][string]$HealthRoot,
+        [string]$Task = 'NOT AVAILABLE',
+        [string]$Phase = 'NOT AVAILABLE',
+        [string]$Model = 'NOT AVAILABLE',
+        [string]$Provider = 'NOT AVAILABLE',
+        [string]$LastSafe = 'NOT AVAILABLE',
+        [int]$HeartbeatSeconds = 120
+    )
+
+    $startedAt = [datetimeoffset]::UtcNow
+    $lastOutputAt = $startedAt
+    $trackState = [pscustomobject]@{
+        Output = New-Object System.Text.StringBuilder
+        LastOutputAt = $startedAt
+    }
+
+    $processStartInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $processStartInfo.FileName = $FilePath
+    $processStartInfo.Arguments = (($ArgumentList | ForEach-Object { Format-ProcessArgument -Value $_ }) -join ' ')
+    $processStartInfo.WorkingDirectory = $WorkingDirectory
+    $processStartInfo.UseShellExecute = $false
+    $processStartInfo.RedirectStandardOutput = $true
+    $processStartInfo.RedirectStandardError = $true
+    $processStartInfo.RedirectStandardInput = $true
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $processStartInfo
+    $process.Start() | Out-Null
+    $process.BeginOutputReadLine()
+    $process.BeginErrorReadLine()
+
+    $outputEvent = Register-ObjectEvent -InputObject $process -EventName OutputDataReceived -Action {
+        if ($null -ne $EventArgs.Data) {
+            [void]$Event.MessageData.Output.AppendLine($EventArgs.Data)
+            $Event.MessageData.LastOutputAt = [datetimeoffset]::UtcNow
+        }
+    } -MessageData $trackState
+    $errorEvent = Register-ObjectEvent -InputObject $process -EventName ErrorDataReceived -Action {
+        if ($null -ne $EventArgs.Data) {
+            [void]$Event.MessageData.Output.AppendLine($EventArgs.Data)
+            $Event.MessageData.LastOutputAt = [datetimeoffset]::UtcNow
+        }
+    } -MessageData $trackState
+
+    Write-SpaHealthRecord `
+        -Task $Task `
+        -Phase $Phase `
+        -Model $Model `
+        -Provider $Provider `
+        -StartedAt $startedAt `
+        -LastOutputAt $lastOutputAt `
+        -ProcessId $process.Id `
+        -ProcessAlive $true `
+        -LastSafe $LastSafe `
+        -HealthRoot $HealthRoot | Out-Null
+
+    $nextHeartbeat = ([datetimeoffset]::UtcNow).AddSeconds($HeartbeatSeconds)
+    try {
+        while (-not $process.HasExited) {
+            Start-Sleep -Seconds 2
+            $process.Refresh()
+            $now = [datetimeoffset]::UtcNow
+            $receivedOutput = ($trackState.LastOutputAt -ne $lastOutputAt)
+
+            if ($receivedOutput) {
+                $lastOutputAt = $now
+                Write-SpaHealthRecord `
+                    -Task $Task `
+                    -Phase $Phase `
+                    -Model $Model `
+                    -Provider $Provider `
+                    -StartedAt $startedAt `
+                    -LastOutputAt $lastOutputAt `
+                    -ProcessId $process.Id `
+                    -ProcessAlive $true `
+                    -LastSafe $LastSafe `
+                    -HealthRoot $HealthRoot `
+                    -Now $now | Out-Null
+                $nextHeartbeat = $now.AddSeconds($HeartbeatSeconds)
+            }
+            elseif ($now -ge $nextHeartbeat) {
+                Write-SpaHealthRecord `
+                    -Task $Task `
+                    -Phase $Phase `
+                    -Model $Model `
+                    -Provider $Provider `
+                    -StartedAt $startedAt `
+                    -LastOutputAt $lastOutputAt `
+                    -ProcessId $process.Id `
+                    -ProcessAlive $true `
+                    -LastSafe $LastSafe `
+                    -HealthRoot $HealthRoot `
+                    -Now $now | Out-Null
+                $nextHeartbeat = $now.AddSeconds($HeartbeatSeconds)
+            }
+        }
+
+        $process.WaitForExit()
+        Start-Sleep -Milliseconds 500
+        Unregister-Event -SourceIdentifier $outputEvent.Name -ErrorAction SilentlyContinue
+        Unregister-Event -SourceIdentifier $errorEvent.Name -ErrorAction SilentlyContinue
+        if ($trackState.LastOutputAt -gt $lastOutputAt) { $lastOutputAt = $trackState.LastOutputAt }
+
+        $code = $process.ExitCode
+        $finalHealth = if ($code -eq 0) { 'COMPLETE' } else { 'STOPPED' }
+        Write-SpaHealthRecord `
+            -Task $Task `
+            -Phase $Phase `
+            -Model $Model `
+            -Provider $Provider `
+            -StartedAt $startedAt `
+            -LastOutputAt $lastOutputAt `
+            -ProcessId $process.Id `
+            -ProcessAlive $false `
+            -LastSafe $LastSafe `
+            -HealthRoot $HealthRoot `
+            -FinalHealth $finalHealth `
+            -Now ([datetimeoffset]::UtcNow) | Out-Null
+
+        return [pscustomobject]@{
+            Code = $code
+            Output = $trackState.Output.ToString().TrimEnd()
+        }
+    }
+    finally {
+        if ($outputEvent) { Unregister-Event -SourceIdentifier $outputEvent.Name -ErrorAction SilentlyContinue }
+        if ($errorEvent) { Unregister-Event -SourceIdentifier $errorEvent.Name -ErrorAction SilentlyContinue }
+        if ($null -ne $process -and -not $process.HasExited) {
+            try { $process.Kill() } catch { }
+        }
+    }
 }
 
 function Invoke-M1Git {
