@@ -631,8 +631,24 @@ $lastMessagePath = Join-Path ([System.IO.Path]::GetTempPath()) ('spa-run-result-
 try {
     $taskArgs = @($codexArgs)
     $taskArgs += @('--output-last-message', $lastMessagePath, '-')
-    [System.IO.File]::ReadAllText($promptPath) | & $commandPath @taskArgs 2>&1 | ForEach-Object { Write-Output $_ }
-    $taskCode = $LASTEXITCODE
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        [System.IO.File]::ReadAllText($promptPath) |
+            & $commandPath @taskArgs 2>&1 |
+            ForEach-Object {
+                if ($_ -is [System.Management.Automation.ErrorRecord]) {
+                    Write-Output $_.Exception.Message
+                }
+                else {
+                    Write-Output $_
+                }
+            }
+        $taskCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
 
     if ($taskCode -ne 0) {
         Stop-SpaRun "Task CLI exited with code $taskCode."

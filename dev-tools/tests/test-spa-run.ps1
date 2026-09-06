@@ -73,6 +73,23 @@ function Invoke-SpaRun {
     }
 }
 
+function Invoke-SpaRunTolerant {
+    param([Parameter(Mandatory = $true)][string[]]$Arguments)
+
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $spaRun @Arguments 2>&1 | Out-String
+        return [pscustomobject]@{
+            Code = $LASTEXITCODE
+            Output = $output
+        }
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+}
+
 function Initialize-TestGitRepo {
     param(
         [Parameter(Mandatory = $true)][string]$WorkingRepo,
@@ -357,6 +374,76 @@ exit /b %ERRORLEVEL%
     $wrongBranch = Invoke-SpaRun -Arguments $preflightArgs
     Assert-True ($wrongBranch.Code -ne 0) 'wrong branch fails closed'
     Assert-Match $wrongBranch.Output 'BRANCH\s+FAIL\s+wrong-branch' 'wrong branch failure is reported'
+
+    $nativeCodexHome = Join-Path $tempRoot 'native-codex-home'
+    New-Item -ItemType Directory -Path $nativeCodexHome -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $nativeCodexHome 'deepseek.config.toml') -Value 'fake profile' -NoNewline
+
+    $nativeCodexShimDir = Join-Path $tempRoot 'native-codex-shim'
+    New-Item -ItemType Directory -Path $nativeCodexShimDir -Force | Out-Null
+    @'
+@echo off
+setlocal EnableExtensions
+set "SPA_RUN_TEST_TASK=0"
+set "SPA_RUN_TEST_OUTPUT="
+
+:parse
+if "%~1"=="" goto run
+if /I "%~1"=="--output-last-message" (
+    set "SPA_RUN_TEST_TASK=1"
+    if not "%~2"=="" set "SPA_RUN_TEST_OUTPUT=%~2"
+    shift
+)
+shift
+goto parse
+
+:run
+if "%SPA_RUN_TEST_TASK%"=="0" (
+    echo MODEL_CHECK_OK
+    echo model: deepseek-v4-pro
+    echo provider: deepseek
+    echo reasoning effort: high
+    echo approval: never
+    echo sandbox: read-only
+    exit /b 0
+)
+echo NATIVE_STDOUT_HEALTHY
+echo NATIVE_STDERR_HEALTHY 1>&2
+if /I "%SPA_RUN_TEST_NATIVE_EXIT%"=="fail" exit /b 7
+if defined SPA_RUN_TEST_OUTPUT (
+    > "%SPA_RUN_TEST_OUTPUT%" echo Review complete.
+    >> "%SPA_RUN_TEST_OUTPUT%" echo SAFE
+)
+exit /b 0
+'@ | Set-Content -LiteralPath (Join-Path $nativeCodexShimDir 'codex.cmd') -Encoding ASCII
+
+    $previousNativePath = $env:PATH
+    $previousNativeCodexHome = [System.Environment]::GetEnvironmentVariable('CODEX_HOME', 'Process')
+    $previousNativeExit = [System.Environment]::GetEnvironmentVariable('SPA_RUN_TEST_NATIVE_EXIT', 'Process')
+    $env:PATH = $nativeCodexShimDir + [System.IO.Path]::PathSeparator + $previousNativePath
+    [System.Environment]::SetEnvironmentVariable('CODEX_HOME', $nativeCodexHome, 'Process')
+    [System.Environment]::SetEnvironmentVariable('SPA_RUN_TEST_NATIVE_EXIT', $null, 'Process')
+    try {
+        $nativeStderrSuccess = Invoke-SpaRunTolerant -Arguments @('-Task', 'P2T4-REVIEW')
+        Assert-True ($nativeStderrSuccess.Code -eq 0) 'native child stderr and zero exit code are not treated as task failure'
+        Assert-Match $nativeStderrSuccess.Output 'NATIVE_STDOUT_HEALTHY' 'native child stdout is preserved as ordinary task output'
+        Assert-Match $nativeStderrSuccess.Output 'NATIVE_STDERR_HEALTHY' 'native child stderr is preserved as ordinary task output'
+        Assert-NotContains $nativeStderrSuccess.Output 'NativeCommandError' 'native child stderr is not rendered as a PowerShell red terminating error'
+        Assert-NotContains $nativeStderrSuccess.Output '+ CategoryInfo' 'native child stderr does not leak PowerShell error formatting'
+        Assert-Match $nativeStderrSuccess.Output 'VERDICT\s+SAFE' 'healthy native child result is accepted by exit code'
+
+        [System.Environment]::SetEnvironmentVariable('SPA_RUN_TEST_NATIVE_EXIT', 'fail', 'Process')
+        $nativeStderrFailure = Invoke-SpaRunTolerant -Arguments @('-Task', 'P2T4-REVIEW')
+        Assert-True ($nativeStderrFailure.Code -ne 0) 'nonzero native child exit code still fails closed'
+        Assert-Match $nativeStderrFailure.Output 'Task CLI exited with code 7' 'nonzero native child failure reports the authoritative exit code'
+        Assert-Match $nativeStderrFailure.Output 'NATIVE_STDERR_HEALTHY' 'native child stderr is preserved before a nonzero exit'
+        Assert-NotContains $nativeStderrFailure.Output 'NativeCommandError' 'nonzero native child stderr is not rendered as a PowerShell red terminating error'
+    }
+    finally {
+        $env:PATH = $previousNativePath
+        [System.Environment]::SetEnvironmentVariable('CODEX_HOME', $previousNativeCodexHome, 'Process')
+        [System.Environment]::SetEnvironmentVariable('SPA_RUN_TEST_NATIVE_EXIT', $previousNativeExit, 'Process')
+    }
 
     $emptyCodexRoot = Join-Path $tempRoot 'empty-codex-home'
     New-Item -ItemType Directory -Path $emptyCodexRoot -Force | Out-Null
