@@ -270,11 +270,13 @@ else {
         if (-not [string]::IsNullOrWhiteSpace($ExpectedReasoning)) {
             $codexArgs += @('-c', ('model_reasoning_effort="{0}"' -f $ExpectedReasoning))
         }
+        # Probe with the route's effective sandbox so preflight validates what the
+        # launched task requests instead of the model profile's stored default.
         $codexArgs += @(
             '--ask-for-approval',
             'never',
             '--sandbox',
-            'read-only',
+            $ExpectedSandbox,
             'exec',
             '--skip-git-repo-check',
             '-'

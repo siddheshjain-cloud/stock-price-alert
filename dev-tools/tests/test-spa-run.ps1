@@ -358,6 +358,61 @@ exit /b %ERRORLEVEL%
     Assert-True ($sandboxMismatch.Code -ne 0) 'actual sandbox mismatch fails closed'
     Assert-Match $sandboxMismatch.Output 'SANDBOX\s+FAIL' 'sandbox mismatch is reported'
 
+    $workspacePreflightArgs = @(
+        '-Task', 'P2T5', '-DryRun', '-TestMode', '-TestModelCheckOutputPath', $modelOutput,
+        '-BackendPath', $workingRepo, '-DependencyMarkerPath', $markerPath
+    )
+
+    @(
+        'MODEL_CHECK_OK'
+        'model: deepseek-v4-flash'
+        'provider: deepseek'
+        'reasoning effort: high'
+        'approval: never'
+        'sandbox: workspace-write'
+    ) | Set-Content -LiteralPath $modelOutput
+    $workspaceReady = Invoke-SpaRun -Arguments $workspacePreflightArgs
+    Assert-True ($workspaceReady.Code -eq 0) 'workspace-write route passes preflight when the effective sandbox is workspace-write'
+    Assert-Match $workspaceReady.Output 'SANDBOX\s+workspace-write' 'workspace-write preflight reports the route effective sandbox'
+    Assert-Match $workspaceReady.Output 'READY\s+YES' 'workspace-write preflight reports READY YES'
+
+    @(
+        'MODEL_CHECK_OK'
+        'model: deepseek-v4-flash'
+        'provider: deepseek'
+        'reasoning effort: high'
+        'approval: never'
+        'sandbox: read-only'
+    ) | Set-Content -LiteralPath $modelOutput
+    $workspaceMismatch = Invoke-SpaRun -Arguments $workspacePreflightArgs
+    Assert-True ($workspaceMismatch.Code -ne 0) 'workspace-write route fails closed when the effective sandbox is read-only'
+    Assert-Match $workspaceMismatch.Output 'SANDBOX\s+FAIL expected=workspace-write actual=read-only' 'effective read-only sandbox mismatch is precise'
+
+    $workspaceGuardMismatches = @(
+        @{
+            Label = 'MODEL'
+            Lines = @('MODEL_CHECK_OK', 'model: gpt-5.6-sol', 'provider: deepseek', 'reasoning effort: high', 'approval: never', 'sandbox: workspace-write')
+        }
+        @{
+            Label = 'PROVIDER'
+            Lines = @('MODEL_CHECK_OK', 'model: deepseek-v4-flash', 'provider: openai', 'reasoning effort: high', 'approval: never', 'sandbox: workspace-write')
+        }
+        @{
+            Label = 'REASONING'
+            Lines = @('MODEL_CHECK_OK', 'model: deepseek-v4-flash', 'provider: deepseek', 'reasoning effort: low', 'approval: never', 'sandbox: workspace-write')
+        }
+        @{
+            Label = 'APPROVAL'
+            Lines = @('MODEL_CHECK_OK', 'model: deepseek-v4-flash', 'provider: deepseek', 'reasoning effort: high', 'approval: on-request', 'sandbox: workspace-write')
+        }
+    )
+    foreach ($guard in $workspaceGuardMismatches) {
+        $guard.Lines | Set-Content -LiteralPath $modelOutput
+        $guardRun = Invoke-SpaRun -Arguments $workspacePreflightArgs
+        Assert-True ($guardRun.Code -ne 0) "$($guard.Label) mismatch still fails closed on a workspace-write route"
+        Assert-Match $guardRun.Output ($guard.Label + '\s+FAIL') "$($guard.Label) mismatch is still reported on a workspace-write route"
+    }
+
     @(
         'MODEL_CHECK_OK'
         'model: deepseek-v4-pro'
@@ -389,6 +444,8 @@ exit /b %ERRORLEVEL%
 setlocal EnableExtensions
 set "SPA_RUN_TEST_TASK=0"
 set "SPA_RUN_TEST_OUTPUT="
+set "SPA_RUN_TEST_MODEL=deepseek-v4-pro"
+set "SPA_RUN_TEST_SANDBOX=read-only"
 
 :parse
 if "%~1"=="" goto run
@@ -397,17 +454,19 @@ if /I "%~1"=="--output-last-message" (
     if not "%~2"=="" set "SPA_RUN_TEST_OUTPUT=%~2"
     shift
 )
+if /I "%~1"=="--model" if not "%~2"=="" set "SPA_RUN_TEST_MODEL=%~2"
+if /I "%~1"=="--sandbox" if not "%~2"=="" set "SPA_RUN_TEST_SANDBOX=%~2"
 shift
 goto parse
 
 :run
 if "%SPA_RUN_TEST_TASK%"=="0" (
     echo MODEL_CHECK_OK
-    echo model: deepseek-v4-pro
+    echo model: %SPA_RUN_TEST_MODEL%
     echo provider: deepseek
     echo reasoning effort: high
     echo approval: never
-    echo sandbox: read-only
+    echo sandbox: %SPA_RUN_TEST_SANDBOX%
     exit /b 0
 )
 echo NATIVE_STDOUT_HEALTHY
@@ -441,6 +500,12 @@ exit /b 0
         Assert-Match $nativeStderrFailure.Output 'Task CLI exited with code 7' 'nonzero native child failure reports the authoritative exit code'
         Assert-Match $nativeStderrFailure.Output 'NATIVE_STDERR_HEALTHY' 'native child stderr is preserved before a nonzero exit'
         Assert-NotContains $nativeStderrFailure.Output 'NativeCommandError' 'nonzero native child stderr is not rendered as a PowerShell red terminating error'
+
+        [System.Environment]::SetEnvironmentVariable('SPA_RUN_TEST_NATIVE_EXIT', $null, 'Process')
+        $workspaceNative = Invoke-SpaRunTolerant -Arguments @('-Task', 'P2T5')
+        Assert-True ($workspaceNative.Code -eq 0) 'workspace-write route passes live preflight when the model CLI reports the requested effective sandbox'
+        Assert-Match $workspaceNative.Output 'SANDBOX\s+workspace-write' 'live workspace-write preflight reports the route effective sandbox'
+        Assert-Match $workspaceNative.Output 'RESULT\s+IMPLEMENTED' 'simulated workspace-write implementation completes after effective-sandbox preflight'
     }
     finally {
         $env:PATH = $previousNativePath

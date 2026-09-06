@@ -188,7 +188,8 @@ Assert-Contains $spaCheckText 'MODEL_CHECK_OK' 'spa-check integrates Codex model
 Assert-Contains $spaCheckText '--ask-for-approval' 'spa-check invokes Codex with approval flag'
 Assert-Contains $spaCheckText 'never' 'spa-check invokes Codex with approval never'
 Assert-Contains $spaCheckText '--sandbox' 'spa-check invokes Codex with sandbox flag'
-Assert-Contains $spaCheckText 'read-only' 'spa-check invokes Codex with read-only sandbox'
+Assert-Contains $spaCheckText '$ExpectedSandbox' 'spa-check probes Codex with the route effective sandbox'
+Assert-Contains $spaCheckText 'read-only' 'spa-check defaults the expected sandbox to read-only'
 Assert-NotContains $spaCheckText 'danger-full-access' 'spa-check never uses danger-full-access'
 
 Assert-NotContains $readmeText 'spa-model-check' 'README does not require a separate model-check command'
@@ -272,6 +273,75 @@ exit /b 9
     }
     Assert-True ($failedModelCode -ne 0) 'spa-check rejects an otherwise valid model header when the model command exits nonzero'
     Assert-True ([regex]::IsMatch($failedModelOutput, 'MODEL CHECK\s+FAIL\s+exit=9')) 'spa-check reports the nonzero model command exit code'
+
+    $effectiveSandboxShimDir = Join-Path $tempRoot 'effective-sandbox-shim'
+    New-Item -ItemType Directory -Path $effectiveSandboxShimDir -Force | Out-Null
+    @'
+@echo off
+setlocal EnableExtensions
+set "EFFECTIVE_SANDBOX=read-only"
+
+:parse
+if "%~1"=="" goto run
+if /I "%~1"=="--sandbox" if not "%~2"=="" set "EFFECTIVE_SANDBOX=%~2"
+shift
+goto parse
+
+:run
+echo MODEL_CHECK_OK
+echo model: deepseek-v4-flash
+echo provider: deepseek
+echo reasoning effort: high
+echo approval: never
+echo sandbox: %EFFECTIVE_SANDBOX%
+exit /b 0
+'@ | Set-Content -LiteralPath (Join-Path $effectiveSandboxShimDir 'codex.cmd') -Encoding ASCII
+
+    $effectiveSandboxArgs = @(
+        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $spaCheck,
+        '-Target', 'Frontend', '-FrontendPath', $frontendRepo,
+        '-ExpectedBranch', $expectedBranch,
+        '-ExpectedModel', 'deepseek-v4-flash', '-ExpectedProvider', 'deepseek', '-ExpectedReasoning', 'high',
+        '-ExpectedApproval', 'never', '-ExpectedSandbox', 'workspace-write'
+    )
+    $previousPath = $env:PATH
+    $env:PATH = $effectiveSandboxShimDir + [System.IO.Path]::PathSeparator + $previousPath
+    try {
+        $effectiveSandboxOutput = & powershell.exe @effectiveSandboxArgs 2>&1 | Out-String
+        $effectiveSandboxCode = $LASTEXITCODE
+    }
+    finally {
+        $env:PATH = $previousPath
+    }
+    Assert-True ($effectiveSandboxCode -eq 0) 'workspace-write route passes spa-check when Codex reports the requested effective sandbox'
+    Assert-True ([regex]::IsMatch($effectiveSandboxOutput, 'READY\s+YES')) 'workspace-write spa-check reports READY YES'
+    Assert-True ([regex]::IsMatch($effectiveSandboxOutput, 'SANDBOX\s+workspace-write')) 'workspace-write spa-check reports the route effective sandbox'
+
+    $readOnlyProfileShimDir = Join-Path $tempRoot 'read-only-profile-shim'
+    New-Item -ItemType Directory -Path $readOnlyProfileShimDir -Force | Out-Null
+    @'
+@echo off
+setlocal EnableExtensions
+echo MODEL_CHECK_OK
+echo model: deepseek-v4-flash
+echo provider: deepseek
+echo reasoning effort: high
+echo approval: never
+echo sandbox: read-only
+exit /b 0
+'@ | Set-Content -LiteralPath (Join-Path $readOnlyProfileShimDir 'codex.cmd') -Encoding ASCII
+
+    $previousPath = $env:PATH
+    $env:PATH = $readOnlyProfileShimDir + [System.IO.Path]::PathSeparator + $previousPath
+    try {
+        $readOnlyProfileOutput = & powershell.exe @effectiveSandboxArgs 2>&1 | Out-String
+        $readOnlyProfileCode = $LASTEXITCODE
+    }
+    finally {
+        $env:PATH = $previousPath
+    }
+    Assert-True ($readOnlyProfileCode -ne 0) 'workspace-write route fails closed when the model profile keeps the sandbox read-only'
+    Assert-True ([regex]::IsMatch($readOnlyProfileOutput, 'SANDBOX\s+FAIL expected=workspace-write actual=read-only')) 'read-only effective sandbox mismatch is precise'
 
     $realGit = (Get-Command git -CommandType Application).Source
     $gitShimDir = Join-Path $tempRoot 'git-shim'
@@ -363,7 +433,7 @@ exit /b %ERRORLEVEL%
 }
 finally {
     if ($tempRoot -and (Test-Path -LiteralPath $tempRoot)) {
-        Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
+        try { [System.IO.Directory]::Delete($tempRoot, $true) } catch { }
     }
 }
 
