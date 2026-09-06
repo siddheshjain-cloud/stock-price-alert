@@ -7,6 +7,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
 $devTools = Join-Path $repoRoot 'dev-tools'
 $spaRun = Join-Path $devTools 'spa-run.ps1'
+$stateTools = Join-Path $devTools 'm1-state.ps1'
 $routingPath = Join-Path $devTools 'm1-model-routing.psd1'
 $reviewPrompt = Join-Path $devTools 'prompts\P2T4-REVIEW.txt'
 $expectedBranch = 'feature/investment-operating-system-m1'
@@ -131,7 +132,7 @@ function Get-TestFingerprint {
     }
 }
 
-foreach ($path in @($spaRun, $routingPath, $reviewPrompt)) {
+foreach ($path in @($spaRun, $stateTools, $routingPath, $reviewPrompt)) {
     Assert-True (Test-Path -LiteralPath $path -PathType Leaf) "required runner artifact exists: $path"
 }
 
@@ -140,6 +141,8 @@ if ($failures.Count -gt 0) {
     Write-Host "RED: $($failures.Count) runner artifact(s) are missing."
     exit 1
 }
+
+. $stateTools
 
 $secretSentinel = 'test-secret-never-print'
 $previousSecret = [System.Environment]::GetEnvironmentVariable('DEEPSEEK_API_KEY', 'Process')
@@ -444,6 +447,50 @@ exit /b 0
         [System.Environment]::SetEnvironmentVariable('CODEX_HOME', $previousNativeCodexHome, 'Process')
         [System.Environment]::SetEnvironmentVariable('SPA_RUN_TEST_NATIVE_EXIT', $previousNativeExit, 'Process')
     }
+
+    $trackedChild = Join-Path $tempRoot 'tracked-child.ps1'
+    @'
+Write-Output 'CHILD_RESULT_LINE_ONE'
+Write-Output 'CHILD_RESULT_LINE_TWO'
+Write-Output 'CHILD_RESULT_LINE_THREE'
+'@ | Set-Content -LiteralPath $trackedChild -Encoding ASCII
+    $trackedHealthRoot = Join-Path $tempRoot 'tracked-health'
+    New-Item -ItemType Directory -Path $trackedHealthRoot -Force | Out-Null
+
+    # The real (non-dry-run) branch of Invoke-M1ChildRoute returns Invoke-SpaTrackedProcess
+    # directly, so exercise that native boundary with a fake child that emits several lines.
+    $childResult = Invoke-SpaTrackedProcess `
+        -FilePath (Get-Command powershell.exe -CommandType Application).Source `
+        -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $trackedChild) `
+        -WorkingDirectory $tempRoot `
+        -HealthRoot $trackedHealthRoot `
+        -Task 'P2T5' `
+        -Phase 'IMPLEMENT' `
+        -Model 'deepseek-v4-flash' `
+        -Provider 'deepseek' `
+        -LastSafe 'backend=probe frontend=probe' `
+        -HeartbeatSeconds 1
+
+    $childItems = @($childResult)
+    Assert-True ($childItems.Count -eq 1) 'real tracked child route returns exactly one structured result object'
+    Assert-True (($childItems[0].Code -is [int]) -and -not [string]::IsNullOrWhiteSpace([string]$childItems[0].Output)) 'real tracked child result exposes Code and Output'
+    Assert-True (($childItems[0].Output -match 'CHILD_RESULT_LINE_ONE') -and
+        ($childItems[0].Output -match 'CHILD_RESULT_LINE_TWO') -and
+        ($childItems[0].Output -match 'CHILD_RESULT_LINE_THREE')) 'multiple live child output lines remain captured for the human'
+
+    Assert-True ($null -ne $childItems[0].PSObject.Properties['DisplayOutput']) 'real tracked child result exposes DisplayOutput'
+    $m1CallerError = ''
+    $callerDisplayOutput = $null
+    try {
+        if ($childItems[0].DisplayOutput) { $callerDisplayOutput = $childItems[0].DisplayOutput }
+    }
+    catch {
+        $m1CallerError = $_.Exception.Message
+    }
+    Assert-True ([string]::IsNullOrWhiteSpace($m1CallerError)) ('M1 caller reads DisplayOutput without StrictMode property failure' + $(if ($m1CallerError) { " (error: $m1CallerError)" } else { '' }))
+    Assert-True (($callerDisplayOutput -match 'CHILD_RESULT_LINE_ONE') -and
+        ($callerDisplayOutput -match 'CHILD_RESULT_LINE_TWO') -and
+        ($callerDisplayOutput -match 'CHILD_RESULT_LINE_THREE')) 'M1 caller displays every captured child line through DisplayOutput'
 
     $emptyCodexRoot = Join-Path $tempRoot 'empty-codex-home'
     New-Item -ItemType Directory -Path $emptyCodexRoot -Force | Out-Null

@@ -125,16 +125,6 @@ function Write-SpaSessionSummary {
     Write-Output $separator
 }
 
-function Remove-SpaFinalTaskSummary {
-    param([Parameter(Mandatory = $true)][string]$Text)
-
-    return ([regex]::Replace(
-        $Text,
-        '(?ms)\r?\n?^={60}\r?\nSPA TASK SUMMARY\r?\n={60}\r?\n.*?^={60}\s*\z',
-        ''
-    )).TrimEnd()
-}
-
 function Stop-SpaRun {
     param([Parameter(Mandatory = $true)][string]$Message)
 

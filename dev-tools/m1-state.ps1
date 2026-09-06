@@ -340,6 +340,16 @@ function Format-SpaDuration {
     return ('{0:00}:{1:00}:{2:00}' -f [math]::Floor($time.TotalHours), $time.Minutes, $time.Seconds)
 }
 
+function Remove-SpaFinalTaskSummary {
+    param([Parameter(Mandatory = $true)][string]$Text)
+
+    return ([regex]::Replace(
+        $Text,
+        '(?ms)\r?\n?^={60}\r?\nSPA TASK SUMMARY\r?\n={60}\r?\n.*?^={60}\s*\z',
+        ''
+    )).TrimEnd()
+}
+
 function Write-SpaHealthRecord {
     param(
         [Parameter(Mandatory = $true)][string]$Task,
@@ -575,9 +585,11 @@ function Invoke-SpaTrackedProcess {
             -FinalHealth $finalHealth `
             -Now ([datetimeoffset]::UtcNow) | Out-Null
 
+        $trimmedOutput = $trackState.Output.ToString().TrimEnd()
         return [pscustomobject]@{
             Code = $code
-            Output = $trackState.Output.ToString().TrimEnd()
+            Output = $trimmedOutput
+            DisplayOutput = Remove-SpaFinalTaskSummary -Text $trimmedOutput
         }
     }
     finally {
