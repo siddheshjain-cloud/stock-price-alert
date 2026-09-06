@@ -83,6 +83,12 @@ try {
     Assert-True ($p2t5.RepositoryPath -eq 'C:\GitHub\backendtest') 'P2T5 resolves to backendtest'
     Assert-True ($p2t5Model.Provider -eq 'deepseek' -and $p2t5Model.Model -eq 'deepseek-v4-flash' -and $p2t5Model.Reasoning -eq 'high') 'P2T5 resolves to DeepSeek V4 Flash High'
     Assert-True (-not [string]::IsNullOrWhiteSpace($p2t5.SectionHeading)) 'P2T5 resolves to a non-empty plan section anchor'
+    $p2t5Prompt = Get-M1ImplementationPrompt -Route $p2t5 -TemplatePath $promptTemplate
+    Assert-Match $p2t5Prompt 'TASK ID:\s+P2T5' 'rendered prompt injects the exact task ID'
+    Assert-Match $p2t5Prompt 'PLAN FILE:\s+.*core-research-domain' 'rendered prompt injects the exact plan file'
+    Assert-Match $p2t5Prompt 'SECTION ANCHOR:\s+## Task 5:' 'rendered prompt injects the exact task section anchor'
+    Assert-Match $p2t5Prompt 'COMMIT/PUSH REQUIRED:\s+YES' 'rendered prompt injects the commit/push requirement'
+    Assert-NotContains $p2t5Prompt '{{PLAN_PATH}}' 'rendered prompt leaves no unresolved plan placeholder'
 
     $p2t9 = Get-M1ImplementationRoute `
         -TaskId 'P2T9' `
