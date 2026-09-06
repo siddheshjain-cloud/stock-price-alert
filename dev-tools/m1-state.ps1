@@ -363,7 +363,10 @@ function Write-SpaHealthRecord {
         [Parameter(Mandatory = $true)][string]$LastSafe,
         [string]$HealthRoot = $env:TEMP,
         [string]$FinalHealth = '',
-        [datetimeoffset]$Now = [datetimeoffset]::UtcNow
+        [datetimeoffset]$Now = [datetimeoffset]::UtcNow,
+        [bool]$Retry = $false,
+        [string]$OriginalTask = '',
+        [int]$DebugCycle = 0
     )
 
     $health = Get-SpaHealthStatus -Now $Now -StartedAt $StartedAt -LastOutputAt $LastOutputAt -ProcessAlive $ProcessAlive -FinalHealth $FinalHealth
@@ -381,6 +384,9 @@ function Write-SpaHealthRecord {
         last_safe = $LastSafe
         updated_at = $Now.ToString('o')
     }
+    if ($Retry) { $record['retry'] = $true }
+    if (-not [string]::IsNullOrWhiteSpace($OriginalTask)) { $record['original_task'] = $OriginalTask }
+    if ($DebugCycle -gt 0) { $record['debug_cycle'] = [int]$DebugCycle }
 
     $root = [System.IO.Path]::GetFullPath($HealthRoot)
     if (-not (Test-Path -LiteralPath $root -PathType Container)) {
@@ -473,13 +479,18 @@ function Invoke-SpaTrackedProcess {
         [string]$Model = 'NOT AVAILABLE',
         [string]$Provider = 'NOT AVAILABLE',
         [string]$LastSafe = 'NOT AVAILABLE',
-        [int]$HeartbeatSeconds = 120
+        [int]$HeartbeatSeconds = 120,
+        [bool]$Retry = $false,
+        [string]$OriginalTask = '',
+        [int]$DebugCycle = 0
     )
 
     $startedAt = [datetimeoffset]::UtcNow
     $lastOutputAt = $startedAt
     $trackState = [pscustomobject]@{
         Output = New-Object System.Text.StringBuilder
+        Stdout = New-Object System.Text.StringBuilder
+        Stderr = New-Object System.Text.StringBuilder
         LastOutputAt = $startedAt
     }
 
@@ -500,12 +511,14 @@ function Invoke-SpaTrackedProcess {
     $outputEvent = Register-ObjectEvent -InputObject $process -EventName OutputDataReceived -Action {
         if ($null -ne $EventArgs.Data) {
             [void]$Event.MessageData.Output.AppendLine($EventArgs.Data)
+            [void]$Event.MessageData.Stdout.AppendLine($EventArgs.Data)
             $Event.MessageData.LastOutputAt = [datetimeoffset]::UtcNow
         }
     } -MessageData $trackState
     $errorEvent = Register-ObjectEvent -InputObject $process -EventName ErrorDataReceived -Action {
         if ($null -ne $EventArgs.Data) {
             [void]$Event.MessageData.Output.AppendLine($EventArgs.Data)
+            [void]$Event.MessageData.Stderr.AppendLine($EventArgs.Data)
             $Event.MessageData.LastOutputAt = [datetimeoffset]::UtcNow
         }
     } -MessageData $trackState
@@ -520,7 +533,10 @@ function Invoke-SpaTrackedProcess {
         -ProcessId $process.Id `
         -ProcessAlive $true `
         -LastSafe $LastSafe `
-        -HealthRoot $HealthRoot | Out-Null
+        -HealthRoot $HealthRoot `
+        -Retry $Retry `
+        -OriginalTask $OriginalTask `
+        -DebugCycle $DebugCycle | Out-Null
 
     $nextHeartbeat = ([datetimeoffset]::UtcNow).AddSeconds($HeartbeatSeconds)
     try {
@@ -543,7 +559,10 @@ function Invoke-SpaTrackedProcess {
                     -ProcessAlive $true `
                     -LastSafe $LastSafe `
                     -HealthRoot $HealthRoot `
-                    -Now $now | Out-Null
+                    -Now $now `
+                    -Retry $Retry `
+                    -OriginalTask $OriginalTask `
+                    -DebugCycle $DebugCycle | Out-Null
                 $nextHeartbeat = $now.AddSeconds($HeartbeatSeconds)
             }
             elseif ($now -ge $nextHeartbeat) {
@@ -558,7 +577,10 @@ function Invoke-SpaTrackedProcess {
                     -ProcessAlive $true `
                     -LastSafe $LastSafe `
                     -HealthRoot $HealthRoot `
-                    -Now $now | Out-Null
+                    -Now $now `
+                    -Retry $Retry `
+                    -OriginalTask $OriginalTask `
+                    -DebugCycle $DebugCycle | Out-Null
                 $nextHeartbeat = $now.AddSeconds($HeartbeatSeconds)
             }
         }
@@ -583,12 +605,19 @@ function Invoke-SpaTrackedProcess {
             -LastSafe $LastSafe `
             -HealthRoot $HealthRoot `
             -FinalHealth $finalHealth `
-            -Now ([datetimeoffset]::UtcNow) | Out-Null
+            -Now ([datetimeoffset]::UtcNow) `
+            -Retry $Retry `
+            -OriginalTask $OriginalTask `
+            -DebugCycle $DebugCycle | Out-Null
 
         $trimmedOutput = $trackState.Output.ToString().TrimEnd()
+        $trimmedStdout = $trackState.Stdout.ToString().TrimEnd()
+        $trimmedStderr = $trackState.Stderr.ToString().TrimEnd()
         return [pscustomobject]@{
             Code = $code
             Output = $trimmedOutput
+            Stdout = $trimmedStdout
+            Stderr = $trimmedStderr
             DisplayOutput = Remove-SpaFinalTaskSummary -Text $trimmedOutput
         }
     }

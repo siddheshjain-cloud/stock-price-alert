@@ -19,6 +19,9 @@ param(
     [ValidateRange(0, 1440)]
     [int]$SafetyBufferMinutes = 15,
     [string]$TestNow = ''
+    ,
+    [switch]$AllowTestExecution,
+    [string]$TestEvidenceRoot = ''
 )
 
 Set-StrictMode -Version Latest
@@ -30,10 +33,20 @@ $script:SpaSummaryModel = 'NOT AVAILABLE'
 $script:SpaSummaryReasoning = 'NOT AVAILABLE'
 $script:SpaLastSafe = 'NOT AVAILABLE'
 $script:SpaRemoteStatus = 'NOT AVAILABLE'
+$script:SpaAutoDebugUsed = $false
+$script:SpaAutoDebugOutcome = ''
+$script:SpaAutoDebugCycles = 0
+$script:SpaAutoDebugRetriedRoute = ''
+$script:SpaAutoDebugFailedRoute = ''
+$script:SpaAutoDebugReason = ''
+$script:SpaAutoDebugProvider = 'NOT AVAILABLE'
+$script:SpaAutoDebugModel = 'NOT AVAILABLE'
+$script:SpaAutoDebugReasoning = 'NOT AVAILABLE'
 $script:M1StateToolsPath = Join-Path $PSScriptRoot 'm1-state.ps1'
 $script:M1StateToolsLoaded = $false
 $script:M1PlanToolsPath = Join-Path $PSScriptRoot 'm1-plan-routing.ps1'
 $script:M1PlanToolsLoaded = $false
+$script:M1AutoDebugToolsPath = Join-Path $PSScriptRoot 'm1-auto-debug.ps1'
 $script:M1ToolingRoot = Split-Path -Parent $PSScriptRoot
 $script:M1PlanRoot = Join-Path $script:M1ToolingRoot 'docs\superpowers\plans'
 $script:M1PlanIndexPath = Join-Path $script:M1PlanRoot '2026-09-04-investment-operating-system-milestone-1-index.md'
@@ -57,6 +70,11 @@ if (-not (Test-Path -LiteralPath $script:M1PlanToolsPath -PathType Leaf)) {
 }
 . $script:M1PlanToolsPath
 $script:M1PlanToolsLoaded = $true
+
+if (-not (Test-Path -LiteralPath $script:M1AutoDebugToolsPath -PathType Leaf)) {
+    throw "M1 auto-debug helper is missing: $script:M1AutoDebugToolsPath"
+}
+. $script:M1AutoDebugToolsPath
 
 if ([string]::IsNullOrWhiteSpace($RoutingPath)) {
     $RoutingPath = Join-Path $PSScriptRoot 'm1-model-routing.psd1'
@@ -109,7 +127,9 @@ function Write-SpaSessionSummary {
         [Parameter(Mandatory = $true)][string]$Next,
         [Parameter(Mandatory = $true)][string]$Remote,
         [Parameter(Mandatory = $true)][string]$StopReason,
-        [Parameter(Mandatory = $true)][string]$Resume
+        [Parameter(Mandatory = $true)][string]$Resume,
+        [string]$Result = '',
+        [string]$Reason = ''
     )
 
     $separator = '=' * 60
@@ -117,10 +137,29 @@ function Write-SpaSessionSummary {
     Write-Output 'SPA SESSION SUMMARY'
     Write-Output $separator
     Write-Output ('{0,-12}{1}' -f 'COMPLETED', $Completed)
+    if (-not [string]::IsNullOrWhiteSpace($Result)) {
+        Write-Output ('{0,-12} {1}' -f 'RESULT', $Result)
+    }
+    if ($script:SpaAutoDebugUsed) {
+        $outcome = if ([string]::IsNullOrWhiteSpace($script:SpaAutoDebugOutcome)) { 'NOT AVAILABLE' } else { $script:SpaAutoDebugOutcome }
+        Write-Output ('{0,-12} {1}' -f 'AUTO-DEBUG', $outcome)
+        if ($outcome -eq 'FIXED' -and -not [string]::IsNullOrWhiteSpace($script:SpaAutoDebugRetriedRoute)) {
+            Write-Output ('{0,-12} {1}' -f 'RETRIED', $script:SpaAutoDebugRetriedRoute)
+        }
+        elseif ($outcome -eq 'COULD NOT RESOLVE' -and -not [string]::IsNullOrWhiteSpace($script:SpaAutoDebugFailedRoute)) {
+            Write-Output ('{0,-12} {1}' -f 'FAILED', $script:SpaAutoDebugFailedRoute)
+        }
+        Write-Output ('{0,-12} {1}' -f 'DEBUG PROVIDER', $script:SpaAutoDebugProvider)
+        Write-Output ('{0,-12} {1}' -f 'DEBUG MODEL', $script:SpaAutoDebugModel)
+        Write-Output ('{0,-12} {1}' -f 'DEBUG CYCLES', $script:SpaAutoDebugCycles)
+    }
     Write-Output ('{0,-12}{1}' -f 'LAST SAFE', $LastSafe)
     Write-Output ('{0,-12}{1}' -f 'NEXT', $Next)
     Write-Output ('{0,-12}{1}' -f 'REMOTE', $Remote)
     Write-Output ('{0,-12}{1}' -f 'STOP REASON', $StopReason)
+    if (-not [string]::IsNullOrWhiteSpace($Reason)) {
+        Write-Output ('{0,-12} {1}' -f 'REASON', $Reason)
+    }
     Write-Output ('{0,-12}{1}' -f 'RESUME', $Resume)
     Write-Output $separator
 }
@@ -442,13 +481,14 @@ function Invoke-M1ChildRoute {
         [string]$HealthPhase = 'NOT AVAILABLE',
         [string]$HealthModel = 'NOT AVAILABLE',
         [string]$HealthProvider = 'NOT AVAILABLE',
-        [string]$HealthLastSafe = 'NOT AVAILABLE'
+        [string]$HealthLastSafe = 'NOT AVAILABLE',
+        [bool]$Retry = $false
     )
 
     $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath, '-Task', $RouteId)
     if ($ChildDryRun) { $arguments += '-DryRun' }
     if ($TestMode) {
-        $arguments += @('-TestMode', '-RoutingPath', $RoutingPath)
+        $arguments += @('-TestMode', '-AllowTestExecution', '-RoutingPath', $RoutingPath)
         if (-not [string]::IsNullOrWhiteSpace($BackendPath)) { $arguments += @('-BackendPath', $BackendPath) }
         if (-not [string]::IsNullOrWhiteSpace($FrontendPath)) { $arguments += @('-FrontendPath', $FrontendPath) }
         if (-not [string]::IsNullOrWhiteSpace($DependencyMarkerPath)) { $arguments += @('-DependencyMarkerPath', $DependencyMarkerPath) }
@@ -475,7 +515,410 @@ function Invoke-M1ChildRoute {
         -Phase $HealthPhase `
         -Model $HealthModel `
         -Provider $HealthProvider `
-        -LastSafe $HealthLastSafe
+        -LastSafe $HealthLastSafe `
+        -Retry $Retry
+}
+
+function Get-SpaM1StateSnapshot {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][object]$TaskRecord,
+        [Parameter(Mandatory = $true)][string]$UnitRoute
+    )
+
+    return [ordered]@{
+        milestone = [string]$State.milestone
+        branch = [string]$State.branch
+        taskId = [string]$TaskRecord.id
+        status = [string]$TaskRecord.status
+        activeRoute = if ([string]::IsNullOrWhiteSpace([string]$TaskRecord.activeRoute)) { $UnitRoute } else { [string]$TaskRecord.activeRoute }
+        updatedUtc = [string]$TaskRecord.updatedUtc
+        backendLastVerifiedSha = [string]$State.repositories.backend.lastVerifiedSha
+        frontendLastVerifiedSha = [string]$State.repositories.frontend.lastVerifiedSha
+    }
+}
+
+function Resolve-SpaDebugUnitMetadata {
+    param(
+        [Parameter(Mandatory = $true)][object]$Unit,
+        [Parameter(Mandatory = $true)][object]$TaskRecord,
+        [Parameter(Mandatory = $true)][string]$RoutingPath,
+        [Parameter(Mandatory = $true)][string]$BackendRepositoryPath,
+        [Parameter(Mandatory = $true)][string]$FrontendRepositoryPath,
+        [Parameter(Mandatory = $true)][object]$State
+    )
+
+    $routeId = [string]$Unit.RouteId
+    $taskId = [string]$Unit.TaskId
+    $repository = 'Backend'
+    $repositoryPath = $BackendRepositoryPath
+    $otherRepositoryPath = $FrontendRepositoryPath
+    $sandbox = 'workspace-write'
+    $planTaskTitle = ''
+    $originalObjective = ''
+    $action = if ([string]::IsNullOrWhiteSpace([string]$TaskRecord.action)) { [string]$Unit.Stage } else { [string]$TaskRecord.action }
+
+    $isGenericImplementation = (
+        ([string]$TaskRecord.action).Equals('IMPLEMENT', [System.StringComparison]::OrdinalIgnoreCase) -and
+        $routeId -match '^P([0-9]+)T([0-9]+)$'
+    )
+
+    if ($isGenericImplementation) {
+        try {
+            $planRoute = Get-M1ImplementationRoute `
+                -TaskId $taskId `
+                -PlanIndexPath $script:M1PlanIndexPath `
+                -PlanRoot $script:M1PlanRoot `
+                -SpecPath $script:M1SpecPath `
+                -RepositoryPath $BackendRepositoryPath `
+                -Repository 'Backend' `
+                -Branch ([string]$State.branch) `
+                -Sandbox 'workspace-write' `
+                -PromptPath $script:M1PromptTemplatePath
+            $planTaskTitle = [string]$planRoute.TaskTitle
+            $originalObjective = Get-M1ImplementationPrompt -Route $planRoute -TemplatePath $script:M1PromptTemplatePath
+        }
+        catch {
+            $planTaskTitle = ''
+            $originalObjective = ''
+        }
+    }
+    else {
+        try {
+            $routing = Import-PowerShellDataFile -LiteralPath $RoutingPath
+            if ($routing.Routes.ContainsKey($routeId)) {
+                $route = $routing.Routes[$routeId]
+                if ($route.ContainsKey('Repository') -and
+                    ([string]$route.Repository).Equals('Frontend', [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $repository = 'Frontend'
+                    $repositoryPath = $FrontendRepositoryPath
+                    $otherRepositoryPath = $BackendRepositoryPath
+                }
+                if ($route.ContainsKey('Sandbox')) { $sandbox = [string]$route.Sandbox }
+                if ($route.ContainsKey('Prompt')) {
+                    $routingRoot = Split-Path -Parent ([System.IO.Path]::GetFullPath($RoutingPath))
+                    $promptRelative = [string]$route.Prompt
+                    $promptFile = if ([System.IO.Path]::IsPathRooted($promptRelative)) {
+                        $promptRelative
+                    }
+                    else {
+                        Join-Path $routingRoot $promptRelative
+                    }
+                    if (Test-Path -LiteralPath $promptFile -PathType Leaf) {
+                        $originalObjective = [System.IO.File]::ReadAllText($promptFile)
+                    }
+                }
+            }
+        }
+        catch {
+            # Routing metadata is best-effort; repository identity below is safe.
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($action)) { $action = [string]$Unit.Stage }
+    return [pscustomobject]@{
+        Repository = $repository
+        RepositoryPath = [System.IO.Path]::GetFullPath($repositoryPath)
+        OtherRepositoryPath = [System.IO.Path]::GetFullPath($otherRepositoryPath)
+        Sandbox = $sandbox
+        PlanTaskTitle = $planTaskTitle
+        OriginalObjective = $originalObjective
+        Action = $action
+        Phase = [string]$Unit.Stage
+    }
+}
+
+function Invoke-SpaAutoDebugCycle {
+    param(
+        [Parameter(Mandatory = $true)][object]$Unit,
+        [Parameter(Mandatory = $true)][object]$TaskRecord,
+        [Parameter(Mandatory = $true)][object]$DebugMeta,
+        [Parameter(Mandatory = $true)][object]$FailureResult,
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][hashtable]$CurrentCommits,
+        [Parameter(Mandatory = $true)][int]$Cycle,
+        [Parameter(Mandatory = $true)][string]$HealthRoot,
+        [Parameter(Mandatory = $true)][string]$LastSafe
+    )
+
+    $routeId = [string]$Unit.RouteId
+    $taskId = [string]$Unit.TaskId
+    $failureCommand = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File {0} -Task {1}' -f $PSCommandPath, $routeId
+    $stdout = [string]$FailureResult.Stdout
+    $stderr = [string]$FailureResult.Stderr
+    $displayOutput = [string]$FailureResult.DisplayOutput
+    if ([string]::IsNullOrWhiteSpace($stdout) -and [string]::IsNullOrWhiteSpace($stderr)) {
+        $stdout = [string]$FailureResult.Output
+    }
+    if ([string]::IsNullOrWhiteSpace($displayOutput)) {
+        $displayOutput = [string]$FailureResult.Output
+    }
+
+    $healthModel = if ([string]$Unit.Stage -eq 'REVIEW') { [string]$TaskRecord.reviewerModel } else { [string]$TaskRecord.implementationModel }
+    $healthProvider = if ([string]$Unit.Stage -eq 'REVIEW') { [string]$TaskRecord.reviewerProvider } else { [string]$TaskRecord.implementationProvider }
+    $stateSnapshot = Get-SpaM1StateSnapshot -State $State -TaskRecord $TaskRecord -UnitRoute $routeId
+    $evidence = New-SpaAutoDebugEvidence `
+        -TaskId $taskId `
+        -RouteId $routeId `
+        -PlanTaskTitle $DebugMeta.PlanTaskTitle `
+        -Action $DebugMeta.Action `
+        -Phase $DebugMeta.Phase `
+        -Repository $DebugMeta.Repository `
+        -RepositoryPath $DebugMeta.RepositoryPath `
+        -Command $failureCommand `
+        -ExitCode ([int]$FailureResult.Code) `
+        -Stdout $stdout `
+        -Stderr $stderr `
+        -DisplayOutput $displayOutput `
+        -Model $healthModel `
+        -Provider $healthProvider `
+        -Reasoning 'high' `
+        -Sandbox $DebugMeta.Sandbox `
+        -M1State $stateSnapshot `
+        -LastSafe $LastSafe `
+        -CurrentCommits $CurrentCommits `
+        -OriginalObjective $DebugMeta.OriginalObjective
+    $prompt = Format-SpaAutoDebugPrompt `
+        -Evidence $evidence `
+        -PrimaryRepositoryPath $DebugMeta.RepositoryPath `
+        -SecondaryRepositoryPath $DebugMeta.OtherRepositoryPath
+
+    $evidenceRoot = if (-not [string]::IsNullOrWhiteSpace($TestEvidenceRoot)) {
+        $TestEvidenceRoot
+    }
+    else {
+        Join-Path ([System.IO.Path]::GetTempPath()) ('spa-auto-debug-' + [guid]::NewGuid().ToString('N'))
+    }
+    $artifacts = Write-SpaAutoDebugArtifacts -EvidenceRoot $evidenceRoot -Evidence $evidence -Prompt $prompt -Cycle $Cycle
+
+    $debugRoute = Get-SpaAutoDebugRoute
+    $command = Find-SpaAutoDebugCommand -Provider $debugRoute.Provider
+    if (-not $command) {
+        $cliName = if ($debugRoute.Provider -eq 'claude') { 'Claude Code' } else { 'codex' }
+        Stop-SpaAutoDebug `
+            -Reason ("Auto-Debug could not find the {0} CLI required for {1} routing." -f $cliName, $debugRoute.Provider) `
+            -FailedRoute $routeId `
+            -Cycles $Cycle
+    }
+    $commandPath = $command.Source
+    $profile = if ($debugRoute.Provider -eq 'deepseek') { 'deepseek' } else { '' }
+
+    if ($debugRoute.Provider -eq 'deepseek' -and -not $TestMode) {
+        $codexRoot = if (-not [string]::IsNullOrWhiteSpace($env:CODEX_HOME)) { $env:CODEX_HOME } else { Join-Path $env:USERPROFILE '.codex' }
+        $profilePath = Join-Path $codexRoot 'deepseek.config.toml'
+        if (-not (Test-Path -LiteralPath $profilePath -PathType Leaf)) {
+            Stop-SpaAutoDebug -Reason ("DeepSeek profile is not configured for the Auto-Debugger at {0}." -f $profilePath) -FailedRoute $routeId -Cycles $Cycle
+        }
+    }
+    $script:SpaAutoDebugProvider = $debugRoute.Provider
+    $script:SpaAutoDebugModel = $debugRoute.DisplayModel
+    $script:SpaAutoDebugReasoning = $debugRoute.Reasoning
+
+    $launcherPath = Join-Path $PSScriptRoot 'spa-auto-debug-launch.ps1'
+    if (-not (Test-Path -LiteralPath $launcherPath -PathType Leaf)) {
+        Stop-SpaAutoDebug -Reason ("Auto-Debug launcher is missing: {0}" -f $launcherPath) -FailedRoute $routeId -Cycles $Cycle
+    }
+    $lastMessagePath = Join-Path $artifacts.EvidenceRoot ('debug-last-message-{0:D2}.txt' -f $Cycle)
+    $arguments = @(
+        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $launcherPath,
+        '-CodexCommand', $commandPath,
+        '-Profile', $profile,
+        '-Model', $debugRoute.Model,
+        '-Provider', $debugRoute.Provider,
+        '-Reasoning', $debugRoute.Reasoning,
+        '-Sandbox', 'workspace-write',
+        '-WorkingDirectory', $DebugMeta.RepositoryPath,
+        '-AdditionalDirectory', $DebugMeta.OtherRepositoryPath,
+        '-PromptPath', $artifacts.PromptFile,
+        '-OutputLastMessagePath', $lastMessagePath
+    )
+    $powershellPath = (Get-Command powershell.exe -CommandType Application).Source
+    Write-Host ''
+    Write-Host ('AUTO-DEBUG   CYCLE {0}' -f $Cycle)
+    Write-Host ('ORIGINAL TASK {0}' -f $taskId)
+    Write-Host ('DEBUG PROVIDER {0}' -f $debugRoute.Provider)
+    Write-Host ('DEBUG MODEL {0}' -f $debugRoute.DisplayModel)
+    Write-Host ('DEBUG REASONING {0}' -f $debugRoute.Reasoning)
+    Write-Host ('EVIDENCE    {0}' -f $artifacts.EvidenceFile)
+    $debugResult = Invoke-SpaTrackedProcess `
+        -FilePath $powershellPath `
+        -ArgumentList $arguments `
+        -WorkingDirectory $PSScriptRoot `
+        -HealthRoot $HealthRoot `
+        -Task ('AUTO-DEBUG ' + $routeId) `
+        -Phase 'AUTO-DEBUG' `
+        -Model $debugRoute.DisplayModel `
+        -Provider $debugRoute.Provider `
+        -LastSafe $LastSafe `
+        -OriginalTask $taskId `
+        -DebugCycle $Cycle
+    if ($debugResult.DisplayOutput) { Write-Host $debugResult.DisplayOutput }
+    if ($debugResult.Code -eq 0) {
+        Write-Host ('AUTO-DEBUG   CYCLE {0} COMPLETE' -f $Cycle)
+    }
+    else {
+        Write-Host ('AUTO-DEBUG   CYCLE {0} FAILED EXIT {1}' -f $Cycle, $debugResult.Code)
+    }
+    return [pscustomobject]@{
+        Code = $debugResult.Code
+        Output = $debugResult.Output
+        DisplayOutput = $debugResult.DisplayOutput
+        EvidenceFile = $artifacts.EvidenceFile
+        PromptFile = $artifacts.PromptFile
+    }
+}
+
+function Stop-SpaAutoDebug {
+    param(
+        [Parameter(Mandatory = $true)][string]$Reason,
+        [Parameter(Mandatory = $true)][string]$FailedRoute,
+        [Parameter(Mandatory = $true)][int]$Cycles
+    )
+
+    $script:SpaAutoDebugUsed = $true
+    $script:SpaAutoDebugOutcome = 'COULD NOT RESOLVE'
+    $script:SpaAutoDebugCycles = $Cycles
+    $script:SpaAutoDebugFailedRoute = $FailedRoute
+    $script:SpaAutoDebugReason = ($Reason -replace '\r?\n', ' ').Trim()
+    $completed = 'NONE'
+    Write-Output ''
+    Write-Output 'AUTO-DEBUG STOPPED SAFELY'
+    Write-SpaSessionSummary `
+        -Completed $completed `
+        -LastSafe $script:SpaLastSafe `
+        -Next $FailedRoute `
+        -Remote $script:SpaRemoteStatus `
+        -StopReason 'AUTO-DEBUG COULD NOT RESOLVE' `
+        -Resume 'spa-run M1-REMAINING' `
+        -Result 'STOPPED SAFELY' `
+        -Reason $script:SpaAutoDebugReason
+    exit 1
+}
+
+function Invoke-SpaUnitWithAutoDebug {
+    param(
+        [Parameter(Mandatory = $true)][object]$Unit,
+        [Parameter(Mandatory = $true)][object]$TaskRecord,
+        [Parameter(Mandatory = $true)][string]$HealthRoot,
+        [Parameter(Mandatory = $true)][string]$BackendRepositoryPath,
+        [Parameter(Mandatory = $true)][string]$FrontendRepositoryPath,
+        [Parameter(Mandatory = $true)][string]$RoutingPath,
+        [Parameter(Mandatory = $true)][object]$State
+    )
+
+    $routeId = [string]$Unit.RouteId
+    $taskId = [string]$Unit.TaskId
+    $stagnation = 0
+    $cycle = 0
+    $taskAttempt = 0
+    $lastFailureSignature = ''
+    $lastDebugFailed = $false
+    $lastDebugNoHeadChange = $false
+
+    while ($true) {
+        $isRetry = ($taskAttempt -gt 0)
+        $healthModel = if ([string]$Unit.Stage -eq 'REVIEW') { [string]$TaskRecord.reviewerModel } else { [string]$TaskRecord.implementationModel }
+        $healthProvider = if ([string]$Unit.Stage -eq 'REVIEW') { [string]$TaskRecord.reviewerProvider } else { [string]$TaskRecord.implementationProvider }
+        $result = Invoke-M1ChildRoute `
+            -RouteId $routeId `
+            -HealthRoot $HealthRoot `
+            -HealthTask $taskId `
+            -HealthPhase ([string]$Unit.Stage) `
+            -HealthModel $healthModel `
+            -HealthProvider $healthProvider `
+            -HealthLastSafe $script:SpaLastSafe `
+            -Retry $isRetry
+        if ($result.DisplayOutput) { Write-Host $result.DisplayOutput }
+        if ($result.Code -eq 0) {
+            if ($taskAttempt -gt 0) {
+                $script:SpaAutoDebugUsed = $true
+                $script:SpaAutoDebugOutcome = 'FIXED'
+                $script:SpaAutoDebugCycles = $cycle
+                $script:SpaAutoDebugRetriedRoute = $routeId
+            }
+            return $result
+        }
+
+        $taskAttempt++
+        $signature = Get-SpaFailureSignature -Result $result
+        if ($taskAttempt -gt 1) {
+            if ($signature -ne $lastFailureSignature) {
+                $stagnation = 0
+            }
+            elseif ($lastDebugFailed -or $lastDebugNoHeadChange) {
+                $stagnation++
+                if ($stagnation -ge 3) {
+                    $stopReason = if ($lastDebugFailed) {
+                        'The Auto-Debugger itself failed three consecutive times with no repair or new evidence.'
+                    }
+                    else {
+                        'Three consecutive Auto-Debug cycles produced no meaningful progress: the original task failure repeated with no repair, no changed failure signature, and no new evidence.'
+                    }
+                    Stop-SpaAutoDebug `
+                        -Reason $stopReason `
+                        -FailedRoute $routeId `
+                        -Cycles $cycle
+                }
+            }
+        }
+        $lastFailureSignature = $signature
+        $lastDebugFailed = $false
+        $lastDebugNoHeadChange = $false
+
+        $cycle++
+        $script:SpaAutoDebugUsed = $true
+        $currentHeads = @{
+            backend = (Invoke-M1Git -Path $BackendRepositoryPath -Arguments @('rev-parse', 'HEAD')).Output
+            frontend = (Invoke-M1Git -Path $FrontendRepositoryPath -Arguments @('rev-parse', 'HEAD')).Output
+        }
+        $debugMeta = Resolve-SpaDebugUnitMetadata `
+            -Unit $Unit `
+            -TaskRecord $TaskRecord `
+            -RoutingPath $RoutingPath `
+            -BackendRepositoryPath $BackendRepositoryPath `
+            -FrontendRepositoryPath $FrontendRepositoryPath `
+            -State $State
+        $debugRun = Invoke-SpaAutoDebugCycle `
+            -Unit $Unit `
+            -TaskRecord $TaskRecord `
+            -DebugMeta $debugMeta `
+            -FailureResult $result `
+            -State $State `
+            -CurrentCommits $currentHeads `
+            -Cycle $cycle `
+            -HealthRoot $HealthRoot `
+            -LastSafe $script:SpaLastSafe
+
+        if ($debugRun.Code -ne 0) {
+            $lastDebugFailed = $true
+            continue
+        }
+
+        try {
+            Test-M1RepositoryLocalState -Name 'Backend' -Path $BackendRepositoryPath -ExpectedBranch 'feature/investment-operating-system-m1' | Out-Null
+            Test-M1RepositoryLocalState -Name 'Frontend' -Path $FrontendRepositoryPath -ExpectedBranch 'feature/investment-operating-system-m1' | Out-Null
+            $backendAfter = Sync-M1Repository -Name 'Backend' -Path $BackendRepositoryPath -ExpectedBranch 'feature/investment-operating-system-m1'
+            $frontendAfter = Sync-M1Repository -Name 'Frontend' -Path $FrontendRepositoryPath -ExpectedBranch 'feature/investment-operating-system-m1'
+        }
+        catch {
+            Stop-SpaAutoDebug `
+                -Reason ('Auto-Debug finished but the repositories are not in a safe resumable state: {0}' -f $_.Exception.Message) `
+                -FailedRoute $routeId `
+                -Cycles $cycle
+        }
+        $script:SpaLastSafe = 'backend={0} frontend={1}' -f $backendAfter.Head, $frontendAfter.Head
+        $headChanged = (
+            $backendAfter.Head -ne $currentHeads.backend -or
+            $frontendAfter.Head -ne $currentHeads.frontend
+        )
+        if ($headChanged) {
+            $stagnation = 0
+            Write-Host 'AUTO-DEBUG   REPAIR HEAD CHANGED (PROGRESS)'
+        }
+        else {
+            $lastDebugNoHeadChange = $true
+        }
+    }
 }
 
 function Invoke-M1Remaining {
@@ -568,18 +1011,15 @@ function Invoke-M1Remaining {
             Publish-M1StateCheckpoint -State $state -StateFile $StatePath -ToolingRepository $toolingPath -TaskId $unit.TaskId -Status 'RUNNING_LOCAL'
 
             $healthRoot = if ([string]::IsNullOrWhiteSpace($TestHealthPath)) { $env:TEMP } else { $TestHealthPath }
-            $healthModel = if ($unit.Stage -eq 'REVIEW') { [string]$taskRecord.reviewerModel } else { [string]$taskRecord.implementationModel }
-            $healthProvider = if ($unit.Stage -eq 'REVIEW') { [string]$taskRecord.reviewerProvider } else { [string]$taskRecord.implementationProvider }
-            $result = Invoke-M1ChildRoute `
-                -RouteId $unit.RouteId `
+            $result = Invoke-SpaUnitWithAutoDebug `
+                -Unit $unit `
+                -TaskRecord $taskRecord `
                 -HealthRoot $healthRoot `
-                -HealthTask $unit.TaskId `
-                -HealthPhase $unit.Stage `
-                -HealthModel $healthModel `
-                -HealthProvider $healthProvider `
-                -HealthLastSafe $script:SpaLastSafe
+                -BackendRepositoryPath $backendRepositoryPath `
+                -FrontendRepositoryPath $toolingPath `
+                -RoutingPath $RoutingPath `
+                -State $state
             if ($result.DisplayOutput) { Write-Output $result.DisplayOutput }
-            if ($result.Code -ne 0) { throw "Unit '$($unit.RouteId)' failed; RUNNING_LOCAL remains the durable non-complete state." }
             $verdict = Get-M1ChildVerdict -Text $result.Output
 
             $backendSync = Sync-M1Repository -Name 'Backend' -Path $backendRepositoryPath -ExpectedBranch $requiredBranch
@@ -657,9 +1097,28 @@ function Invoke-SpaStatus {
     $lastSafe = if ([string]::IsNullOrWhiteSpace([string]$record.last_safe)) { 'NOT AVAILABLE' } else { [string]$record.last_safe }
     $updated = if ([string]::IsNullOrWhiteSpace([string]$record.updated_at)) { 'NOT AVAILABLE' } else { [string]$record.updated_at }
 
+    $processAlive = if ($null -ne $record.PSObject.Properties['process_alive']) { [bool]$record.process_alive } else { $false }
+    $retry = if ($null -ne $record.PSObject.Properties['retry']) { [bool]$record.retry } else { $false }
+    $originalTask = if ($null -ne $record.PSObject.Properties['original_task']) { [string]$record.original_task } else { '' }
+    $debugCycleValue = if ($null -ne $record.PSObject.Properties['debug_cycle']) { [int]$record.debug_cycle } else { 0 }
+    $autoDebugPhase = $phase.Equals('AUTO-DEBUG', [System.StringComparison]::OrdinalIgnoreCase)
+    $state = if (-not $processAlive) {
+        'STOPPED'
+    }
+    elseif ($retry) {
+        'RETRYING'
+    }
+    elseif ($autoDebugPhase) {
+        'AUTO_DEBUGGING'
+    }
+    else {
+        $health
+    }
+
     Write-Output 'SPA STATUS'
     Write-Output ('TASK       {0}' -f $task)
     Write-Output ('PHASE      {0}' -f $phase)
+    Write-Output ('STATE      {0}' -f $state)
     Write-Output ('MODEL      {0}' -f $model)
     Write-Output ('PROVIDER   {0}' -f $provider)
     Write-Output ('STARTED    {0}' -f $started)
@@ -669,6 +1128,16 @@ function Invoke-SpaStatus {
     Write-Output ('HEALTH     {0}' -f $health)
     Write-Output ('LAST SAFE  {0}' -f $lastSafe)
     Write-Output ('UPDATED    {0}' -f $updated)
+    if (-not [string]::IsNullOrWhiteSpace($originalTask)) {
+        Write-Output ('ORIGINAL TASK {0}' -f $originalTask)
+    }
+    if ($debugCycleValue -gt 0) {
+        Write-Output ('DEBUG CYCLE  {0}' -f $debugCycleValue)
+    }
+    if ($autoDebugPhase -or $debugCycleValue -gt 0) {
+        Write-Output ('DEBUG PROVIDER {0}' -f $provider)
+        Write-Output ('DEBUG MODEL  {0}' -f $model)
+    }
 }
 
 function Invoke-M1ReviewApplication {
@@ -732,7 +1201,19 @@ function Invoke-M1ReviewApplication {
     }
 }
 
-$testOnlyOverrides = @('RoutingPath', 'BackendPath', 'FrontendPath', 'DependencyMarkerPath', 'TestModelCheckOutputPath', 'TestTaskOutputPath', 'StatePath', 'TestNow', 'TestHealthPath')
+$testOnlyOverrides = @(
+    'RoutingPath',
+    'BackendPath',
+    'FrontendPath',
+    'DependencyMarkerPath',
+    'TestModelCheckOutputPath',
+    'TestTaskOutputPath',
+    'StatePath',
+    'TestNow',
+    'TestHealthPath',
+    'AllowTestExecution',
+    'TestEvidenceRoot'
+)
 $usedTestOnlyOverrides = @($testOnlyOverrides | Where-Object { $PSBoundParameters.ContainsKey($_) })
 
 $taskId = $script:SpaTaskId
@@ -753,8 +1234,11 @@ if ($ApplyReview) {
     Invoke-M1ReviewApplication -Verdict $ReviewVerdict
     exit 0
 }
-if ($TestMode -and -not $DryRun) {
+if ($TestMode -and -not $DryRun -and -not $AllowTestExecution) {
     Stop-SpaRun '-TestMode requires -DryRun and can never invoke a task.'
+}
+if ($AllowTestExecution -and -not $TestMode) {
+    Stop-SpaRun '-AllowTestExecution is only valid together with -TestMode.'
 }
 if (-not $TestMode -and $usedTestOnlyOverrides.Count -gt 0) {
     Stop-SpaRun 'Test-only overrides require both -TestMode and -DryRun.'
