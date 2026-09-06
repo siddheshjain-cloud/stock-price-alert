@@ -1,0 +1,29 @@
+You are implementing one exact, already-approved Milestone 1 task.
+
+Read AGENTS.md in the target repository before doing any work.
+
+Read the governing frozen plan file and the exact task section named below. The frozen plan is authoritative for this task. Do not reinterpret adjacent tasks, implement later tasks early, or broaden the scope.
+
+TASK ID: {{TASK_ID}}
+PLAN FILE: {{PLAN_PATH}}
+PLAN TASK: Task {{PLAN_TASK_NUMBER}}
+PLAN TASK TITLE: {{PLAN_TASK_TITLE}}
+SECTION ANCHOR: {{SECTION_HEADING}}
+SPEC FILE: {{SPEC_PATH}}
+TARGET REPOSITORY: {{REPOSITORY_PATH}}
+BRANCH: {{BRANCH}}
+COMMIT/PUSH REQUIRED: {{COMMIT_PUSH}}
+
+Execute only the exact task identified by the section anchor.
+
+Use TDD. Write the task-prescribed focused tests first, confirm the expected RED failure, implement only the frozen interfaces for this task, and run the task-prescribed focused tests until they pass.
+
+Respect all frozen interfaces and constraints in the plan and specification. Do not modify adjacent plans, migrations, APIs, provider profiles, secrets, permissions, live systems, or deployment behavior unless the exact frozen task explicitly requires it and reaches its documented human gate.
+
+Stable infrastructure is reused. Do not rerun already-established environment setup or reinstall dependencies. Recheck only volatile state required by this task.
+
+Run the focused tests prescribed by the exact task, then run only proportional relevant regression that the plan identifies for the task.
+
+If commit/push is required for this task, commit and push only this task's changes to the required branch after the focused verification passes.
+
+Print a final compact report with the exact task ID, the focused tests run, the final test result, any proportional regression run, and the commit SHA if commit/push was required.

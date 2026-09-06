@@ -32,6 +32,14 @@ $script:SpaLastSafe = 'NOT AVAILABLE'
 $script:SpaRemoteStatus = 'NOT AVAILABLE'
 $script:M1StateToolsPath = Join-Path $PSScriptRoot 'm1-state.ps1'
 $script:M1StateToolsLoaded = $false
+$script:M1PlanToolsPath = Join-Path $PSScriptRoot 'm1-plan-routing.ps1'
+$script:M1PlanToolsLoaded = $false
+$script:M1ToolingRoot = Split-Path -Parent $PSScriptRoot
+$script:M1PlanRoot = Join-Path $script:M1ToolingRoot 'docs\superpowers\plans'
+$script:M1PlanIndexPath = Join-Path $script:M1PlanRoot '2026-09-04-investment-operating-system-milestone-1-index.md'
+$script:M1SpecPath = Join-Path $script:M1ToolingRoot 'docs\superpowers\specs\2026-09-04-investment-operating-system-milestone-1-design.md'
+$script:M1PromptTemplatePath = Join-Path $PSScriptRoot 'prompts\m1-implementation.txt'
+$script:DefaultM1BackendPath = 'C:\GitHub\backendtest'
 
 # Keep all Git calls made by this process and its child scripts unattended.
 $env:GIT_PAGER = 'cat'
@@ -43,6 +51,12 @@ if (-not (Test-Path -LiteralPath $script:M1StateToolsPath -PathType Leaf)) {
 }
 . $script:M1StateToolsPath
 $script:M1StateToolsLoaded = $true
+
+if (-not (Test-Path -LiteralPath $script:M1PlanToolsPath -PathType Leaf)) {
+    throw "M1 plan-routing helper is missing: $script:M1PlanToolsPath"
+}
+. $script:M1PlanToolsPath
+$script:M1PlanToolsLoaded = $true
 
 if ([string]::IsNullOrWhiteSpace($RoutingPath)) {
     $RoutingPath = Join-Path $PSScriptRoot 'm1-model-routing.psd1'
@@ -179,7 +193,7 @@ function Get-ReviewVerdict {
 function Get-M1ChildVerdict {
     param([Parameter(Mandatory = $true)][string]$Text)
 
-    $matches = @([regex]::Matches($Text, '(?im)^VERDICT\s+(SAFE WITH NON-BLOCKING OBSERVATIONS|SAFE|CHANGES REQUIRED)\s*$'))
+    $matches = @([regex]::Matches($Text, '(?im)^VERDICT\s+(SAFE WITH NON-BLOCKING OBSERVATIONS|SAFE|CHANGES REQUIRED|IMPLEMENTED)\s*$'))
     if ($matches.Count -ne 1) {
         throw 'Completed child route did not report exactly one validated SPA TASK RESULT verdict.'
     }
@@ -800,49 +814,82 @@ $script:SpaSummaryReasoning = $reasoning
 $commandName = Get-RequiredValue -Table $modelRoute -Name 'Command' -Context $modelRouteName
 $profile = if ($modelRoute.ContainsKey('Profile')) { [string]$modelRoute.Profile } else { '' }
 
-if (-not $route.ContainsKey('Enabled') -or -not [bool]$route.Enabled) {
-    $reason = if ($route.ContainsKey('DisabledReason')) { [string]$route.DisabledReason } else { 'Repository, prompt, and execution metadata are not enabled in Phase 1.' }
-    Stop-SpaRun "$taskId is recorded but not yet enabled. $reason"
-}
+$isGenericImplementation = (
+    $action.Equals('IMPLEMENT', [System.StringComparison]::OrdinalIgnoreCase) -and
+    -not $route.ContainsKey('Prompt')
+)
+$genericImplementationRoute = $null
+$repository = ''
+$repositoryPath = ''
+$expectedBranch = ''
+$sandbox = ''
+$promptPath = ''
 
-if ($route.ContainsKey('IndependentReview') -and [bool]$route.IndependentReview) {
-    if (-not $route.ContainsKey('Implementer') -or
-        -not $route.Implementer.ContainsKey('Provider') -or
-        -not $route.Implementer.ContainsKey('Model') -or
-        [string]::IsNullOrWhiteSpace([string]$route.Implementer.Provider) -or
-        [string]::IsNullOrWhiteSpace([string]$route.Implementer.Model)) {
-        Stop-SpaRun "$taskId requires implementer metadata before an independent review can run."
+if ($isGenericImplementation) {
+    $repository = 'Backend'
+    $repositoryPath = if ([string]::IsNullOrWhiteSpace($BackendPath)) { $script:DefaultM1BackendPath } else { $BackendPath }
+    $expectedBranch = 'feature/investment-operating-system-m1'
+    $sandbox = 'workspace-write'
+    $genericImplementationRoute = Get-M1ImplementationRoute `
+        -TaskId $taskId `
+        -PlanIndexPath $script:M1PlanIndexPath `
+        -PlanRoot $script:M1PlanRoot `
+        -SpecPath $script:M1SpecPath `
+        -RepositoryPath $repositoryPath `
+        -Repository $repository `
+        -Branch $expectedBranch `
+        -Sandbox $sandbox `
+        -PromptPath $script:M1PromptTemplatePath
+    $promptPath = [string]$genericImplementationRoute.PromptPath
+    if (-not (Test-Path -LiteralPath $promptPath -PathType Leaf)) {
+        Stop-SpaRun "Generic M1 implementation prompt template is missing: $promptPath"
     }
-
-    $sameProvider = $provider.Equals([string]$route.Implementer.Provider, [System.StringComparison]::OrdinalIgnoreCase)
-    $sameModel = $model.Equals([string]$route.Implementer.Model, [System.StringComparison]::OrdinalIgnoreCase)
-    if ($sameProvider -and $sameModel) {
-        Stop-SpaRun "$taskId has an independent review conflict: implementer and reviewer both resolve to $provider/$model."
-    }
-}
-
-$repository = Get-RequiredValue -Table $route -Name 'Repository' -Context $taskId
-$repositoryPath = Get-RequiredValue -Table $route -Name 'RepositoryPath' -Context $taskId
-$expectedBranch = Get-RequiredValue -Table $route -Name 'Branch' -Context $taskId
-$sandbox = Get-RequiredValue -Table $route -Name 'Sandbox' -Context $taskId
-$promptRelativePath = Get-RequiredValue -Table $route -Name 'Prompt' -Context $taskId
-
-if ($repository.Equals('Backend', [System.StringComparison]::OrdinalIgnoreCase) -and -not [string]::IsNullOrWhiteSpace($BackendPath)) {
-    $repositoryPath = $BackendPath
-}
-elseif ($repository.Equals('Frontend', [System.StringComparison]::OrdinalIgnoreCase) -and -not [string]::IsNullOrWhiteSpace($FrontendPath)) {
-    $repositoryPath = $FrontendPath
-}
-
-$routingRoot = Split-Path -Parent ([System.IO.Path]::GetFullPath($RoutingPath))
-$promptPath = if ([System.IO.Path]::IsPathRooted($promptRelativePath)) {
-    $promptRelativePath
 }
 else {
-    Join-Path $routingRoot $promptRelativePath
-}
-if (-not (Test-Path -LiteralPath $promptPath -PathType Leaf)) {
-    Stop-SpaRun "Prompt file is missing: $promptPath"
+    if (-not $route.ContainsKey('Enabled') -or -not [bool]$route.Enabled) {
+        $reason = if ($route.ContainsKey('DisabledReason')) { [string]$route.DisabledReason } else { 'Repository, prompt, and execution metadata are not enabled in Phase 1.' }
+        Stop-SpaRun "$taskId is recorded but not yet enabled. $reason"
+    }
+
+    if ($route.ContainsKey('IndependentReview') -and [bool]$route.IndependentReview) {
+        if (-not $route.ContainsKey('Implementer') -or
+            -not $route.Implementer.ContainsKey('Provider') -or
+            -not $route.Implementer.ContainsKey('Model') -or
+            [string]::IsNullOrWhiteSpace([string]$route.Implementer.Provider) -or
+            [string]::IsNullOrWhiteSpace([string]$route.Implementer.Model)) {
+            Stop-SpaRun "$taskId requires implementer metadata before an independent review can run."
+        }
+
+        $sameProvider = $provider.Equals([string]$route.Implementer.Provider, [System.StringComparison]::OrdinalIgnoreCase)
+        $sameModel = $model.Equals([string]$route.Implementer.Model, [System.StringComparison]::OrdinalIgnoreCase)
+        if ($sameProvider -and $sameModel) {
+            Stop-SpaRun "$taskId has an independent review conflict: implementer and reviewer both resolve to $provider/$model."
+        }
+    }
+
+    $repository = Get-RequiredValue -Table $route -Name 'Repository' -Context $taskId
+    $repositoryPath = Get-RequiredValue -Table $route -Name 'RepositoryPath' -Context $taskId
+    $expectedBranch = Get-RequiredValue -Table $route -Name 'Branch' -Context $taskId
+    $sandbox = Get-RequiredValue -Table $route -Name 'Sandbox' -Context $taskId
+    $promptRelativePath = Get-RequiredValue -Table $route -Name 'Prompt' -Context $taskId
+
+    if ($repository.Equals('Backend', [System.StringComparison]::OrdinalIgnoreCase) -and -not [string]::IsNullOrWhiteSpace($BackendPath)) {
+        $repositoryPath = $BackendPath
+    }
+    elseif ($repository.Equals('Frontend', [System.StringComparison]::OrdinalIgnoreCase) -and -not [string]::IsNullOrWhiteSpace($FrontendPath)) {
+        $repositoryPath = $FrontendPath
+    }
+
+    $routingRoot = Split-Path -Parent ([System.IO.Path]::GetFullPath($RoutingPath))
+    $promptPath = if ([System.IO.Path]::IsPathRooted($promptRelativePath)) {
+        $promptRelativePath
+    }
+    else {
+        Join-Path $routingRoot $promptRelativePath
+    }
+    if (-not (Test-Path -LiteralPath $promptPath -PathType Leaf)) {
+        Stop-SpaRun "Prompt file is missing: $promptPath"
+    }
 }
 
 $command = $null
@@ -894,6 +941,13 @@ if ($DryRun -and [string]::IsNullOrWhiteSpace($TestModelCheckOutputPath)) {
     Write-Output ('PROVIDER   {0}' -f $provider)
     Write-Output ('REASONING  {0}' -f $reasoning)
     Write-Output ('SANDBOX    {0}' -f $sandbox)
+    if ($isGenericImplementation) {
+        Write-Output ('PLAN       {0}' -f (Split-Path -Leaf $genericImplementationRoute.PlanFile))
+        Write-Output ('PLAN TASK  Task {0}' -f $genericImplementationRoute.TaskNumber)
+        Write-Output ('PLAN TITLE {0}' -f $genericImplementationRoute.TaskTitle)
+        Write-Output 'PROMPT     GENERIC'
+        Write-Output 'COMMIT/PUSH REQUIRED YES'
+    }
     Write-Output 'READY      NOT CHECKED (DRY RUN)'
     Write-Output ('COMMAND    {0}' -f $displayCommand)
     Write-SpaTaskSummary -Result 'DRY RUN' -Tests 'NOT APPLICABLE' -Commit 'NOT APPLICABLE' -Push 'NOT APPLICABLE' -Worktree 'NOT CHECKED (DRY RUN)' -Remote 'NOT CHECKED (DRY RUN)'
@@ -949,6 +1003,13 @@ Write-Output ('MODEL      {0}' -f $model)
 Write-Output ('PROVIDER   {0}' -f $provider)
 Write-Output ('REASONING  {0}' -f $reasoning)
 Write-Output ('SANDBOX    {0}' -f $sandbox)
+if ($isGenericImplementation) {
+    Write-Output ('PLAN       {0}' -f (Split-Path -Leaf $genericImplementationRoute.PlanFile))
+    Write-Output ('PLAN TASK  Task {0}' -f $genericImplementationRoute.TaskNumber)
+    Write-Output ('PLAN TITLE {0}' -f $genericImplementationRoute.TaskTitle)
+    Write-Output 'PROMPT     GENERIC'
+    Write-Output 'COMMIT/PUSH REQUIRED YES'
+}
 Write-Output 'READY      YES'
 Write-Output ('COMMAND    {0}' -f $displayCommand)
 
@@ -972,6 +1033,15 @@ if ($DryRun) {
     exit 0
 }
 
+$promptExecutionPath = $promptPath
+$genericPromptTemporaryPath = $null
+if ($isGenericImplementation) {
+    $renderedPrompt = Get-M1ImplementationPrompt -Route $genericImplementationRoute -TemplatePath $promptPath
+    $genericPromptTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) ('spa-m1-prompt-' + [guid]::NewGuid().ToString('N') + '.txt')
+    [System.IO.File]::WriteAllText($genericPromptTemporaryPath, $renderedPrompt, (New-Object System.Text.UTF8Encoding($false)))
+    $promptExecutionPath = $genericPromptTemporaryPath
+}
+
 Write-Output ''
 Write-Output 'Starting...'
 
@@ -982,7 +1052,7 @@ try {
     $previousErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = 'Continue'
-        [System.IO.File]::ReadAllText($promptPath) |
+        [System.IO.File]::ReadAllText($promptExecutionPath) |
             & $commandPath @taskArgs 2>&1 |
             ForEach-Object {
                 if ($_ -is [System.Management.Automation.ErrorRecord]) {
@@ -1005,7 +1075,16 @@ try {
         Stop-SpaRun 'Task completed without a captured final response.'
     }
 
-    $verdict = Get-ReviewVerdict -Text ([System.IO.File]::ReadAllText($lastMessagePath))
+    $finalTaskText = [System.IO.File]::ReadAllText($lastMessagePath)
+    $verdict = if ($isGenericImplementation) {
+        if ([string]::IsNullOrWhiteSpace($finalTaskText)) {
+            Stop-SpaRun 'Task completed without a non-empty implementation report.'
+        }
+        'IMPLEMENTED'
+    }
+    else {
+        Get-ReviewVerdict -Text $finalTaskText
+    }
 
     Write-Output ''
     Write-Output 'SPA TASK RESULT'
@@ -1018,5 +1097,8 @@ try {
 finally {
     if (Test-Path -LiteralPath $lastMessagePath) {
         Remove-Item -LiteralPath $lastMessagePath -Force -ErrorAction SilentlyContinue
+    }
+    if ($genericPromptTemporaryPath -and (Test-Path -LiteralPath $genericPromptTemporaryPath -PathType Leaf)) {
+        Remove-Item -LiteralPath $genericPromptTemporaryPath -Force -ErrorAction SilentlyContinue
     }
 }

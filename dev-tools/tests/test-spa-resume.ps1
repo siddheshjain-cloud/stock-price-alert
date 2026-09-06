@@ -286,7 +286,7 @@ try {
 
     $seed = Read-M1State -Path $seedState
     $seedNext = Get-M1NextUnit -State $seed
-    Assert-True ($seedNext.RouteId -eq 'P2T4-REVIEW') 'seed state identifies P2T4-REVIEW as next unresolved gate'
+    Assert-True ($seedNext.RouteId -eq 'P2T5') 'seed state identifies P2T5 as next unresolved implementation unit'
 
     $runBackend = Initialize-RemotePair -Root $tempRoot -Name 'run-backend'
     $runFrontend = Initialize-RemotePair -Root $tempRoot -Name 'run-frontend'
