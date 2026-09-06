@@ -21,15 +21,100 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:SpaMaxMinutesSpecified = $PSBoundParameters.ContainsKey('MaxMinutes')
+$script:SpaTaskId = $Task.Trim().ToUpperInvariant()
+$script:SpaSummaryAction = 'NOT AVAILABLE'
+$script:SpaSummaryModel = 'NOT AVAILABLE'
+$script:SpaSummaryReasoning = 'NOT AVAILABLE'
+$script:SpaLastSafe = 'NOT AVAILABLE'
+$script:SpaRemoteStatus = 'NOT AVAILABLE'
+
+# Keep all Git calls made by this process and its child scripts unattended.
+$env:GIT_PAGER = 'cat'
+$env:PAGER = 'cat'
+$env:GIT_TERMINAL_PROMPT = '0'
 
 if ([string]::IsNullOrWhiteSpace($RoutingPath)) {
     $RoutingPath = Join-Path $PSScriptRoot 'm1-model-routing.psd1'
+}
+
+function Write-SpaTaskSummary {
+    param(
+        [Parameter(Mandatory = $true)][string]$Result,
+        [string]$Reason = '',
+        [string]$Tests = 'NOT AVAILABLE',
+        [string]$Commit = 'NOT AVAILABLE',
+        [string]$Push = 'NOT AVAILABLE',
+        [string]$Worktree = 'NOT AVAILABLE',
+        [string]$Remote = '',
+        [string]$Next = 'NOT AVAILABLE'
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Remote)) { $Remote = $script:SpaRemoteStatus }
+    $separator = '=' * 60
+    Write-Output $separator
+    Write-Output 'SPA TASK SUMMARY'
+    Write-Output $separator
+    Write-Output ('{0,-12}{1}' -f 'TASK', $script:SpaTaskId)
+    if ($Result -eq 'STOPPED') {
+        Write-Output ('{0,-12}{1}' -f 'RESULT', 'STOPPED')
+        Write-Output ('{0,-12}{1}' -f 'REASON', (($Reason -replace '\r?\n', ' ').Trim()))
+        Write-Output ('{0,-12}{1}' -f 'LAST SAFE', $script:SpaLastSafe)
+        Write-Output ('{0,-12}{1}' -f 'REMOTE', $Remote)
+        Write-Output ('{0,-12}{1}' -f 'NEXT', $Next)
+    }
+    else {
+        Write-Output ('{0,-12}{1}' -f 'ACTION', $script:SpaSummaryAction)
+        Write-Output ('{0,-12}{1}' -f 'RESULT', $Result)
+        Write-Output ('{0,-12}{1}' -f 'MODEL', $script:SpaSummaryModel)
+        Write-Output ('{0,-12}{1}' -f 'REASONING', $script:SpaSummaryReasoning)
+        Write-Output ('{0,-12}{1}' -f 'TESTS', $Tests)
+        Write-Output ('{0,-12}{1}' -f 'COMMIT', $Commit)
+        Write-Output ('{0,-12}{1}' -f 'PUSH', $Push)
+        Write-Output ('{0,-12}{1}' -f 'WORKTREE', $Worktree)
+        Write-Output ('{0,-12}{1}' -f 'REMOTE', $Remote)
+        Write-Output ('{0,-12}{1}' -f 'NEXT', $Next)
+    }
+    Write-Output $separator
+}
+
+function Write-SpaSessionSummary {
+    param(
+        [Parameter(Mandatory = $true)][string]$Completed,
+        [Parameter(Mandatory = $true)][string]$LastSafe,
+        [Parameter(Mandatory = $true)][string]$Next,
+        [Parameter(Mandatory = $true)][string]$Remote,
+        [Parameter(Mandatory = $true)][string]$StopReason,
+        [Parameter(Mandatory = $true)][string]$Resume
+    )
+
+    $separator = '=' * 60
+    Write-Output $separator
+    Write-Output 'SPA SESSION SUMMARY'
+    Write-Output $separator
+    Write-Output ('{0,-12}{1}' -f 'COMPLETED', $Completed)
+    Write-Output ('{0,-12}{1}' -f 'LAST SAFE', $LastSafe)
+    Write-Output ('{0,-12}{1}' -f 'NEXT', $Next)
+    Write-Output ('{0,-12}{1}' -f 'REMOTE', $Remote)
+    Write-Output ('{0,-12}{1}' -f 'STOP REASON', $StopReason)
+    Write-Output ('{0,-12}{1}' -f 'RESUME', $Resume)
+    Write-Output $separator
+}
+
+function Remove-SpaFinalTaskSummary {
+    param([Parameter(Mandatory = $true)][string]$Text)
+
+    return ([regex]::Replace(
+        $Text,
+        '(?ms)\r?\n?^={60}\r?\nSPA TASK SUMMARY\r?\n={60}\r?\n.*?^={60}\s*\z',
+        ''
+    )).TrimEnd()
 }
 
 function Stop-SpaRun {
     param([Parameter(Mandatory = $true)][string]$Message)
 
     Write-Output ('SPA-RUN FAIL: {0}' -f $Message)
+    Write-SpaTaskSummary -Result 'STOPPED' -Reason $Message -Next ('Resolve failure and rerun spa-run {0}' -f $script:SpaTaskId)
     exit 1
 }
 
@@ -155,7 +240,12 @@ function Invoke-M1ChildRoute {
         if (-not [string]::IsNullOrWhiteSpace($TestTaskOutputPath)) { $arguments += @('-TestTaskOutputPath', $TestTaskOutputPath) }
     }
     $output = & powershell.exe @arguments 2>&1 | Out-String
-    return [pscustomobject]@{ Code = $LASTEXITCODE; Output = $output.TrimEnd() }
+    $trimmedOutput = $output.TrimEnd()
+    return [pscustomobject]@{
+        Code = $LASTEXITCODE
+        Output = $trimmedOutput
+        DisplayOutput = Remove-SpaFinalTaskSummary -Text $trimmedOutput
+    }
 }
 
 function Invoke-M1Remaining {
@@ -195,6 +285,9 @@ function Invoke-M1Remaining {
         $backendSync = Sync-M1Repository -Name 'Backend' -Path $backendRepositoryPath -ExpectedBranch $requiredBranch
         $frontendSync = Sync-M1Repository -Name 'Frontend' -Path $toolingPath -ExpectedBranch $requiredBranch
         Test-M1RecordedShas -State $state -BackendPath $backendRepositoryPath -FrontendPath $toolingPath -Branch $requiredBranch | Out-Null
+        $script:SpaLastSafe = 'backend={0} frontend={1}' -f $backendSync.Head, $frontendSync.Head
+        $script:SpaRemoteStatus = 'SYNCED'
+        $completedThisSession = New-Object System.Collections.Generic.List[string]
 
         Write-Output 'SPA M1 ORCHESTRATOR'
         Write-Output ('MODE       M1-REMAINING')
@@ -207,6 +300,8 @@ function Invoke-M1Remaining {
             if ($null -eq $unit) {
                 Write-Output 'STATUS     ALL MACHINE-VERIFIED UNITS COMPLETE'
                 Write-Output 'HUMAN GATE REQUIRED before M1 release.'
+                $completed = if ($completedThisSession.Count -eq 0) { 'NONE' } else { $completedThisSession -join ', ' }
+                Write-SpaSessionSummary -Completed $completed -LastSafe $script:SpaLastSafe -Next 'HUMAN GATE' -Remote 'SYNCED' -StopReason 'HUMAN GATE' -Resume 'HUMAN APPROVAL REQUIRED'
                 return
             }
             Write-Output ('NEXT       {0}' -f $unit.RouteId)
@@ -219,14 +314,17 @@ function Invoke-M1Remaining {
                 Write-Output 'SOFT STOP  SAFETY BUFFER REACHED'
                 Write-Output ('CHECKPOINT backend={0} frontend={1}' -f $backendSync.Head, $frontendSync.Head)
                 Write-Output ('RESUME     spa-run M1-REMAINING')
+                $completed = if ($completedThisSession.Count -eq 0) { 'NONE' } else { $completedThisSession -join ', ' }
+                Write-SpaSessionSummary -Completed $completed -LastSafe $script:SpaLastSafe -Next $unit.RouteId -Remote 'SYNCED' -StopReason 'TIME WINDOW' -Resume 'spa-run M1-REMAINING'
                 return
             }
 
             if ($DryRun) {
                 $preview = Invoke-M1ChildRoute -RouteId $unit.RouteId -ChildDryRun
-                if ($preview.Output) { Write-Output $preview.Output }
+                if ($preview.DisplayOutput) { Write-Output $preview.DisplayOutput }
                 if ($preview.Code -ne 0) { throw "Dry-run route resolution failed for '$($unit.RouteId)'." }
                 Write-Output 'TOKENS     NONE (DRY RUN)'
+                Write-SpaSessionSummary -Completed 'NONE' -LastSafe $script:SpaLastSafe -Next $unit.RouteId -Remote 'SYNCED' -StopReason 'DRY RUN' -Resume 'spa-run M1-REMAINING'
                 return
             }
 
@@ -244,7 +342,7 @@ function Invoke-M1Remaining {
             Publish-M1StateCheckpoint -State $state -StateFile $StatePath -ToolingRepository $toolingPath -TaskId $unit.TaskId -Status 'RUNNING_LOCAL'
 
             $result = Invoke-M1ChildRoute -RouteId $unit.RouteId
-            if ($result.Output) { Write-Output $result.Output }
+            if ($result.DisplayOutput) { Write-Output $result.DisplayOutput }
             if ($result.Code -ne 0) { throw "Unit '$($unit.RouteId)' failed; RUNNING_LOCAL remains the durable non-complete state." }
             $verdict = Get-M1ChildVerdict -Text $result.Output
 
@@ -288,6 +386,8 @@ function Invoke-M1Remaining {
             Set-M1Property -InputObject $state.repositories.frontend -Name 'lastVerifiedSha' -Value $frontendSync.Head
             Publish-M1StateCheckpoint -State $state -StateFile $StatePath -ToolingRepository $toolingPath -TaskId $unit.TaskId -Status ([string]$taskRecord.status)
             Write-Output ('CHECKPOINT {0} {1} PUSHED' -f $unit.TaskId, $taskRecord.status)
+            $completedThisSession.Add($unit.RouteId)
+            $script:SpaLastSafe = '{0} {1}' -f $unit.TaskId, $taskRecord.status
             if ($hardStopAfterCheckpoint) {
                 throw "Repeated remediation failure after 2 attempts for '$($unit.TaskId)'."
             }
@@ -307,7 +407,7 @@ if (-not $TestMode -and $usedTestOnlyOverrides.Count -gt 0) {
     Stop-SpaRun 'Test-only overrides require both -TestMode and -DryRun.'
 }
 
-$taskId = $Task.Trim().ToUpperInvariant()
+$taskId = $script:SpaTaskId
 if ($taskId -eq 'M1-REMAINING') {
     Invoke-M1Remaining
     exit 0
@@ -333,6 +433,7 @@ if (-not $routing.ContainsKey('Routes') -or -not $routing.Routes.ContainsKey($ta
 
 $route = $routing.Routes[$taskId]
 $action = Get-RequiredValue -Table $route -Name 'Action' -Context $taskId
+$script:SpaSummaryAction = $action.ToUpperInvariant()
 $modelRouteName = if ($route.ContainsKey('ModelRoute')) { [string]$route.ModelRoute } else { $taskId }
 if ($route.ContainsKey('ModelRoute')) {
     if (-not $routing.ContainsKey('ModelRoutes') -or -not $routing.ModelRoutes.ContainsKey($modelRouteName)) {
@@ -346,6 +447,8 @@ else {
 $provider = Get-RequiredValue -Table $modelRoute -Name 'Provider' -Context $modelRouteName
 $model = Get-RequiredValue -Table $modelRoute -Name 'Model' -Context $modelRouteName
 $reasoning = Get-RequiredValue -Table $modelRoute -Name 'Reasoning' -Context $modelRouteName
+$script:SpaSummaryModel = $model
+$script:SpaSummaryReasoning = $reasoning
 $commandName = Get-RequiredValue -Table $modelRoute -Name 'Command' -Context $modelRouteName
 $profile = if ($modelRoute.ContainsKey('Profile')) { [string]$modelRoute.Profile } else { '' }
 
@@ -445,6 +548,7 @@ if ($DryRun -and [string]::IsNullOrWhiteSpace($TestModelCheckOutputPath)) {
     Write-Output ('SANDBOX    {0}' -f $sandbox)
     Write-Output 'READY      NOT CHECKED (DRY RUN)'
     Write-Output ('COMMAND    {0}' -f $displayCommand)
+    Write-SpaTaskSummary -Result 'DRY RUN' -Tests 'NOT APPLICABLE' -Commit 'NOT APPLICABLE' -Push 'NOT APPLICABLE' -Worktree 'NOT CHECKED (DRY RUN)' -Remote 'NOT CHECKED (DRY RUN)'
     exit 0
 }
 
@@ -485,6 +589,8 @@ Write-Output $preflightOutput.TrimEnd()
 if ($preflightCode -ne 0 -or -not [regex]::IsMatch($preflightOutput, '(?im)^READY\s+YES\s*$')) {
     Stop-SpaRun 'Preflight did not prove the requested route ready.'
 }
+$script:SpaLastSafe = 'PREFLIGHT READY'
+$script:SpaRemoteStatus = 'SYNCED'
 
 Write-Output ''
 Write-Output 'SPA TASK RUNNER'
@@ -508,11 +614,13 @@ if (-not [string]::IsNullOrWhiteSpace($TestTaskOutputPath)) {
     Write-Output ('TASK       {0}' -f $taskId)
     Write-Output ('VERDICT    {0}' -f $testVerdict)
     Write-Output 'AUTO-CLOSE NO'
+    Write-SpaTaskSummary -Result $testVerdict -Worktree 'CLEAN' -Remote 'SYNCED'
     exit 0
 }
 
 if ($DryRun) {
     Write-Output 'DRY RUN    task invocation skipped'
+    Write-SpaTaskSummary -Result 'DRY RUN' -Tests 'NOT APPLICABLE' -Commit 'NOT APPLICABLE' -Push 'NOT APPLICABLE' -Worktree 'CLEAN' -Remote 'SYNCED'
     exit 0
 }
 
@@ -540,6 +648,7 @@ try {
     Write-Output ('TASK       {0}' -f $taskId)
     Write-Output ('VERDICT    {0}' -f $verdict)
     Write-Output 'AUTO-CLOSE NO'
+    Write-SpaTaskSummary -Result $verdict
     exit 0
 }
 finally {

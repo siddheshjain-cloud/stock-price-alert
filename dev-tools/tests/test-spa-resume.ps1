@@ -24,6 +24,18 @@ function Assert-Match {
     Assert-True ([regex]::IsMatch($Text, $Pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) $Message
 }
 
+function Assert-FinalSessionSummary {
+    param(
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][string]$Message
+    )
+
+    $sessionCount = @([regex]::Matches($Text, '(?m)^SPA SESSION SUMMARY\r?$')).Count
+    $allSummaryCount = @([regex]::Matches($Text, '(?m)^SPA (?:TASK|SESSION) SUMMARY\r?$')).Count
+    $summaryAtEnd = [regex]::IsMatch($Text, '(?ms)^={60}\r?\nSPA SESSION SUMMARY\r?\n={60}\r?\n.*^={60}\s*\z')
+    Assert-True ($sessionCount -eq 1 -and $allSummaryCount -eq 1 -and $summaryAtEnd) $Message
+}
+
 function Invoke-SpaRun {
     param([string[]]$Arguments)
     $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $spaRun @Arguments 2>&1 | Out-String
@@ -242,6 +254,8 @@ try {
     $maxStop = Invoke-SpaRun ($commonM1Args + @('-MaxMinutes', '10'))
     Assert-True ($maxStop.Code -eq 0) 'M1-REMAINING MaxMinutes soft stop succeeds'
     Assert-Match $maxStop.Output 'SOFT STOP\s+SAFETY BUFFER REACHED' 'MaxMinutes soft stop does not start the next unit'
+    Assert-Match $maxStop.Output '(?ms)^COMPLETED\s+NONE\r?$.*^LAST SAFE\s+.*\r?$.*^NEXT\s+P2T4-REVIEW\r?$.*^REMOTE\s+SYNCED\r?$.*^STOP REASON\s+TIME WINDOW\r?$.*^RESUME\s+spa-run M1-REMAINING\r?$' 'MaxMinutes soft stop prints the required session recovery fields'
+    Assert-FinalSessionSummary $maxStop.Output 'MaxMinutes soft stop prints exactly one session summary at the bottom'
     $untilStop = Invoke-SpaRun ($commonM1Args + @('-Until', '12:10'))
     Assert-True ($untilStop.Code -eq 0) 'M1-REMAINING Until soft stop succeeds'
     Assert-Match $untilStop.Output 'SOFT STOP\s+SAFETY BUFFER REACHED' 'Until soft stop does not start the next unit'
@@ -279,6 +293,8 @@ exit /b 99
     Assert-Match $dryRun.Output 'NEXT\s+P2T4-REVIEW' 'M1-REMAINING dry-run identifies P2T4-REVIEW'
     Assert-True (-not (Test-Path -LiteralPath $tokenMarker)) 'tests and dry-runs consume no model tokens'
     Assert-True ($dryRun.Output.IndexOf($secretSentinel, [System.StringComparison]::Ordinal) -lt 0) 'dry-run prints no secrets'
+    Assert-Match $dryRun.Output '(?ms)^COMPLETED\s+NONE\r?$.*^NEXT\s+P2T4-REVIEW\r?$.*^REMOTE\s+SYNCED\r?$.*^STOP REASON\s+DRY RUN\r?$.*^RESUME\s+spa-run M1-REMAINING\r?$' 'M1-REMAINING dry-run prints the required session fields'
+    Assert-FinalSessionSummary $dryRun.Output 'M1-REMAINING dry-run prints exactly one session summary at the bottom'
 }
 finally {
     if (Test-Path -LiteralPath $tempRoot) {

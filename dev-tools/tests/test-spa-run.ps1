@@ -48,6 +48,21 @@ function Assert-NotContains {
     Assert-True ($Text.IndexOf($Needle, [System.StringComparison]::Ordinal) -lt 0) $Message
 }
 
+function Assert-FinalSummary {
+    param(
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][string]$Heading,
+        [Parameter(Mandatory = $true)][string]$Message
+    )
+
+    $summaryCount = @([regex]::Matches($Text, ('(?m)^' + [regex]::Escape($Heading) + '\r?$'))).Count
+    $summaryAtEnd = [regex]::IsMatch(
+        $Text,
+        ('(?ms)^={60}\r?\n' + [regex]::Escape($Heading) + '\r?\n={60}\r?\n.*^={60}\s*\z')
+    )
+    Assert-True ($summaryCount -eq 1 -and $summaryAtEnd) $Message
+}
+
 function Invoke-SpaRun {
     param([Parameter(Mandatory = $true)][string[]]$Arguments)
 
@@ -126,10 +141,14 @@ try {
     Assert-Match $resolved.Output 'COMMAND\s+.*--profile deepseek.*--model deepseek-v4-pro.*model_provider' 'dry run displays the deterministic command construction'
     Assert-Match $resolved.Output 'COMMAND\s+.*model_reasoning_effort="high".*--ask-for-approval never.*--sandbox read-only.*-C C:\\GitHub\\backendtest.*exec --ephemeral --color never - < .*P2T4-REVIEW\.txt' 'dry run displays every safety-critical command argument'
     Assert-NotContains $resolved.Output $secretSentinel 'dry-run output does not disclose provider secrets'
+    Assert-Match $resolved.Output '(?ms)^TASK\s+P2T4-REVIEW\r?$.*^ACTION\s+REVIEW\r?$.*^RESULT\s+DRY RUN\r?$.*^MODEL\s+deepseek-v4-pro\r?$.*^REASONING\s+high\r?$' 'successful dry-run summary contains the known route outcome'
+    Assert-FinalSummary $resolved.Output 'SPA TASK SUMMARY' 'successful dry-run prints exactly one task summary at the bottom'
 
     $unknown = Invoke-SpaRun -Arguments @('-Task', 'DOES-NOT-EXIST', '-DryRun')
     Assert-True ($unknown.Code -ne 0) 'unknown task ID fails closed'
     Assert-Match $unknown.Output 'Unknown SPA task ID' 'unknown task failure is precise'
+    Assert-Match $unknown.Output '(?ms)^TASK\s+DOES-NOT-EXIST\r?$.*^RESULT\s+STOPPED\r?$.*^REASON\s+Unknown SPA task ID.*^LAST SAFE\s+NOT AVAILABLE\r?$.*^REMOTE\s+NOT AVAILABLE\r?$.*^NEXT\s+Resolve failure and rerun spa-run DOES-NOT-EXIST\r?$' 'controlled failure summary contains the required recovery fields'
+    Assert-FinalSummary $unknown.Output 'SPA TASK SUMMARY' 'controlled failure prints exactly one task summary at the bottom'
 
     $missingPromptManifest = Join-Path $tempRoot 'missing-prompt.psd1'
     @'
@@ -194,15 +213,38 @@ try {
         '-Task', 'P2T4-REVIEW', '-DryRun', '-TestMode', '-TestModelCheckOutputPath', $modelOutput,
         '-BackendPath', $workingRepo, '-DependencyMarkerPath', $markerPath
     )
-    $ready = Invoke-SpaRun -Arguments $preflightArgs
+    $realGit = (Get-Command git -CommandType Application).Source
+    $gitShimDir = Join-Path $tempRoot 'git-noninteractive-shim'
+    $gitEnvironmentMarker = Join-Path $tempRoot 'git-noninteractive-environment.txt'
+    New-Item -ItemType Directory -Path $gitShimDir -Force | Out-Null
+    @"
+@echo off
+if not "%GIT_PAGER%"=="cat" exit /b 91
+if not "%PAGER%"=="cat" exit /b 92
+if not "%GIT_TERMINAL_PROMPT%"=="0" exit /b 93
+echo protected>"$gitEnvironmentMarker"
+"$realGit" %*
+exit /b %ERRORLEVEL%
+"@ | Set-Content -LiteralPath (Join-Path $gitShimDir 'git.cmd') -Encoding ASCII
+    $previousPath = $env:PATH
+    $env:PATH = $gitShimDir + [System.IO.Path]::PathSeparator + $previousPath
+    try {
+        $ready = Invoke-SpaRun -Arguments $preflightArgs
+    }
+    finally {
+        $env:PATH = $previousPath
+    }
     Assert-True ($ready.Code -eq 0) 'matching route and clean repository pass dry-run preflight'
     Assert-Match $ready.Output 'READY\s+YES' 'matching preflight reports READY YES'
+    Assert-True (Test-Path -LiteralPath $gitEnvironmentMarker -PathType Leaf) 'runner establishes non-interactive Git pager and prompt environment for child checks'
 
     $taskOutput = Join-Path $tempRoot 'task-output.txt'
     @('Review complete.', 'SAFE') | Set-Content -LiteralPath $taskOutput
     $validVerdict = Invoke-SpaRun -Arguments ($preflightArgs + @('-TestTaskOutputPath', $taskOutput))
     Assert-True ($validVerdict.Code -eq 0) 'one final review verdict is accepted'
     Assert-Match $validVerdict.Output 'VERDICT\s+SAFE' 'accepted review verdict is reported clearly'
+    Assert-Match $validVerdict.Output '(?ms)^TASK\s+P2T4-REVIEW\r?$.*^RESULT\s+SAFE\r?$' 'successful task summary reports the validated verdict'
+    Assert-FinalSummary $validVerdict.Output 'SPA TASK SUMMARY' 'successful task result prints exactly one task summary at the bottom'
 
     @('SAFE', 'SAFE') | Set-Content -LiteralPath $taskOutput
     $duplicateVerdict = Invoke-SpaRun -Arguments ($preflightArgs + @('-TestTaskOutputPath', $taskOutput))
