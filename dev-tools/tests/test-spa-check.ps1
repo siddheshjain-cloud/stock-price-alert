@@ -317,6 +317,42 @@ exit /b 0
     Assert-True ([regex]::IsMatch($effectiveSandboxOutput, 'READY\s+YES')) 'workspace-write spa-check reports READY YES'
     Assert-True ([regex]::IsMatch($effectiveSandboxOutput, 'SANDBOX\s+workspace-write')) 'workspace-write spa-check reports the route effective sandbox'
 
+    $annotatedSandboxShimDir = Join-Path $tempRoot 'annotated-sandbox-shim'
+    New-Item -ItemType Directory -Path $annotatedSandboxShimDir -Force | Out-Null
+    @'
+@echo off
+setlocal EnableExtensions
+set "EFFECTIVE_SANDBOX=read-only"
+
+:parse
+if "%~1"=="" goto run
+if /I "%~1"=="--sandbox" if not "%~2"=="" set "EFFECTIVE_SANDBOX=%~2"
+shift
+goto parse
+
+:run
+echo MODEL_CHECK_OK
+echo model: deepseek-v4-flash
+echo provider: deepseek
+echo reasoning effort: high
+echo approval: never
+echo sandbox: %EFFECTIVE_SANDBOX% [workdir, /tmp, $TMPDIR]
+exit /b 0
+'@ | Set-Content -LiteralPath (Join-Path $annotatedSandboxShimDir 'codex.cmd') -Encoding ASCII
+
+    $previousPath = $env:PATH
+    $env:PATH = $annotatedSandboxShimDir + [System.IO.Path]::PathSeparator + $previousPath
+    try {
+        $annotatedSandboxOutput = & powershell.exe @effectiveSandboxArgs 2>&1 | Out-String
+        $annotatedSandboxCode = $LASTEXITCODE
+    }
+    finally {
+        $env:PATH = $previousPath
+    }
+    Assert-True ($annotatedSandboxCode -eq 0) 'workspace-write route passes spa-check when Codex annotates the effective sandbox with writable roots'
+    Assert-True ([regex]::IsMatch($annotatedSandboxOutput, 'READY\s+YES')) 'annotated workspace-write spa-check reports READY YES'
+    Assert-True ([regex]::IsMatch($annotatedSandboxOutput, 'SANDBOX\s+workspace-write')) 'annotated workspace-write spa-check normalizes the sandbox value'
+
     $readOnlyProfileShimDir = Join-Path $tempRoot 'read-only-profile-shim'
     New-Item -ItemType Directory -Path $readOnlyProfileShimDir -Force | Out-Null
     @'

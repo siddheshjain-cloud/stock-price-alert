@@ -382,6 +382,19 @@ exit /b %ERRORLEVEL%
         'provider: deepseek'
         'reasoning effort: high'
         'approval: never'
+        'sandbox: workspace-write [workdir, /tmp, $TMPDIR]'
+    ) | Set-Content -LiteralPath $modelOutput
+    $workspaceAnnotatedReady = Invoke-SpaRun -Arguments $workspacePreflightArgs
+    Assert-True ($workspaceAnnotatedReady.Code -eq 0) 'workspace-write route passes preflight when Codex annotates the effective sandbox with writable roots'
+    Assert-Match $workspaceAnnotatedReady.Output 'SANDBOX\s+workspace-write' 'annotated workspace-write preflight normalizes the sandbox value'
+    Assert-Match $workspaceAnnotatedReady.Output 'READY\s+YES' 'annotated workspace-write preflight reports READY YES'
+
+    @(
+        'MODEL_CHECK_OK'
+        'model: deepseek-v4-flash'
+        'provider: deepseek'
+        'reasoning effort: high'
+        'approval: never'
         'sandbox: read-only'
     ) | Set-Content -LiteralPath $modelOutput
     $workspaceMismatch = Invoke-SpaRun -Arguments $workspacePreflightArgs

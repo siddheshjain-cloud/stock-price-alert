@@ -302,7 +302,7 @@ if ($codexText) {
     $provider = Get-FirstRegexValue -Text $codexText -Pattern '(?im)^\s*provider:\s*(.+)$'
     $reasoning = Get-FirstRegexValue -Text $codexText -Pattern '(?im)^\s*reasoning(?:_effort| effort):\s*(.+)$'
     $parsedApproval = Get-FirstRegexValue -Text $codexText -Pattern '(?im)^\s*approval:\s*(.+)$'
-    $parsedSandbox = Get-FirstRegexValue -Text $codexText -Pattern '(?im)^\s*sandbox:\s*(.+)$'
+    $parsedSandbox = Get-FirstRegexValue -Text $codexText -Pattern '(?im)^\s*sandbox:\s*([^\s\[]+)'
 
     if (-not [string]::IsNullOrWhiteSpace($parsedApproval)) {
         $approval = $parsedApproval
