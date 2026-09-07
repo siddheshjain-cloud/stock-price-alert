@@ -726,7 +726,7 @@ function Invoke-SpaAutoDebugCycle {
         '-Model', $debugRoute.Model,
         '-Provider', $debugRoute.Provider,
         '-Reasoning', $debugRoute.Reasoning,
-        '-Sandbox', 'workspace-write',
+        '-Sandbox', 'danger-full-access',
         '-WorkingDirectory', $DebugMeta.RepositoryPath,
         '-AdditionalDirectory', $DebugMeta.OtherRepositoryPath,
         '-PromptPath', $artifacts.PromptFile,

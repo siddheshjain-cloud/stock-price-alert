@@ -88,6 +88,18 @@ public static class SpaFakeCodex
                 WriteText(addDirCapture, addDir);
             }
 
+            string sandboxCapture = Env("SPA_AD_SANDBOX_CAPTURE");
+            if (!string.IsNullOrWhiteSpace(sandboxCapture))
+            {
+                WriteText(sandboxCapture, ArgValue(args, "--sandbox") ?? "");
+            }
+
+            string approvalCapture = Env("SPA_AD_APPROVAL_CAPTURE");
+            if (!string.IsNullOrWhiteSpace(approvalCapture))
+            {
+                WriteText(approvalCapture, ArgValue(args, "--ask-for-approval") ?? "");
+            }
+
             int cycle = 0;
             string countFile = Env("SPA_AD_COUNT_FILE");
             if (!string.IsNullOrWhiteSpace(countFile))

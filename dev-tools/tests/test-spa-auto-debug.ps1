@@ -297,10 +297,14 @@ try {
     Set-Content -LiteralPath $aGate -Value 'fail-A' -NoNewline
     $aCount = Join-Path $tempRoot 'a-debug-count.txt'
     $aAddDir = Join-Path $tempRoot 'a-add-dir.txt'
+    $aSandboxCapture = Join-Path $tempRoot 'a-debug-sandbox.txt'
+    $aApprovalCapture = Join-Path $tempRoot 'a-debug-approval.txt'
     Set-AdEnvironment @{
         SPA_AD_GATE_FILE = $aGate
         SPA_AD_COUNT_FILE = $aCount
         SPA_AD_ADD_DIR_CAPTURE = $aAddDir
+        SPA_AD_SANDBOX_CAPTURE = $aSandboxCapture
+        SPA_AD_APPROVAL_CAPTURE = $aApprovalCapture
         SPA_AD_GATE_1 = 'pass'
         SPA_AD_REPAIR_REPO = $scenarioA.Backend.Home
         SPA_AD_BRANCH = $expectedBranch
@@ -328,6 +332,8 @@ try {
     Assert-True ([int]([System.IO.File]::ReadAllText($aCount).Trim()) -eq 1) 'A: exactly one Auto-Debug cycle ran'
     Assert-Match $runA.Output 'ROUTE_FAILURE_SIGNATURE_ALPHA' 'A: child failure evidence remains visible to the human'
     Assert-True ([System.IO.File]::ReadAllText($aAddDir).Trim() -eq $scenarioA.Frontend.Home) 'A: debugger receives the other repository as an additional writable root'
+    Assert-True ([System.IO.File]::ReadAllText($aSandboxCapture).Trim() -eq 'danger-full-access') 'A: Auto-Debug child receives danger-full-access sandbox'
+    Assert-True ([System.IO.File]::ReadAllText($aApprovalCapture).Trim() -eq 'never') 'A: Auto-Debug child receives approval never'
     Assert-True (((@(Invoke-Git $scenarioA.Backend.Home @('log', '--oneline', '-3'))) -join "`n") -match 'test auto-debug repair') 'A: debugger committed a verified repair in the original project'
     $aState = Read-M1State -Path $scenarioA.StatePath
     Assert-True (([string]$aState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'A: original task completes only after the retried route succeeds'
@@ -532,6 +538,10 @@ try {
     Assert-Match $statusStopped.Output 'STATE\s+STOPPED' 'STATUS: stopped worker reports STOPPED'
 }
 finally {
+    Set-AdEnvironment @{
+        SPA_AD_SANDBOX_CAPTURE = $null
+        SPA_AD_APPROVAL_CAPTURE = $null
+    }
     Set-AdEnvironment @{
         SPA_AD_GATE_FILE = $null
         SPA_AD_COUNT_FILE = $null
