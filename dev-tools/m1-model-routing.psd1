@@ -87,7 +87,19 @@
             Sandbox = 'read-only'
             Prompt = 'prompts\P2T4-REVIEW.txt'
         }
-        'P2T9-REVIEW' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS'); Enabled = $false; IndependentReview = $true }
+        'P2T9-REVIEW' = @{
+            Action = 'REVIEW'
+            ModelRoute = 'SOL'
+            FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS')
+            Enabled = $true
+            IndependentReview = $true
+            Implementer = @{ Provider = 'deepseek'; Model = 'deepseek-v4-pro' }
+            Repository = 'Backend'
+            RepositoryPath = 'C:\GitHub\backendtest'
+            Branch = 'feature/investment-operating-system-m1'
+            Sandbox = 'read-only'
+            Prompt = 'prompts\P2T9-REVIEW.txt'
+        }
         'P3T6-REVIEW' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS'); Enabled = $false; IndependentReview = $true }
         'P4T8-REVIEW' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS'); Enabled = $false; IndependentReview = $true }
         'P4-FINAL-REVIEW' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS'); Enabled = $false; IndependentReview = $true }

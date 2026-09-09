@@ -10,6 +10,7 @@ $spaRun = Join-Path $devTools 'spa-run.ps1'
 $stateTools = Join-Path $devTools 'm1-state.ps1'
 $routingPath = Join-Path $devTools 'm1-model-routing.psd1'
 $reviewPrompt = Join-Path $devTools 'prompts\P2T4-REVIEW.txt'
+$reviewPrompt9 = Join-Path $devTools 'prompts\P2T9-REVIEW.txt'
 $expectedBranch = 'feature/investment-operating-system-m1'
 
 $failures = New-Object System.Collections.Generic.List[string]
@@ -132,7 +133,7 @@ function Get-TestFingerprint {
     }
 }
 
-foreach ($path in @($spaRun, $stateTools, $routingPath, $reviewPrompt)) {
+foreach ($path in @($spaRun, $stateTools, $routingPath, $reviewPrompt, $reviewPrompt9)) {
     Assert-True (Test-Path -LiteralPath $path -PathType Leaf) "required runner artifact exists: $path"
 }
 
@@ -163,6 +164,16 @@ try {
     Assert-NotContains $resolved.Output $secretSentinel 'dry-run output does not disclose provider secrets'
     Assert-Match $resolved.Output '(?ms)^TASK\s+P2T4-REVIEW\r?$.*^ACTION\s+REVIEW\r?$.*^RESULT\s+DRY RUN\r?$.*^MODEL\s+deepseek-v4-pro\r?$.*^REASONING\s+high\r?$' 'successful dry-run summary contains the known route outcome'
     Assert-FinalSummary $resolved.Output 'SPA TASK SUMMARY' 'successful dry-run prints exactly one task summary at the bottom'
+
+    $p2t9Review = Invoke-SpaRun -Arguments @('-Task', 'P2T9-REVIEW', '-DryRun')
+    Assert-True ($p2t9Review.Code -eq 0) 'known P2T9-REVIEW route resolves in dry-run mode'
+    Assert-Match $p2t9Review.Output 'ACTION\s+REVIEW' 'P2T9-REVIEW resolves as a review action'
+    Assert-Match $p2t9Review.Output 'MODEL\s+gpt-5\.6-sol' 'P2T9-REVIEW resolves to the configured SOL reviewer'
+    Assert-Match $p2t9Review.Output 'PROVIDER\s+openai' 'P2T9-REVIEW resolves to the OpenAI provider'
+    Assert-Match $p2t9Review.Output 'REASONING\s+high' 'P2T9-REVIEW resolves to high reasoning'
+    Assert-Match $p2t9Review.Output 'COMMAND\s+.*--model gpt-5\.6-sol.*model_provider="openai".*--sandbox read-only.*-C C:\\GitHub\\backendtest.*exec --ephemeral --color never - < .*P2T9-REVIEW\.txt' 'P2T9-REVIEW dry run displays the independent review command'
+    Assert-Match $p2t9Review.Output '(?ms)^TASK\s+P2T9-REVIEW\r?$.*^ACTION\s+REVIEW\r?$.*^RESULT\s+DRY RUN\r?$.*^MODEL\s+gpt-5\.6-sol\r?$.*^REASONING\s+high\r?$' 'successful P2T9-REVIEW dry-run summary contains the known route outcome'
+    Assert-FinalSummary $p2t9Review.Output 'SPA TASK SUMMARY' 'successful P2T9-REVIEW dry-run prints exactly one task summary at the bottom'
 
     $unknown = Invoke-SpaRun -Arguments @('-Task', 'DOES-NOT-EXIST', '-DryRun')
     Assert-True ($unknown.Code -ne 0) 'unknown task ID fails closed'

@@ -1,0 +1,29 @@
+Perform an independent, read-only review of SPA Milestone 1 Plan 2 Task 9 in C:\GitHub\backendtest.
+
+Review only the exact Task 9 implementation:
+- implementation commit: 55785a7a7e12568caa69d6e980bde208b3f2cca7
+- remediation commit: none (this is the first independent review)
+- governing task: C:\GitHub\stock-price-alert\docs\superpowers\plans\2026-09-04-investment-operating-system-m1-core-research-domain.md, Plan 2 Task 9
+
+Ignore unrelated earlier tasks and later hygiene or tooling commits. Inspect the complete Task 9 implementation and verify the frozen M1 contract:
+1. `ValuationRevision` and `ValuationReferenceLine` persist only the fields named in Task 9.
+2. Revision streams are independent per `(company_id, valuation_method)`, append-only, and immutable.
+3. Reference lines are zero/one/many immutable children with unique non-negative sort order and required metric/value/unit/basis.
+4. All eight valuation methods are validated exactly as the frozen specification requires.
+5. Same-company forecast linkage, required fiscal year for a forecast link, and EPS linkage to supplied EPS are enforced.
+6. Optional administrator-supplied enterprise-to-equity bridge snapshots are stored, never calculated.
+7. Stale-base and unique-race semantics return typed conflicts rather than overwriting.
+8. Parent and child inserts commit or roll back atomically.
+
+Inspect concurrency safety. Explicitly separate uniqueness behavior proven by local tests from deployment-dialect-dependent FOR UPDATE semantics. Do not describe deployment behavior as proven merely because local uniqueness tests pass.
+
+Run focused and relevant tests if this read-only repository sandbox permits writable temporary storage. Direct all test caches and temporary files to an OS temporary directory where practical. If sandbox or temporary-storage constraints block a test, report that test as NOT PROVEN and include the blocking evidence; never report an unexecuted or blocked test as passing.
+
+Review efficiency and complexity as well as correctness. Identify unnecessary queries, avoidable transaction work, or complexity that materially affects safety or maintainability.
+
+Make no edits. Make no commits or pushes. Do not close Task 9.
+
+End with exactly one review verdict on its own line:
+SAFE
+SAFE WITH NON-BLOCKING OBSERVATIONS
+CHANGES REQUIRED
