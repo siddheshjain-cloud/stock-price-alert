@@ -369,33 +369,33 @@
                   {
                       "id":  "P2T9",
                       "action":  "IMPLEMENT",
-                      "status": "COMPLETE",
+                      "status":  "COMPLETE",
                       "implementationProvider":  "deepseek",
                       "implementationModel":  "deepseek-v4-pro",
                       "reviewerProvider":  "openai",
                       "reviewerModel":  "gpt-5.6-sol",
                       "reviewRoute":  "P2T9-REVIEW",
                       "remediationRoute":  "P2T9",
-                      "lastVerifiedBackendSha": "3e3f4ca79717550235ba0810e62fb68d3564ac64",
-                      "lastVerifiedFrontendSha": "f4f411abd7fe83d5be9b7050a3dca8119993d1b7",
+                      "lastVerifiedBackendSha":  "3e3f4ca79717550235ba0810e62fb68d3564ac64",
+                      "lastVerifiedFrontendSha":  "f4f411abd7fe83d5be9b7050a3dca8119993d1b7",
                       "implementationCommitSha":  "55785a7a7e12568caa69d6e980bde208b3f2cca7",
-                      "remediationCommitSha": "3e3f4ca79717550235ba0810e62fb68d3564ac64",
-                      "lastSuccessfulReviewVerdict": "SAFE WITH NON-BLOCKING OBSERVATIONS",
-                      "remediationAttempts": 2,
+                      "remediationCommitSha":  "3e3f4ca79717550235ba0810e62fb68d3564ac64",
+                      "lastSuccessfulReviewVerdict":  "SAFE WITH NON-BLOCKING OBSERVATIONS",
+                      "remediationAttempts":  2,
                       "evidence":  {
                                        "implementationSucceeded":  true,
                                        "testsSucceeded":  true,
                                        "reviewRequired":  true,
-                                       "reviewSucceeded": true,
+                                       "reviewSucceeded":  true,
                                        "relevantCommitsPushed":  true
                                    },
-                      "updatedUtc": "2026-09-09T18:21:05.6304754+00:00",
-                      "activeRoute": null
+                      "updatedUtc":  "2026-09-09T18:21:05.6304754+00:00",
+                      "activeRoute":  null
                   },
                   {
                       "id":  "P3T1",
                       "action":  "IMPLEMENT",
-                      "status":  "PENDING",
+                      "status":  "RUNNING_LOCAL",
                       "implementationProvider":  "deepseek",
                       "implementationModel":  "deepseek-v4-flash",
                       "reviewerProvider":  null,
@@ -415,7 +415,8 @@
                                        "reviewSucceeded":  false,
                                        "relevantCommitsPushed":  false
                                    },
-                      "updatedUtc":  "2026-09-06T00:00:00Z"
+                      "updatedUtc":  "2026-09-09T18:23:12.2468569+00:00",
+                      "activeRoute":  "P3T1"
                   },
                   {
                       "id":  "P3T2",
