@@ -499,7 +499,7 @@
                   {
                       "id":  "P3T5",
                       "action":  "IMPLEMENT",
-                      "status":  "PENDING",
+                      "status":  "RUNNING_LOCAL",
                       "implementationProvider":  "deepseek",
                       "implementationModel":  "deepseek-v4-flash",
                       "reviewerProvider":  null,
@@ -519,7 +519,8 @@
                                        "reviewSucceeded":  false,
                                        "relevantCommitsPushed":  false
                                    },
-                      "updatedUtc":  "2026-09-06T00:00:00Z"
+                      "updatedUtc":  "2026-09-09T21:36:32.7624212+00:00",
+                      "activeRoute":  "P3T5"
                   },
                   {
                       "id":  "P3T6",
