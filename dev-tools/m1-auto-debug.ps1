@@ -79,7 +79,11 @@ function New-SpaAutoDebugEvidence {
         [hashtable]$M1State = @{},
         [string]$LastSafe = '',
         [hashtable]$CurrentCommits = @{},
-        [string]$OriginalObjective = ''
+        [string]$OriginalObjective = '',
+        [object]$OriginalFailure = $null,
+        [object]$FailureTrail = $null,
+        [string]$PreviousRejectedPatch = '',
+        [string]$RejectionReason = ''
     )
 
     return [ordered]@{
@@ -105,6 +109,10 @@ function New-SpaAutoDebugEvidence {
         m1State = $M1State
         currentCommits = $CurrentCommits
         originalObjective = $OriginalObjective
+        originalFailure = $OriginalFailure
+        failureTrail = $FailureTrail
+        previousRejectedPatch = $PreviousRejectedPatch
+        rejectionReason = $RejectionReason
     }
 }
 
@@ -215,6 +223,43 @@ function Format-SpaAutoDebugPrompt {
     $objective = [string]$Evidence.originalObjective
     if ([string]::IsNullOrWhiteSpace($objective)) { $objective = 'NOT AVAILABLE' }
     [void]$builder.AppendLine($objective)
+
+    [void]$builder.AppendLine('')
+    [void]$builder.AppendLine('V7 AUTO-DEBUG CONTEXT')
+    [void]$builder.AppendLine('This context is preserved across every repair attempt. Use it to avoid repeating')
+    [void]$builder.AppendLine('the same failed repair and to respect the frozen escalation order.')
+    [void]$builder.AppendLine('')
+    [void]$builder.AppendLine('ORIGINAL FAILURE')
+    if ($null -eq $Evidence.originalFailure) {
+        [void]$builder.AppendLine('NOT AVAILABLE')
+    }
+    else {
+        [void]$builder.AppendLine(($Evidence.originalFailure | ConvertTo-Json -Depth 8))
+    }
+    [void]$builder.AppendLine('')
+    [void]$builder.AppendLine('STRUCTURED FAILURE TRAIL')
+    $trail = @()
+    if ($null -ne $Evidence.failureTrail) {
+        foreach ($trailEntry in $Evidence.failureTrail) {
+            $trail += $trailEntry
+        }
+    }
+    if ($trail.Count -eq 0) {
+        [void]$builder.AppendLine('NONE')
+    }
+    else {
+        [void]$builder.AppendLine(($trail | ConvertTo-Json -Depth 10))
+    }
+    [void]$builder.AppendLine('')
+    [void]$builder.AppendLine('PREVIOUS REJECTED PATCH')
+    $rejectedPatch = [string]$Evidence.previousRejectedPatch
+    if ([string]::IsNullOrWhiteSpace($rejectedPatch)) { $rejectedPatch = 'NONE' }
+    [void]$builder.AppendLine($rejectedPatch)
+    [void]$builder.AppendLine('')
+    [void]$builder.AppendLine('EXACT REJECTION REASON')
+    $rejectionReason = [string]$Evidence.rejectionReason
+    if ([string]::IsNullOrWhiteSpace($rejectionReason)) { $rejectionReason = 'NONE' }
+    [void]$builder.AppendLine($rejectionReason)
     return $builder.ToString()
 }
 
@@ -287,6 +332,226 @@ function Get-SpaAutoDebugRoute {
         Model = $model
         DisplayModel = $displayModel
         Reasoning = $reasoning
+        Mode = 'REPAIR'
+        ReadOnly = $false
+        IsHuman = $false
+    }
+}
+
+function Get-SpaAutoDebugEscalationPlan {
+    # Frozen V7 escalation order. Code-repair attempts never promote themselves:
+    # each stage produces a candidate, deterministic retry/promotion remains
+    # authoritative, and the final advisory stage is explicitly read-only.
+    return @(
+        [ordered]@{
+            Index = 0
+            Key = 'FLASH_REPAIR'
+            Provider = 'deepseek'
+            Model = 'deepseek-v4-flash'
+            Reasoning = 'high'
+            Mode = 'REPAIR'
+            ReadOnly = $false
+            Description = 'DeepSeek Flash repair'
+        },
+        [ordered]@{
+            Index = 1
+            Key = 'FLASH_SELF_DEBUG'
+            Provider = 'deepseek'
+            Model = 'deepseek-v4-flash'
+            Reasoning = 'high'
+            Mode = 'SELF_DEBUG'
+            ReadOnly = $false
+            Description = 'DeepSeek Flash self-debug'
+        },
+        [ordered]@{
+            Index = 2
+            Key = 'PRO_REPAIR'
+            Provider = 'deepseek'
+            Model = 'deepseek-v4-pro'
+            Reasoning = 'high'
+            Mode = 'REPAIR'
+            ReadOnly = $false
+            Description = 'DeepSeek Pro repair'
+        },
+        [ordered]@{
+            Index = 3
+            Key = 'PRO_SELF_DEBUG'
+            Provider = 'deepseek'
+            Model = 'deepseek-v4-pro'
+            Reasoning = 'high'
+            Mode = 'SELF_DEBUG'
+            ReadOnly = $false
+            Description = 'DeepSeek Pro self-debug'
+        },
+        [ordered]@{
+            Index = 4
+            Key = 'CLAUDE_APPELLATE'
+            Provider = 'claude'
+            Model = 'claude-opus'
+            Reasoning = 'high'
+            Mode = 'REVIEW'
+            ReadOnly = $true
+            Description = 'Claude Opus appellate review'
+        },
+        [ordered]@{
+            Index = 5
+            Key = 'HUMAN'
+            Provider = 'human'
+            Model = 'human'
+            Reasoning = ''
+            Mode = 'HUMAN'
+            ReadOnly = $true
+            Description = 'Human escalation'
+        }
+    )
+}
+
+function Get-SpaAutoDebugEscalationStep {
+    param(
+        [Parameter(Mandatory = $true)][int]$Index
+    )
+
+    $plan = @(Get-SpaAutoDebugEscalationPlan)
+    if ($Index -lt 0) { $Index = 0 }
+    if ($Index -ge $plan.Count) { $Index = $plan.Count - 1 }
+    $step = $plan[$Index]
+    $model = [string]$step.Model
+    return [pscustomobject]@{
+        Index = [int]$Index
+        Key = [string]$step.Key
+        Provider = [string]$step.Provider
+        Model = $model
+        DisplayModel = if ([string]::IsNullOrWhiteSpace($model)) { 'default' } else { $model }
+        Reasoning = [string]$step.Reasoning
+        Mode = [string]$step.Mode
+        ReadOnly = [bool]$step.ReadOnly
+        IsHuman = ([string]$step.Provider -eq 'human')
+        Description = [string]$step.Description
+    }
+}
+
+function Test-SpaAutoDebugDeterministicFailure {
+    param([Parameter(Mandatory = $true)][object]$Result)
+
+    $code = 0
+    if ($null -ne $Result.PSObject.Properties['Code']) { $code = [int]$Result.Code }
+    $text = @(
+        [string]$Result.Output
+        [string]$Result.DisplayOutput
+        [string]$Result.Stdout
+        [string]$Result.Stderr
+    ) -join "`n"
+
+    if ($code -eq 401 -or $text -match '(?i)\b401\b|\bunauthorized\b|\bauthentication\b|\binvalid api key\b|\bmissing (?:api )?token\b|\bexpired (?:api )?token\b') {
+        return [pscustomobject]@{
+            IsDeterministic = $true
+            Category = 'AUTHENTICATION'
+            Reason = 'Provider authentication failed (401).'
+        }
+    }
+    if ($code -eq 402 -or $text -match '(?i)\b402\b|\binsufficient balance\b|\bbilling\b|\bpayment required\b|\bquota exceeded\b|\bout of credits\b') {
+        return [pscustomobject]@{
+            IsDeterministic = $true
+            Category = 'BILLING'
+            Reason = 'Provider billing/balance failure (402).'
+        }
+    }
+    if ($text -match '(?i)\bprovider unavailable\b|\bprovider_unavailable\b|\bapi unavailable\b|\bservice unavailable\b|\b503\b|\boverloaded\b|\brate limit exceeded\b') {
+        return [pscustomobject]@{
+            IsDeterministic = $true
+            Category = 'PROVIDER_UNAVAILABLE'
+            Reason = 'The provider is unavailable.'
+        }
+    }
+    if ($text -match '(?i)\bmodel unavailable\b|\bmodel_not_found\b|\bunknown model\b|\binvalid model\b|\bmodel .* not (?:available|found)\b|\b404\b.*\bmodel\b') {
+        return [pscustomobject]@{
+            IsDeterministic = $true
+            Category = 'MODEL_UNAVAILABLE'
+            Reason = 'The requested model is unavailable.'
+        }
+    }
+
+    return [pscustomobject]@{
+        IsDeterministic = $false
+        Category = ''
+        Reason = ''
+    }
+}
+
+function New-SpaAutoDebugFailureTrailEntry {
+    param(
+        [Parameter(Mandatory = $true)][int]$Attempt,
+        [Parameter(Mandatory = $true)][string]$Stage,
+        [Parameter(Mandatory = $true)][string]$Provider,
+        [Parameter(Mandatory = $true)][string]$Model,
+        [Parameter(Mandatory = $true)][object]$Failure,
+        [string]$PreviousRejectedPatch = '',
+        [string]$RejectionReason = ''
+    )
+
+    $signature = Get-SpaFailureSignature -Result $Failure
+    return [ordered]@{
+        attempt = [int]$Attempt
+        stage = $Stage
+        provider = $Provider
+        model = $Model
+        capturedUtc = [datetimeoffset]::UtcNow.ToString('o')
+        failure = [ordered]@{
+            code = [int]$Failure.Code
+            signature = $signature
+            output = [string]$Failure.Output
+            displayOutput = [string]$Failure.DisplayOutput
+            stdout = [string]$Failure.Stdout
+            stderr = [string]$Failure.Stderr
+        }
+        previousRejectedPatch = $PreviousRejectedPatch
+        rejectionReason = $RejectionReason
+    }
+}
+
+function Reset-SpaAutoDebugRepository {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$ExpectedBranch,
+        [Parameter(Mandatory = $true)][string]$InitialHead
+    )
+
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+            throw "$Name repository is missing: $Path"
+        }
+        $branch = (& git -C $Path branch --show-current 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $branch.Equals($ExpectedBranch, [System.StringComparison]::Ordinal)) {
+            throw "$Name repository cannot be reset to the V7 initial head because it is not on '$ExpectedBranch'."
+        }
+        & git -C $Path reset --hard $InitialHead 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "$Name repository reset to V7 initial head failed."
+        }
+        & git -C $Path clean -fd 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "$Name repository clean after V7 reset failed."
+        }
+
+        & git -C $Path fetch --prune origin $ExpectedBranch 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "$Name repository fetch before V7 reset failed."
+        }
+        $remoteRef = 'refs/remotes/origin/' + $ExpectedBranch
+        $remoteHead = (& git -C $Path rev-parse --verify $remoteRef 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($remoteHead) -and
+            -not $remoteHead.Equals($InitialHead, [System.StringComparison]::Ordinal)) {
+            & git -C $Path push --force origin ($InitialHead + ':' + $ExpectedBranch) 2>&1 | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                throw "$Name repository rejected-candidate rollback failed; the V7 initial head could not be restored on origin."
+            }
+        }
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
     }
 }
 

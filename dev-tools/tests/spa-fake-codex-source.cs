@@ -79,6 +79,23 @@ public static class SpaFakeCodex
             return 0;
         }
 
+        if (!isDebug)
+        {
+            string deterministicLine = Env("SPA_AD_DETERMINISTIC_LINE");
+            if (!string.IsNullOrWhiteSpace(deterministicLine))
+            {
+                Console.WriteLine(deterministicLine);
+                Console.Error.WriteLine(deterministicLine);
+                int deterministicCode = 7;
+                string deterministicCodeText = Env("SPA_AD_DETERMINISTIC_CODE");
+                if (!string.IsNullOrWhiteSpace(deterministicCodeText))
+                {
+                    int.TryParse(deterministicCodeText, out deterministicCode);
+                }
+                return deterministicCode;
+            }
+        }
+
         if (isDebug)
         {
             string addDir = ArgValue(args, "--add-dir");

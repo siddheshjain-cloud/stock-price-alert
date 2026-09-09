@@ -229,9 +229,83 @@ if ($failures.Count -gt 0) {
 . $stateTools
 . $autoDebugTools
 
+# V7 AutoDebug contract assertions. These are focused on the new behavior and
+# do not invoke live providers.
+$escalationPlan = @(Get-SpaAutoDebugEscalationPlan)
+Assert-True ($escalationPlan.Count -eq 6) 'V7 escalation plan has the frozen six stages'
+Assert-True (
+    ($escalationPlan | ForEach-Object { [string]$_.Key }) -join '|' -eq
+    'FLASH_REPAIR|FLASH_SELF_DEBUG|PRO_REPAIR|PRO_SELF_DEBUG|CLAUDE_APPELLATE|HUMAN'
+) 'V7 escalation plan preserves the frozen order'
+$flashRepair = Get-SpaAutoDebugEscalationStep -Index 0
+$flashSelfDebug = Get-SpaAutoDebugEscalationStep -Index 1
+$proRepair = Get-SpaAutoDebugEscalationStep -Index 2
+$claude = Get-SpaAutoDebugEscalationStep -Index 4
+Assert-True ([string]$flashRepair.Model -eq 'deepseek-v4-flash' -and -not $flashRepair.ReadOnly) 'V7 first stage is DeepSeek Flash repair'
+Assert-True ([string]$flashSelfDebug.Mode -eq 'SELF_DEBUG' -and [string]$flashSelfDebug.Model -eq 'deepseek-v4-flash') 'V7 second stage is Flash self-debug'
+Assert-True ([string]$proRepair.Model -eq 'deepseek-v4-pro' -and [string]$proRepair.Mode -eq 'REPAIR') 'V7 third stage is DeepSeek Pro repair'
+Assert-True ($claude.ReadOnly -and [string]$claude.Model -eq 'claude-opus') 'V7 Claude appellate stage is read-only'
+
+$authFailure = Test-SpaAutoDebugDeterministicFailure -Result ([pscustomobject]@{ Code = 401; Output = '401 Unauthorized'; DisplayOutput = ''; Stdout = ''; Stderr = '' })
+$billingFailure = Test-SpaAutoDebugDeterministicFailure -Result ([pscustomobject]@{ Code = 402; Output = '402 insufficient balance'; DisplayOutput = ''; Stdout = ''; Stderr = '' })
+$providerFailure = Test-SpaAutoDebugDeterministicFailure -Result ([pscustomobject]@{ Code = 7; Output = 'provider unavailable'; DisplayOutput = ''; Stdout = ''; Stderr = '' })
+$modelFailure = Test-SpaAutoDebugDeterministicFailure -Result ([pscustomobject]@{ Code = 7; Output = 'model unavailable'; DisplayOutput = ''; Stdout = ''; Stderr = '' })
+$ordinaryFailure = [pscustomobject]@{ Code = 7; Output = 'ROUTE_FAILURE_SIGNATURE_ALPHA'; DisplayOutput = ''; Stdout = ''; Stderr = '' }
+$codeFailure = Test-SpaAutoDebugDeterministicFailure -Result $ordinaryFailure
+Assert-True ($authFailure.IsDeterministic -and [string]$authFailure.Category -eq 'AUTHENTICATION') 'V7 classifies 401 authentication as deterministic'
+Assert-True ($billingFailure.IsDeterministic -and [string]$billingFailure.Category -eq 'BILLING') 'V7 classifies 402 billing as deterministic'
+Assert-True ($providerFailure.IsDeterministic -and [string]$providerFailure.Category -eq 'PROVIDER_UNAVAILABLE') 'V7 classifies provider unavailable as deterministic'
+Assert-True ($modelFailure.IsDeterministic -and [string]$modelFailure.Category -eq 'MODEL_UNAVAILABLE') 'V7 classifies model unavailable as deterministic'
+Assert-True (-not $codeFailure.IsDeterministic) 'V7 does not classify ordinary code failures as deterministic infrastructure failures'
+
+$trailEntry = New-SpaAutoDebugFailureTrailEntry `
+    -Attempt 1 `
+    -Stage 'FLASH_REPAIR' `
+    -Provider 'deepseek' `
+    -Model 'deepseek-v4-flash' `
+    -Failure $ordinaryFailure `
+    -PreviousRejectedPatch 'backend=abc frontend=def' `
+    -RejectionReason 'Retry failed with exit code 7 and failure signature 7:no-output.'
+$trailEvidence = New-SpaAutoDebugEvidence `
+    -TaskId 'P2T5' `
+    -RouteId 'P2T5' `
+    -PlanTaskTitle 'Ownership snapshots' `
+    -Action 'IMPLEMENT' `
+    -Phase 'IMPLEMENT' `
+    -Repository 'Backend' `
+    -RepositoryPath (Join-Path $env:TEMP 'v7-repo') `
+    -Command 'spa-run P2T5' `
+    -ExitCode 7 `
+    -Stdout 'ROUTE_FAILURE_SIGNATURE_ALPHA' `
+    -Stderr '' `
+    -DisplayOutput 'ROUTE_FAILURE_SIGNATURE_ALPHA' `
+    -Model 'deepseek-v4-flash' `
+    -Provider 'deepseek' `
+    -OriginalFailure ([ordered]@{ code = 7; output = 'ROUTE_FAILURE_SIGNATURE_ALPHA' }) `
+    -FailureTrail @($trailEntry) `
+    -PreviousRejectedPatch 'backend=abc frontend=def' `
+    -RejectionReason 'Retry failed with exit code 7 and failure signature 7:no-output.'
+$trailPrompt = Format-SpaAutoDebugPrompt -Evidence $trailEvidence -PrimaryRepositoryPath (Join-Path $env:TEMP 'v7-repo') -SecondaryRepositoryPath (Join-Path $env:TEMP 'v7-other')
+Assert-Match $trailPrompt 'V7 AUTO-DEBUG CONTEXT' 'V7 prompt preserves Auto-Debug context section'
+Assert-Match $trailPrompt 'STRUCTURED FAILURE TRAIL' 'V7 prompt preserves structured failure trail'
+Assert-Match $trailPrompt 'FLASH_REPAIR' 'V7 prompt forwards prior escalation stage'
+Assert-Match $trailPrompt 'backend=abc frontend=def' 'V7 prompt forwards previous rejected patch'
+Assert-Match $trailPrompt 'Retry failed with exit code 7' 'V7 prompt forwards the exact rejection reason'
+
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('spa-auto-debug-test-' + [guid]::NewGuid().ToString('N'))
 try {
     New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
+
+    $resetPair = Initialize-RemotePair -Root $tempRoot -Name 'v7-reset'
+    $v7InitialHead = (Invoke-Git $resetPair.Home @('rev-parse', 'HEAD'))
+    Set-Content -LiteralPath (Join-Path $resetPair.Home 'rejected-candidate.txt') -Value 'rejected candidate' -NoNewline
+    Invoke-Git $resetPair.Home @('add', '-A') | Out-Null
+    Invoke-Git $resetPair.Home @('commit', '-q', '-m', 'rejected candidate') | Out-Null
+    Invoke-Git $resetPair.Home @('push', '-q', 'origin', $expectedBranch) | Out-Null
+    Reset-SpaAutoDebugRepository -Name 'Backend' -Path $resetPair.Home -ExpectedBranch $expectedBranch -InitialHead $v7InitialHead
+    Assert-True ((Invoke-Git $resetPair.Home @('rev-parse', 'HEAD')) -eq $v7InitialHead) 'V7 reset restores the pristine initial head'
+    Assert-True ([string]::IsNullOrWhiteSpace((Invoke-Git $resetPair.Home @('status', '--porcelain=v1')))) 'V7 reset leaves no rejected candidate worktree changes'
+    Assert-True ((Invoke-Git $resetPair.Home @('rev-parse', ('refs/remotes/origin/' + $expectedBranch))) -eq $v7InitialHead) 'V7 reset rolls back a rejected candidate from the promotion branch'
 
     $fakeBackendRoot = Join-Path $tempRoot 'contract-backend'
     $fakeFrontendRoot = Join-Path $tempRoot 'contract-frontend'
@@ -477,6 +551,44 @@ try {
     Assert-True (((@($dBackendLog)) -join "`n") -match 'test auto-debug repair cycle 1') 'D: first repair commit exists'
     Assert-True (((@($dBackendLog)) -join "`n") -match 'test auto-debug repair cycle 2') 'D: second repair commit exists'
 
+    # Scenario E: a deterministic 401 provider failure must stop immediately and
+    # must not consume any code-debug/self-repair cycle.
+    $scenarioE = New-AdScenario -Root $tempRoot -Name 'e'
+    $eCount = Join-Path $tempRoot 'e-debug-count.txt'
+    Set-AdEnvironment @{
+        SPA_AD_GATE_FILE = $null
+        SPA_AD_COUNT_FILE = $eCount
+        SPA_AD_ADD_DIR_CAPTURE = $null
+        SPA_AD_GATE_1 = $null
+        SPA_AD_GATE_2 = $null
+        SPA_AD_GATE_3 = $null
+        SPA_AD_REPAIR_REPO = $null
+        SPA_AD_DEBUG_EXIT = $null
+        SPA_AD_DETERMINISTIC_LINE = '401 Unauthorized'
+        SPA_AD_DETERMINISTIC_CODE = '401'
+    }
+    $oldPathE = $env:PATH
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldPathE
+    try {
+        $runE = Invoke-SpaRunTolerant @(
+            '-Task', 'M1-REMAINING', '-TestMode', '-AllowTestExecution',
+            '-StatePath', $scenarioE.StatePath, '-RoutingPath', $routingPath,
+            '-BackendPath', $scenarioE.Backend.Home, '-FrontendPath', $scenarioE.Frontend.Home,
+            '-DependencyMarkerPath', $scenarioE.MarkerPath,
+            '-TestEvidenceRoot', (Join-Path $tempRoot 'e-evidence'), '-TestHealthPath', (Join-Path $tempRoot 'e-health')
+        )
+    }
+    finally {
+        $env:PATH = $oldPathE
+    }
+    Assert-True ($runE.Code -ne 0) 'E: deterministic provider failure stops the runner safely'
+    Assert-Match $runE.Output 'AUTO-DEBUG\s+COULD NOT RESOLVE' 'E: deterministic failure is reported as unresolved Auto-Debug'
+    Assert-Match $runE.Output 'deterministic AUTHENTICATION' 'E: deterministic failure identifies the authentication category'
+    Assert-Match $runE.Output 'DEBUG CYCLES\s+0' 'E: deterministic failure consumes zero Auto-Debug cycles'
+    Assert-True (-not (Test-Path -LiteralPath $eCount -PathType Leaf)) 'E: no code-debug or self-repair cycle was started'
+    $eState = Read-M1State -Path $scenarioE.StatePath
+    Assert-True (([string]$eState.tasks[0].status).Equals('RUNNING_LOCAL', [System.StringComparison]::OrdinalIgnoreCase)) 'E: deterministic failure never promotes or completes the original task'
+
     # STATUS surface: Auto-Debug heartbeat fields and state transitions.
     $statusHealthRoot = Join-Path $tempRoot 'status-health'
     New-Item -ItemType Directory -Path $statusHealthRoot -Force | Out-Null
@@ -552,6 +664,8 @@ finally {
         SPA_AD_REPAIR_REPO = $null
         SPA_AD_BRANCH = $null
         SPA_AD_DEBUG_EXIT = $null
+        SPA_AD_DETERMINISTIC_LINE = $null
+        SPA_AD_DETERMINISTIC_CODE = $null
     }
     if (Test-Path -LiteralPath $tempRoot) {
         Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue

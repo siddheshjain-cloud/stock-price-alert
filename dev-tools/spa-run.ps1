@@ -638,7 +638,12 @@ function Invoke-SpaAutoDebugCycle {
         [Parameter(Mandatory = $true)][hashtable]$CurrentCommits,
         [Parameter(Mandatory = $true)][int]$Cycle,
         [Parameter(Mandatory = $true)][string]$HealthRoot,
-        [Parameter(Mandatory = $true)][string]$LastSafe
+        [Parameter(Mandatory = $true)][string]$LastSafe,
+        [object]$DebugRoute = $null,
+        [object]$OriginalFailure = $null,
+        [object]$FailureTrail = $null,
+        [string]$PreviousRejectedPatch = '',
+        [string]$RejectionReason = ''
     )
 
     $routeId = [string]$Unit.RouteId
@@ -677,7 +682,11 @@ function Invoke-SpaAutoDebugCycle {
         -M1State $stateSnapshot `
         -LastSafe $LastSafe `
         -CurrentCommits $CurrentCommits `
-        -OriginalObjective $DebugMeta.OriginalObjective
+        -OriginalObjective $DebugMeta.OriginalObjective `
+        -OriginalFailure $OriginalFailure `
+        -FailureTrail $FailureTrail `
+        -PreviousRejectedPatch $PreviousRejectedPatch `
+        -RejectionReason $RejectionReason
     $prompt = Format-SpaAutoDebugPrompt `
         -Evidence $evidence `
         -PrimaryRepositoryPath $DebugMeta.RepositoryPath `
@@ -691,7 +700,7 @@ function Invoke-SpaAutoDebugCycle {
     }
     $artifacts = Write-SpaAutoDebugArtifacts -EvidenceRoot $evidenceRoot -Evidence $evidence -Prompt $prompt -Cycle $Cycle
 
-    $debugRoute = Get-SpaAutoDebugRoute
+    $debugRoute = if ($null -ne $DebugRoute) { $DebugRoute } else { Get-SpaAutoDebugRoute }
     $command = Find-SpaAutoDebugCommand -Provider $debugRoute.Provider
     if (-not $command) {
         $cliName = if ($debugRoute.Provider -eq 'claude') { 'Claude Code' } else { 'codex' }
@@ -732,6 +741,9 @@ function Invoke-SpaAutoDebugCycle {
         '-PromptPath', $artifacts.PromptFile,
         '-OutputLastMessagePath', $lastMessagePath
     )
+    if ($debugRoute.ReadOnly) {
+        $arguments += '-ReadOnly'
+    }
     $powershellPath = (Get-Command powershell.exe -CommandType Application).Source
     Write-Host ''
     Write-Host ('AUTO-DEBUG   CYCLE {0}' -f $Cycle)
@@ -765,6 +777,7 @@ function Invoke-SpaAutoDebugCycle {
         DisplayOutput = $debugResult.DisplayOutput
         EvidenceFile = $artifacts.EvidenceFile
         PromptFile = $artifacts.PromptFile
+        Route = $debugRoute
     }
 }
 
@@ -814,6 +827,13 @@ function Invoke-SpaUnitWithAutoDebug {
     $lastFailureSignature = ''
     $lastDebugFailed = $false
     $lastDebugNoHeadChange = $false
+    $initialHeads = $null
+    $originalFailure = $null
+    $failureTrail = New-Object System.Collections.Generic.List[object]
+    $previousRejectedPatch = ''
+    $rejectionReason = ''
+    $pendingStage = $null
+    $pendingPatch = ''
 
     while ($true) {
         $isRetry = ($taskAttempt -gt 0)
@@ -841,6 +861,50 @@ function Invoke-SpaUnitWithAutoDebug {
 
         $taskAttempt++
         $signature = Get-SpaFailureSignature -Result $result
+        if ($null -eq $initialHeads) {
+            $initialHeads = @{
+                backend = (Invoke-M1Git -Path $BackendRepositoryPath -Arguments @('rev-parse', 'HEAD')).Output
+                frontend = (Invoke-M1Git -Path $FrontendRepositoryPath -Arguments @('rev-parse', 'HEAD')).Output
+            }
+            $originalFailure = [ordered]@{
+                code = [int]$result.Code
+                output = [string]$result.Output
+                stdout = [string]$result.Stdout
+                stderr = [string]$result.Stderr
+                displayOutput = [string]$result.DisplayOutput
+                signature = $signature
+            }
+        }
+
+        $deterministicFailure = Test-SpaAutoDebugDeterministicFailure -Result $result
+        if ($deterministicFailure.IsDeterministic) {
+            $script:SpaAutoDebugUsed = $true
+            $script:SpaAutoDebugOutcome = 'COULD NOT RESOLVE'
+            $script:SpaAutoDebugCycles = $cycle
+            $script:SpaAutoDebugFailedRoute = $routeId
+            $script:SpaAutoDebugReason = $deterministicFailure.Reason
+            Stop-SpaAutoDebug `
+                -Reason ('Auto-Debug stopped before repair: deterministic ' + $deterministicFailure.Category + ' failure. ' + $deterministicFailure.Reason) `
+                -FailedRoute $routeId `
+                -Cycles $cycle
+        }
+
+        if ($null -ne $pendingStage) {
+            $previousRejectedPatch = $pendingPatch
+            $rejectionReason = ('Retry failed with exit code {0} and failure signature {1}.' -f [int]$result.Code, $signature)
+            $trailEntry = New-SpaAutoDebugFailureTrailEntry `
+                -Attempt ([int]$failureTrail.Count + 1) `
+                -Stage ([string]$pendingStage.Key) `
+                -Provider ([string]$pendingStage.Provider) `
+                -Model ([string]$pendingStage.Model) `
+                -Failure $result `
+                -PreviousRejectedPatch $previousRejectedPatch `
+                -RejectionReason $rejectionReason
+            [void]$failureTrail.Add($trailEntry)
+            $pendingStage = $null
+            $pendingPatch = ''
+        }
+
         if ($taskAttempt -gt 1) {
             if ($signature -ne $lastFailureSignature) {
                 $stagnation = 0
@@ -865,8 +929,28 @@ function Invoke-SpaUnitWithAutoDebug {
         $lastDebugFailed = $false
         $lastDebugNoHeadChange = $false
 
+        $escalationStep = Get-SpaAutoDebugEscalationStep -Index ([int]$failureTrail.Count)
+        if ($escalationStep.IsHuman) {
+            Stop-SpaAutoDebug `
+                -Reason ('The frozen Auto-Debug escalation order is exhausted and the failure requires human escalation.') `
+                -FailedRoute $routeId `
+                -Cycles $cycle
+        }
+
         $cycle++
         $script:SpaAutoDebugUsed = $true
+        if ($escalationStep.Mode -eq 'REPAIR' -and $null -ne $initialHeads) {
+            Reset-SpaAutoDebugRepository `
+                -Name 'Backend' `
+                -Path $BackendRepositoryPath `
+                -ExpectedBranch 'feature/investment-operating-system-m1' `
+                -InitialHead ([string]$initialHeads.backend)
+            Reset-SpaAutoDebugRepository `
+                -Name 'Frontend' `
+                -Path $FrontendRepositoryPath `
+                -ExpectedBranch 'feature/investment-operating-system-m1' `
+                -InitialHead ([string]$initialHeads.frontend)
+        }
         $currentHeads = @{
             backend = (Invoke-M1Git -Path $BackendRepositoryPath -Arguments @('rev-parse', 'HEAD')).Output
             frontend = (Invoke-M1Git -Path $FrontendRepositoryPath -Arguments @('rev-parse', 'HEAD')).Output
@@ -887,11 +971,29 @@ function Invoke-SpaUnitWithAutoDebug {
             -CurrentCommits $currentHeads `
             -Cycle $cycle `
             -HealthRoot $HealthRoot `
-            -LastSafe $script:SpaLastSafe
+            -LastSafe $script:SpaLastSafe `
+            -DebugRoute $escalationStep `
+            -OriginalFailure $originalFailure `
+            -FailureTrail $failureTrail `
+            -PreviousRejectedPatch $previousRejectedPatch `
+            -RejectionReason $rejectionReason
 
         if ($debugRun.Code -ne 0) {
+            if ($escalationStep.ReadOnly) {
+                Stop-SpaAutoDebug `
+                    -Reason ('Claude Opus appellate review failed. The frozen escalation order now requires human intervention.') `
+                    -FailedRoute $routeId `
+                    -Cycles $cycle
+            }
             $lastDebugFailed = $true
             continue
+        }
+
+        if ($escalationStep.ReadOnly) {
+            Stop-SpaAutoDebug `
+                -Reason ('Claude Opus appellate review completed read-only. Claude cannot promote changes; the frozen escalation order now requires human intervention.') `
+                -FailedRoute $routeId `
+                -Cycles $cycle
         }
 
         try {
@@ -918,6 +1020,8 @@ function Invoke-SpaUnitWithAutoDebug {
         else {
             $lastDebugNoHeadChange = $true
         }
+        $pendingStage = $escalationStep
+        $pendingPatch = ('backend={0} frontend={1}' -f $backendAfter.Head, $frontendAfter.Head)
     }
 }
 

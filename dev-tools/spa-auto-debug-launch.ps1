@@ -9,7 +9,8 @@ param(
     [Parameter(Mandatory = $true)][string]$WorkingDirectory,
     [Parameter(Mandatory = $true)][string]$AdditionalDirectory,
     [Parameter(Mandatory = $true)][string]$PromptPath,
-    [Parameter(Mandatory = $true)][string]$OutputLastMessagePath
+    [Parameter(Mandatory = $true)][string]$OutputLastMessagePath,
+    [switch]$ReadOnly
 )
 
 Set-StrictMode -Version Latest
@@ -43,13 +44,20 @@ if ($Provider -eq 'deepseek' -and [string]::IsNullOrWhiteSpace($Model)) {
 }
 
 $debuggerArgs = New-Object System.Collections.Generic.List[string]
-if ($Provider -eq 'claude') {
-    # Claude Code non-interactive contract (verified with claude --help):
-    # claude -p reads the prompt from stdin, --add-dir grants the secondary
-    # repository, and --permission-mode bypassPermissions is the Claude analog
-    # of codex --ask-for-approval never. Claude is launched from the working
-    # repository (it has no -C directory flag). While AUTO_DEBUG_MODEL is
-    # empty, Claude keeps its authenticated default model.
+
+if ($ReadOnly -and $Provider -eq 'claude') {
+    # V7 appellate review is advisory only. Claude gets the prompt and repository
+    # context for read-only analysis, but no bypassPermissions/add-dir grant and
+    # no repair/promotion path.
+    $debuggerArgs.Add('-p')
+    if (-not [string]::IsNullOrWhiteSpace($Model)) {
+        $debuggerArgs.Add('--model')
+        $debuggerArgs.Add($Model)
+    }
+    $debuggerArgs.Add('--output-format')
+    $debuggerArgs.Add('text')
+}
+elseif ($Provider -eq 'claude') {
     $debuggerArgs.Add('-p')
     if (-not [string]::IsNullOrWhiteSpace($Model)) {
         $debuggerArgs.Add('--model')

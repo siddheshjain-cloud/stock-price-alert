@@ -456,6 +456,7 @@ exit /b %ERRORLEVEL%
     $wrongBranch = Invoke-SpaRun -Arguments $preflightArgs
     Assert-True ($wrongBranch.Code -ne 0) 'wrong branch fails closed'
     Assert-Match $wrongBranch.Output 'BRANCH\s+FAIL\s+wrong-branch' 'wrong branch failure is reported'
+    git -C $workingRepo checkout -q $expectedBranch
 
     $nativeCodexHome = Join-Path $tempRoot 'native-codex-home'
     New-Item -ItemType Directory -Path $nativeCodexHome -Force | Out-Null
@@ -510,7 +511,13 @@ exit /b 0
     [System.Environment]::SetEnvironmentVariable('CODEX_HOME', $nativeCodexHome, 'Process')
     [System.Environment]::SetEnvironmentVariable('SPA_RUN_TEST_NATIVE_EXIT', $null, 'Process')
     try {
-        $nativeStderrSuccess = Invoke-SpaRunTolerant -Arguments @('-Task', 'P2T4-REVIEW')
+        $nativeLiveArgs = @(
+            '-Task', 'P2T4-REVIEW',
+            '-TestMode', '-AllowTestExecution',
+            '-BackendPath', $workingRepo,
+            '-DependencyMarkerPath', $markerPath
+        )
+        $nativeStderrSuccess = Invoke-SpaRunTolerant -Arguments $nativeLiveArgs
         Assert-True ($nativeStderrSuccess.Code -eq 0) 'native child stderr and zero exit code are not treated as task failure'
         Assert-Match $nativeStderrSuccess.Output 'NATIVE_STDOUT_HEALTHY' 'native child stdout is preserved as ordinary task output'
         Assert-Match $nativeStderrSuccess.Output 'NATIVE_STDERR_HEALTHY' 'native child stderr is preserved as ordinary task output'
@@ -519,14 +526,20 @@ exit /b 0
         Assert-Match $nativeStderrSuccess.Output 'VERDICT\s+SAFE' 'healthy native child result is accepted by exit code'
 
         [System.Environment]::SetEnvironmentVariable('SPA_RUN_TEST_NATIVE_EXIT', 'fail', 'Process')
-        $nativeStderrFailure = Invoke-SpaRunTolerant -Arguments @('-Task', 'P2T4-REVIEW')
+        $nativeStderrFailure = Invoke-SpaRunTolerant -Arguments $nativeLiveArgs
         Assert-True ($nativeStderrFailure.Code -ne 0) 'nonzero native child exit code still fails closed'
         Assert-Match $nativeStderrFailure.Output 'Task CLI exited with code 7' 'nonzero native child failure reports the authoritative exit code'
         Assert-Match $nativeStderrFailure.Output 'NATIVE_STDERR_HEALTHY' 'native child stderr is preserved before a nonzero exit'
         Assert-NotContains $nativeStderrFailure.Output 'NativeCommandError' 'nonzero native child stderr is not rendered as a PowerShell red terminating error'
 
         [System.Environment]::SetEnvironmentVariable('SPA_RUN_TEST_NATIVE_EXIT', $null, 'Process')
-        $workspaceNative = Invoke-SpaRunTolerant -Arguments @('-Task', 'P2T5')
+        $workspaceLiveArgs = @(
+            '-Task', 'P2T5',
+            '-TestMode', '-AllowTestExecution',
+            '-BackendPath', $workingRepo,
+            '-DependencyMarkerPath', $markerPath
+        )
+        $workspaceNative = Invoke-SpaRunTolerant -Arguments $workspaceLiveArgs
         Assert-True ($workspaceNative.Code -eq 0) 'workspace-write route passes live preflight when the model CLI reports the requested effective sandbox'
         Assert-Match $workspaceNative.Output 'SANDBOX\s+workspace-write' 'live workspace-write preflight reports the route effective sandbox'
         Assert-Match $workspaceNative.Output 'RESULT\s+IMPLEMENTED' 'simulated workspace-write implementation completes after effective-sandbox preflight'

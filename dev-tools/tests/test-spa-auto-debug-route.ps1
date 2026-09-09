@@ -234,6 +234,33 @@ try {
         Assert-True ($LASTEXITCODE -eq 0) 'claude launcher accepts an explicit model through the seam'
         $claudeModelArgs = if (Test-Path -LiteralPath $claudeModelArgsFile) { [System.IO.File]::ReadAllText($claudeModelArgsFile) } else { '' }
         Assert-Match $claudeModelArgs '--model[\r\n]+claude-opus' 'claude route forwards the configured model'
+
+        # 8. V7 appellate review is read-only: Claude receives a plain prompt,
+        #    but no permission bypass or additional writable root.
+        $env:PATH = $claudeShimDir + [System.IO.Path]::PathSeparator + $oldPath
+        $claudeReadOnlyArgsFile = Join-Path $tempRoot 'claude-readonly-args.txt'
+        $claudeReadOnlyLast = Join-Path $tempRoot 'claude-readonly-last.txt'
+        Set-AdEnvironment @{
+            SPA_ROUTE_TEST_ARGS = $claudeReadOnlyArgsFile
+            SPA_ROUTE_TEST_OUT_LINE = 'FAKE_CLAUDE_READONLY_DONE'
+        }
+        $launchClaudeReadOnly = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $debugLauncher `
+            -CodexCommand $claudeCommandPath `
+            -Model 'claude-opus' `
+            -Provider 'claude' `
+            -Reasoning 'high' `
+            -Sandbox 'workspace-write' `
+            -WorkingDirectory $workingRepo `
+            -AdditionalDirectory $additionalRepo `
+            -PromptPath $promptFile `
+            -OutputLastMessagePath $claudeReadOnlyLast `
+            -ReadOnly 2>&1 | Out-String
+        Assert-True ($LASTEXITCODE -eq 0) 'V7 read-only Claude launcher exits successfully'
+        $claudeReadOnlyArgs = if (Test-Path -LiteralPath $claudeReadOnlyArgsFile) { [System.IO.File]::ReadAllText($claudeReadOnlyArgsFile) } else { '' }
+        Assert-Match $claudeReadOnlyArgs '(?m)^-p[`r`n]?$' 'V7 read-only Claude route uses print mode'
+        Assert-True ($claudeReadOnlyArgs.IndexOf('--permission-mode', [System.StringComparison]::Ordinal) -lt 0) 'V7 read-only Claude never grants bypassPermissions'
+        Assert-True ($claudeReadOnlyArgs.IndexOf('--add-dir', [System.StringComparison]::Ordinal) -lt 0) 'V7 read-only Claude never receives an additional writable root'
+        Assert-True (Test-Path -LiteralPath $claudeReadOnlyLast -PathType Leaf) 'V7 read-only Claude preserves its advisory final response'
     }
     finally {
         $env:PATH = $oldPath
