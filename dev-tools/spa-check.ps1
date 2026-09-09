@@ -266,6 +266,10 @@ else {
         }
         if (-not [string]::IsNullOrWhiteSpace($ExpectedProvider)) {
             $codexArgs += @('-c', ('model_provider="{0}"' -f $ExpectedProvider))
+
+if ($ExpectedProvider.Equals('openai', [System.StringComparison]::OrdinalIgnoreCase)) {
+    $codexArgs += @('-c', 'forced_login_method="chatgpt"')
+}
         }
         if (-not [string]::IsNullOrWhiteSpace($ExpectedReasoning)) {
             $codexArgs += @('-c', ('model_reasoning_effort="{0}"' -f $ExpectedReasoning))

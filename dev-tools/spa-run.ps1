@@ -1390,6 +1390,11 @@ $codexArgs.Add('--model')
 $codexArgs.Add($model)
 $codexArgs.Add('-c')
 $codexArgs.Add(('model_provider="{0}"' -f $provider))
+
+if ($provider.Equals('openai', [System.StringComparison]::OrdinalIgnoreCase)) {
+    $codexArgs.Add('-c')
+    $codexArgs.Add('forced_login_method="chatgpt"')
+}
 $codexArgs.Add('-c')
 $codexArgs.Add(('model_reasoning_effort="{0}"' -f $reasoning))
 $codexArgs.Add('--ask-for-approval')
@@ -1442,29 +1447,94 @@ if (-not (Test-Path -LiteralPath $spaCheck -PathType Leaf)) {
 }
 
 $preflightArgs = @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $spaCheck,
+    '-NoProfile',
+    '-ExecutionPolicy', 'Bypass',
+    '-File', $spaCheck,
     '-Target', $repository,
     '-ExpectedBranch', $expectedBranch,
     '-ExpectedModel', $model,
     '-ExpectedProvider', $provider,
     '-ExpectedReasoning', $reasoning,
     '-ExpectedApproval', 'never',
-    '-ExpectedSandbox', $sandbox,
-    '-CodexProfile', $profile
+    '-ExpectedSandbox', $sandbox
 )
-if (-not [string]::IsNullOrWhiteSpace($BackendPath)) { $preflightArgs += @('-BackendPath', $BackendPath) }
-if (-not [string]::IsNullOrWhiteSpace($FrontendPath)) { $preflightArgs += @('-FrontendPath', $FrontendPath) }
-if ([string]::IsNullOrWhiteSpace($BackendPath) -and $repository.Equals('Backend', [System.StringComparison]::OrdinalIgnoreCase)) { $preflightArgs += @('-BackendPath', $repositoryPath) }
-if ([string]::IsNullOrWhiteSpace($FrontendPath) -and $repository.Equals('Frontend', [System.StringComparison]::OrdinalIgnoreCase)) { $preflightArgs += @('-FrontendPath', $repositoryPath) }
-if (-not [string]::IsNullOrWhiteSpace($DependencyMarkerPath)) { $preflightArgs += @('-DependencyMarkerPath', $DependencyMarkerPath) }
-if (-not [string]::IsNullOrWhiteSpace($TestModelCheckOutputPath)) { $preflightArgs += @('-CodexOutputPath', $TestModelCheckOutputPath) }
+
+if (-not [string]::IsNullOrWhiteSpace($profile)) {
+    $preflightArgs += @(
+        '-CodexProfile',
+        $profile
+    )
+}
+
+if (-not [string]::IsNullOrWhiteSpace($BackendPath)) {
+    $preflightArgs += @(
+        '-BackendPath',
+        $BackendPath
+    )
+}
+
+if (-not [string]::IsNullOrWhiteSpace($FrontendPath)) {
+    $preflightArgs += @(
+        '-FrontendPath',
+        $FrontendPath
+    )
+}
+
+if (
+    [string]::IsNullOrWhiteSpace($BackendPath) -and
+    $repository.Equals(
+        'Backend',
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
+) {
+    $preflightArgs += @(
+        '-BackendPath',
+        $repositoryPath
+    )
+}
+
+if (
+    [string]::IsNullOrWhiteSpace($FrontendPath) -and
+    $repository.Equals(
+        'Frontend',
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
+) {
+    $preflightArgs += @(
+        '-FrontendPath',
+        $repositoryPath
+    )
+}
+
+if (-not [string]::IsNullOrWhiteSpace($DependencyMarkerPath)) {
+    $preflightArgs += @(
+        '-DependencyMarkerPath',
+        $DependencyMarkerPath
+    )
+}
+
+if (-not [string]::IsNullOrWhiteSpace($TestModelCheckOutputPath)) {
+    $preflightArgs += @(
+        '-CodexOutputPath',
+        $TestModelCheckOutputPath
+    )
+}
 
 $preflightOutput = & powershell.exe @preflightArgs 2>&1 | Out-String
 $preflightCode = $LASTEXITCODE
+
 Write-Output $preflightOutput.TrimEnd()
-if ($preflightCode -ne 0 -or -not [regex]::IsMatch($preflightOutput, '(?im)^READY\s+YES\s*$')) {
+
+if (
+    $preflightCode -ne 0 -or
+    -not [regex]::IsMatch(
+        $preflightOutput,
+        '(?im)^READY\s+YES\s*$'
+    )
+) {
     Stop-SpaRun 'Preflight did not prove the requested route ready.'
 }
+
 $script:SpaLastSafe = 'PREFLIGHT READY'
 $script:SpaRemoteStatus = 'SYNCED'
 
