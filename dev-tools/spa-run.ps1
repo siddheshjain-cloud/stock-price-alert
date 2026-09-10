@@ -918,13 +918,17 @@ function Invoke-SpaUnitWithAutoDebug {
 
         $deterministicFailure = Test-SpaAutoDebugDeterministicFailure -Result $result
         if ($deterministicFailure.IsDeterministic) {
+            $deterministicStopReason = 'Auto-Debug stopped before repair: deterministic ' + $deterministicFailure.Category + ' failure. ' + $deterministicFailure.Reason
+            if (-not [string]::IsNullOrWhiteSpace([string]$deterministicFailure.Evidence)) {
+                $deterministicStopReason += ' Evidence: ' + [string]$deterministicFailure.Evidence
+            }
             $script:SpaAutoDebugUsed = $true
             $script:SpaAutoDebugOutcome = 'COULD NOT RESOLVE'
             $script:SpaAutoDebugCycles = $cycle
             $script:SpaAutoDebugFailedRoute = $routeId
             $script:SpaAutoDebugReason = $deterministicFailure.Reason
             Stop-SpaAutoDebug `
-                -Reason ('Auto-Debug stopped before repair: deterministic ' + $deterministicFailure.Category + ' failure. ' + $deterministicFailure.Reason) `
+                -Reason $deterministicStopReason `
                 -FailedRoute $routeId `
                 -Cycles $cycle
         }

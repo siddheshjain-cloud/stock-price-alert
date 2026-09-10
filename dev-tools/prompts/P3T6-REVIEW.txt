@@ -1,0 +1,28 @@
+Perform an independent, read-only review of SPA Milestone 1 Plan 3 Task 6 in C:\GitHub\backendtest.
+
+Review only the exact Task 6 implementation:
+- implementation commit: c907cd5e5be7562d0a2fd62545cf515d50fc4f33
+- remediation commit: none (this is the first independent review)
+- governing task: C:\GitHub\stock-price-alert\docs\superpowers\plans\2026-09-04-investment-operating-system-m1-entitlement-query-projection.md, Plan 3 Task 6
+
+Ignore unrelated earlier tasks and later hygiene or tooling commits. Inspect the complete Task 6 implementation and verify the frozen M1 security-matrix contract:
+1. Missing, inactive, revoked, future, and expired entitlements all resolve to free, and premium values never appear in their projections.
+2. FREE, PREMIUM, administrator-without-row, and administrator-with-stale-tier-claim cases each project only their explicit allowed-section set.
+3. No premium field, section, sentinel, scalar, nested key, count, range, or existence-sensitive error leaks into a free projection.
+4. A stale JWT tier claim has no authority: entitlement changes in the database take effect on the next call without issuing a new token.
+5. Administrators receive research access without any document-rights shortcut.
+6. Ticker and the legacy response contracts remain unchanged by research projection.
+7. The matrix is parameterized as the reusable `research_security_matrix` fixture and is release-blocking.
+
+Inspect security, not only green tests. Verify the matrix actually exercises every named case and would fail on a realistic projection regression rather than passing vacuously. Explicitly separate behavior proven by local tests from behavior that depends on deployment configuration. Do not describe deployment behavior as proven merely because local tests pass.
+
+Run focused and relevant tests if this read-only repository sandbox permits writable temporary storage. Direct all test caches and temporary files to an OS temporary directory where practical. If sandbox or temporary-storage constraints block a test, report that test as NOT PROVEN and include the blocking evidence; never report an unexecuted or blocked test as passing.
+
+Review efficiency and complexity as well as correctness. Identify unnecessary queries, avoidable fixture work, or complexity that materially affects safety or maintainability.
+
+Make no edits. Make no commits or pushes. Do not close Task 6.
+
+End with exactly one review verdict on its own line:
+SAFE
+SAFE WITH NON-BLOCKING OBSERVATIONS
+CHANGES REQUIRED

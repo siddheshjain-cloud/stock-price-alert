@@ -11,6 +11,7 @@ $stateTools = Join-Path $devTools 'm1-state.ps1'
 $routingPath = Join-Path $devTools 'm1-model-routing.psd1'
 $reviewPrompt = Join-Path $devTools 'prompts\P2T4-REVIEW.txt'
 $reviewPrompt9 = Join-Path $devTools 'prompts\P2T9-REVIEW.txt'
+$reviewPrompt6 = Join-Path $devTools 'prompts\P3T6-REVIEW.txt'
 $expectedBranch = 'feature/investment-operating-system-m1'
 
 $failures = New-Object System.Collections.Generic.List[string]
@@ -133,7 +134,7 @@ function Get-TestFingerprint {
     }
 }
 
-foreach ($path in @($spaRun, $stateTools, $routingPath, $reviewPrompt, $reviewPrompt9)) {
+foreach ($path in @($spaRun, $stateTools, $routingPath, $reviewPrompt, $reviewPrompt9, $reviewPrompt6)) {
     Assert-True (Test-Path -LiteralPath $path -PathType Leaf) "required runner artifact exists: $path"
 }
 
@@ -174,6 +175,18 @@ try {
     Assert-Match $p2t9Review.Output 'COMMAND\s+.*--model gpt-5\.6-sol.*model_provider="openai".*--sandbox read-only.*-C C:\\GitHub\\backendtest.*exec --ephemeral --color never - < .*P2T9-REVIEW\.txt' 'P2T9-REVIEW dry run displays the independent review command'
     Assert-Match $p2t9Review.Output '(?ms)^TASK\s+P2T9-REVIEW\r?$.*^ACTION\s+REVIEW\r?$.*^RESULT\s+DRY RUN\r?$.*^MODEL\s+gpt-5\.6-sol\r?$.*^REASONING\s+high\r?$' 'successful P2T9-REVIEW dry-run summary contains the known route outcome'
     Assert-FinalSummary $p2t9Review.Output 'SPA TASK SUMMARY' 'successful P2T9-REVIEW dry-run prints exactly one task summary at the bottom'
+
+    $p3t6Review = Invoke-SpaRun -Arguments @('-Task', 'P3T6-REVIEW', '-DryRun')
+    Assert-True ($p3t6Review.Code -eq 0) 'known P3T6-REVIEW route resolves in dry-run mode'
+    Assert-Match $p3t6Review.Output 'ACTION\s+REVIEW' 'P3T6-REVIEW resolves as a review action'
+    Assert-Match $p3t6Review.Output 'MODEL\s+gpt-5\.6-sol' 'P3T6-REVIEW resolves to the configured SOL reviewer'
+    Assert-Match $p3t6Review.Output 'PROVIDER\s+openai' 'P3T6-REVIEW resolves to the OpenAI provider'
+    Assert-Match $p3t6Review.Output 'REASONING\s+high' 'P3T6-REVIEW resolves to high reasoning'
+    Assert-Match $p3t6Review.Output 'SANDBOX\s+read-only' 'P3T6-REVIEW resolves to a read-only review sandbox'
+    Assert-Match $p3t6Review.Output 'COMMAND\s+.*--model gpt-5\.6-sol.*model_provider="openai".*--sandbox read-only.*-C C:\\GitHub\\backendtest.*exec --ephemeral --color never - < .*P3T6-REVIEW\.txt' 'P3T6-REVIEW dry run displays the independent review command'
+    Assert-Match $p3t6Review.Output '(?ms)^TASK\s+P3T6-REVIEW\r?$.*^ACTION\s+REVIEW\r?$.*^RESULT\s+DRY RUN\r?$.*^MODEL\s+gpt-5\.6-sol\r?$.*^REASONING\s+high\r?$' 'successful P3T6-REVIEW dry-run summary contains the known route outcome'
+    Assert-NotContains $p3t6Review.Output 'recorded but not yet enabled' 'P3T6-REVIEW is no longer recorded as a disabled route'
+    Assert-FinalSummary $p3t6Review.Output 'SPA TASK SUMMARY' 'successful P3T6-REVIEW dry-run prints exactly one task summary at the bottom'
 
     $unknown = Invoke-SpaRun -Arguments @('-Task', 'DOES-NOT-EXIST', '-DryRun')
     Assert-True ($unknown.Code -ne 0) 'unknown task ID fails closed'

@@ -258,6 +258,27 @@ Assert-True ($providerFailure.IsDeterministic -and [string]$providerFailure.Cate
 Assert-True ($modelFailure.IsDeterministic -and [string]$modelFailure.Category -eq 'MODEL_UNAVAILABLE') 'V7 classifies model unavailable as deterministic'
 Assert-True (-not $codeFailure.IsDeterministic) 'V7 does not classify ordinary code failures as deterministic infrastructure failures'
 
+# A disabled/missing review route, or missing review execution metadata, is an
+# orchestration/configuration defect rather than a code defect. V7 must classify
+# it so the supervisor never spends Flash/Pro code-repair cycles on it.
+$disabledRouteFailure = Test-SpaAutoDebugDeterministicFailure -Result ([pscustomobject]@{
+    Code = 1
+    Output = 'SPA-RUN FAIL: P3T6-REVIEW is recorded but not yet enabled. Repository, prompt, and execution metadata are not enabled in Phase 1.'
+    DisplayOutput = ''
+    Stdout = ''
+    Stderr = ''
+})
+$missingReviewMetadataFailure = Test-SpaAutoDebugDeterministicFailure -Result ([pscustomobject]@{
+    Code = 1
+    Output = 'SPA-RUN FAIL: P3T6-REVIEW requires implementer metadata before an independent review can run.'
+    DisplayOutput = ''
+    Stdout = ''
+    Stderr = ''
+})
+Assert-True ($disabledRouteFailure.IsDeterministic -and [string]$disabledRouteFailure.Category -eq 'ORCHESTRATION_CONFIGURATION') 'V7 classifies a disabled review route as an orchestration/configuration failure'
+Assert-True ($missingReviewMetadataFailure.IsDeterministic -and [string]$missingReviewMetadataFailure.Category -eq 'ORCHESTRATION_CONFIGURATION') 'V7 classifies missing review execution metadata as an orchestration/configuration failure'
+Assert-Match ([string]$disabledRouteFailure.Evidence) 'P3T6-REVIEW is recorded but not yet enabled' 'V7 preserves the exact disabled-route evidence'
+
 $trailEntry = New-SpaAutoDebugFailureTrailEntry `
     -Attempt 1 `
     -Stage 'FLASH_REPAIR' `
@@ -588,6 +609,74 @@ try {
     Assert-True (-not (Test-Path -LiteralPath $eCount -PathType Leaf)) 'E: no code-debug or self-repair cycle was started'
     $eState = Read-M1State -Path $scenarioE.StatePath
     Assert-True (([string]$eState.tasks[0].status).Equals('RUNNING_LOCAL', [System.StringComparison]::OrdinalIgnoreCase)) 'E: deterministic failure never promotes or completes the original task'
+
+    # Scenario F: the observed P3T6-REVIEW failure. A review route that is recorded
+    # but disabled is an orchestration/configuration defect, not a code defect. It
+    # must not consume any Flash/Pro code-repair cycle and must stop through the
+    # existing configuration/human path with the exact evidence preserved.
+    $scenarioF = New-AdScenario -Root $tempRoot -Name 'f'
+    $fBackendSha = (Invoke-Git $scenarioF.Backend.Home @('rev-parse', 'HEAD'))
+    $fState = [ordered]@{
+        schemaVersion = 1
+        milestone = 'M1'
+        branch = $expectedBranch
+        repositories = [ordered]@{
+            backend = [ordered]@{ lastVerifiedSha = $fBackendSha }
+            frontend = [ordered]@{ lastVerifiedSha = $null }
+        }
+        tasks = @(
+            [ordered]@{
+                id = 'P3T6'; action = 'IMPLEMENT'; status = 'REVIEW_PENDING'
+                implementationProvider = 'deepseek'; implementationModel = 'deepseek-v4-pro'
+                reviewerProvider = 'openai'; reviewerModel = 'gpt-5.6-sol'
+                reviewRoute = 'P3T6-REVIEW'; remediationRoute = 'P3T6'
+                lastVerifiedBackendSha = $fBackendSha; lastVerifiedFrontendSha = $null
+                implementationCommitSha = $fBackendSha; remediationCommitSha = $null
+                lastSuccessfulReviewVerdict = $null; remediationAttempts = 0
+                evidence = [ordered]@{
+                    implementationSucceeded = $true; testsSucceeded = $true
+                    reviewRequired = $true; reviewSucceeded = $false; relevantCommitsPushed = $true
+                }
+                updatedUtc = '2026-09-10T00:00:00Z'
+            }
+        )
+    }
+    Write-M1StateAtomic -State $fState -Path $scenarioF.StatePath
+    Invoke-Git $scenarioF.Frontend.Home @('add', '-A') | Out-Null
+    Invoke-Git $scenarioF.Frontend.Home @('commit', '-q', '-m', 'checkpoint P3T6 REVIEW_PENDING') | Out-Null
+    Invoke-Git $scenarioF.Frontend.Home @('push', '-q', 'origin', $expectedBranch) | Out-Null
+
+    $fRouting = Join-Path $tempRoot 'f-disabled-review-routing.psd1'
+    @'
+@{
+    Version = 1
+    ModelRoutes = @{
+        SOL = @{ Provider = 'openai'; Model = 'gpt-5.6-sol'; Reasoning = 'high'; Command = 'codex'; Profile = '' }
+    }
+    Routes = @{
+        'P3T6-REVIEW' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; Enabled = $false; IndependentReview = $true }
+    }
+}
+'@ | Set-Content -LiteralPath $fRouting
+
+    $fEvidenceRoot = Join-Path $tempRoot 'f-evidence'
+    $fHealthRoot = Join-Path $tempRoot 'f-health'
+    New-Item -ItemType Directory -Path $fEvidenceRoot, $fHealthRoot -Force | Out-Null
+    $runF = Invoke-SpaRunTolerant @(
+        '-Task', 'M1-REMAINING', '-TestMode', '-AllowTestExecution',
+        '-StatePath', $scenarioF.StatePath, '-RoutingPath', $fRouting,
+        '-BackendPath', $scenarioF.Backend.Home, '-FrontendPath', $scenarioF.Frontend.Home,
+        '-DependencyMarkerPath', $scenarioF.MarkerPath,
+        '-TestEvidenceRoot', $fEvidenceRoot, '-TestHealthPath', $fHealthRoot
+    )
+    Assert-True ($runF.Code -ne 0) 'F: disabled review route stops the runner instead of retrying code'
+    Assert-Match $runF.Output 'ORCHESTRATION_CONFIGURATION' 'F: disabled review route is classified as an orchestration/configuration failure'
+    Assert-Match $runF.Output 'DEBUG CYCLES\s+0' 'F: disabled review route consumes zero code-repair cycles'
+    Assert-Match $runF.Output 'P3T6-REVIEW is recorded but not yet enabled' 'F: the exact configuration evidence is preserved'
+    Assert-True (@(Get-ChildItem -LiteralPath $fEvidenceRoot -File).Count -eq 0) 'F: no code-debug cycle artifacts were produced'
+    $fStateAfter = Read-M1State -Path $scenarioF.StatePath
+    Assert-True (-not [bool]$fStateAfter.tasks[0].evidence.reviewSucceeded) 'F: disabled review route never records a review result'
+    Assert-True (-not ([string]$fStateAfter.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'F: disabled review route never completes the task'
 
     # STATUS surface: Auto-Debug heartbeat fields and state transitions.
     $statusHealthRoot = Join-Path $tempRoot 'status-health'

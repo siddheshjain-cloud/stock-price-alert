@@ -442,11 +442,32 @@ function Test-SpaAutoDebugDeterministicFailure {
         [string]$Result.Stderr
     ) -join "`n"
 
+    # V7 orchestration/configuration failures. A disabled or missing review route,
+    # or missing review execution metadata, is a tooling configuration defect and
+    # not a code defect. It is classified before the provider categories so the
+    # supervisor stops through the existing configuration/human path without
+    # spending any Flash/Pro code-repair cycle on it.
+    $routeConfigurationPattern = '(?i)(?:is recorded but not yet enabled|requires implementer metadata before an independent review can run|unknown spa task id|refers to unknown model route)'
+    if ($text -match $routeConfigurationPattern) {
+        $evidenceLine = @(
+            $text -split '\r?\n' |
+                Where-Object { $_ -match $routeConfigurationPattern } |
+                Select-Object -First 1
+        )
+        return [pscustomobject]@{
+            IsDeterministic = $true
+            Category = 'ORCHESTRATION_CONFIGURATION'
+            Reason = 'The review route or its execution metadata is not enabled for orchestration.'
+            Evidence = ([string]$evidenceLine).Trim()
+        }
+    }
+
     if ($code -eq 401 -or $text -match '(?i)\b401\b|\bunauthorized\b|\bauthentication\b|\binvalid api key\b|\bmissing (?:api )?token\b|\bexpired (?:api )?token\b') {
         return [pscustomobject]@{
             IsDeterministic = $true
             Category = 'AUTHENTICATION'
             Reason = 'Provider authentication failed (401).'
+            Evidence = ''
         }
     }
     if ($code -eq 402 -or $text -match '(?i)\b402\b|\binsufficient balance\b|\bbilling\b|\bpayment required\b|\bquota exceeded\b|\bout of credits\b') {
@@ -454,6 +475,7 @@ function Test-SpaAutoDebugDeterministicFailure {
             IsDeterministic = $true
             Category = 'BILLING'
             Reason = 'Provider billing/balance failure (402).'
+            Evidence = ''
         }
     }
     if ($text -match '(?i)\bprovider unavailable\b|\bprovider_unavailable\b|\bapi unavailable\b|\bservice unavailable\b|\b503\b|\boverloaded\b|\brate limit exceeded\b') {
@@ -461,6 +483,7 @@ function Test-SpaAutoDebugDeterministicFailure {
             IsDeterministic = $true
             Category = 'PROVIDER_UNAVAILABLE'
             Reason = 'The provider is unavailable.'
+            Evidence = ''
         }
     }
     if ($text -match '(?i)\bmodel unavailable\b|\bmodel_not_found\b|\bunknown model\b|\binvalid model\b|\bmodel .* not (?:available|found)\b|\b404\b.*\bmodel\b') {
@@ -468,6 +491,7 @@ function Test-SpaAutoDebugDeterministicFailure {
             IsDeterministic = $true
             Category = 'MODEL_UNAVAILABLE'
             Reason = 'The requested model is unavailable.'
+            Evidence = ''
         }
     }
 
@@ -475,6 +499,7 @@ function Test-SpaAutoDebugDeterministicFailure {
         IsDeterministic = $false
         Category = ''
         Reason = ''
+        Evidence = ''
     }
 }
 
