@@ -525,17 +525,17 @@
                   {
                       "id":  "P3T6",
                       "action":  "IMPLEMENT",
-                      "status": "REVIEW_PENDING",
+                      "status":  "RUNNING_LOCAL",
                       "implementationProvider":  "deepseek",
                       "implementationModel":  "deepseek-v4-pro",
                       "reviewerProvider":  "openai",
                       "reviewerModel":  "gpt-5.6-sol",
                       "reviewRoute":  "P3T6-REVIEW",
                       "remediationRoute":  "P3T6",
-                      "lastVerifiedBackendSha": "118532f3b59b455484300de94d33d9bd66bb31d7",
+                      "lastVerifiedBackendSha":  "118532f3b59b455484300de94d33d9bd66bb31d7",
                       "lastVerifiedFrontendSha":  null,
                       "implementationCommitSha":  "c907cd5e5be7562d0a2fd62545cf515d50fc4f33",
-                      "remediationCommitSha": "118532f3b59b455484300de94d33d9bd66bb31d7",
+                      "remediationCommitSha":  "118532f3b59b455484300de94d33d9bd66bb31d7",
                       "lastSuccessfulReviewVerdict":  null,
                       "remediationAttempts":  0,
                       "evidence":  {
@@ -545,7 +545,7 @@
                                        "reviewSucceeded":  false,
                                        "relevantCommitsPushed":  true
                                    },
-                      "updatedUtc":  "2026-09-10T05:23:41.4531188+00:00",
+                      "updatedUtc":  "2026-09-10T19:03:14.7833018+00:00",
                       "activeRoute":  "P3T6-REVIEW"
                   },
                   {
