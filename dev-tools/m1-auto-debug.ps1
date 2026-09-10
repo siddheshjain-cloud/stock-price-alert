@@ -503,6 +503,66 @@ function Test-SpaAutoDebugDeterministicFailure {
     }
 }
 
+function Get-SpaAutoDebugHarnessFailurePattern {
+    # Exact harness-owned failure signatures. These describe the harness failing
+    # to prepare or bookkeep a candidate, not the candidate failing validation.
+    return '(?i)(?:candidate status:|candidate diffstat:|candidate verification failed|candidate checkpoint|candidate scope|checkpoint refused because the tooling repository has changes|repository is dirty|repository became dirty|is not a durable|\.git-commit-temp)'
+}
+
+function Test-SpaAutoDebugCodeValidationRejection {
+    # V7 may spend a code-repair attempt only when the candidate was rejected by
+    # the authoritative validation layer: a prescribed test failure, validator
+    # failure, static/AST guard failure, or deterministic scope/invariant guard.
+    # Harness bookkeeping, commit preparation, and orchestration/configuration
+    # failures are never code-validation rejections.
+    param([Parameter(Mandatory = $true)][object]$Result)
+
+    if ($null -ne $Result.PSObject.Properties['Source'] -and
+        ([string]$Result.Source).Equals('HARNESS', [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $false
+    }
+
+    $text = @(
+        [string]$Result.Output
+        [string]$Result.DisplayOutput
+        [string]$Result.Stdout
+        [string]$Result.Stderr
+    ) -join ([char]10)
+    if ($text -match (Get-SpaAutoDebugHarnessFailurePattern)) { return $false }
+
+    $deterministic = Test-SpaAutoDebugDeterministicFailure -Result $Result
+    if ([bool]$deterministic.IsDeterministic) { return $false }
+
+    return $true
+}
+
+function Test-SpaAutoDebugProClass {
+    # A Pro/deep originating task keeps Pro-classified repair attempts. Flash
+    # classified tasks keep the existing Flash-first escalation behavior.
+    param(
+        [string]$Model = '',
+        [string]$ModelRoute = ''
+    )
+
+    $routeName = ([string]$ModelRoute).Trim()
+    if ($routeName -match '(?i)(?:^|[^A-Za-z])PRO(?:$|[^A-Za-z])') { return $true }
+
+    $modelName = ([string]$Model).Trim()
+    if ($modelName -match '(?i)(?:^|[^A-Za-z0-9])pro(?:$|[^A-Za-z0-9])') { return $true }
+
+    return $false
+}
+
+function Get-SpaAutoDebugEscalationStartIndex {
+    # Frozen V7 escalation plan index 0 is Flash repair and index 2 is Pro
+    # repair. Pro/deep tasks start at PRO_REPAIR so a repair attempt can never
+    # begin as, or fall back to, Flash.
+    param([bool]$IsProClass)
+
+    if ($IsProClass) { return 2 }
+    return 0
+}
+
 function New-SpaAutoDebugFailureTrailEntry {
     param(
         [Parameter(Mandatory = $true)][int]$Attempt,

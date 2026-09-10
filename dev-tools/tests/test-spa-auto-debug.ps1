@@ -279,6 +279,30 @@ Assert-True ($disabledRouteFailure.IsDeterministic -and [string]$disabledRouteFa
 Assert-True ($missingReviewMetadataFailure.IsDeterministic -and [string]$missingReviewMetadataFailure.Category -eq 'ORCHESTRATION_CONFIGURATION') 'V7 classifies missing review execution metadata as an orchestration/configuration failure'
 Assert-Match ([string]$disabledRouteFailure.Evidence) 'P3T6-REVIEW is recorded but not yet enabled' 'V7 preserves the exact disabled-route evidence'
 
+# Invariant A: the harness-owned commit temp never enters candidate scope.
+Assert-True (Test-SpaHarnessOwnedTempArtifact -Path '.git-commit-temp') 'A: .git-commit-temp is a harness-owned artifact'
+Assert-True (-not (Test-SpaHarnessOwnedTempArtifact -Path 'src/app.ts')) 'A: ordinary paths are not harness-owned artifacts'
+Assert-True (Test-SpaCandidateWorktreeClean -StatusOutput '?? .git-commit-temp') 'A: the harness temp alone does not make a candidate dirty'
+Assert-True (-not (Test-SpaCandidateWorktreeClean -StatusOutput ('?? .git-commit-temp' + [System.Environment]::NewLine + '?? real.txt'))) 'A: genuine candidate changes still count alongside the harness temp'
+
+# Invariant B: escalation requires a genuine code-validation rejection.
+$harnessTextFailure = [pscustomobject]@{ Code = 1; Output = ('CANDIDATE STATUS:' + [System.Environment]::NewLine + '?? .git-commit-temp'); DisplayOutput = ''; Stdout = ''; Stderr = '' }
+$harnessPrepFailure = [pscustomobject]@{ Code = 1; Output = 'Backend candidate verification failed before checkpoint (staged whitespace/conflict markers).'; DisplayOutput = ''; Stdout = ''; Stderr = '' }
+$harnessSourceFailure = [pscustomobject]@{ Code = 1; Source = 'HARNESS'; Output = 'candidate checkpoint was committed locally but push failed.'; DisplayOutput = ''; Stdout = ''; Stderr = '' }
+Assert-True (-not (Test-SpaAutoDebugCodeValidationRejection -Result $harnessTextFailure)) 'B: harness temp failure is not a validation rejection'
+Assert-True (-not (Test-SpaAutoDebugCodeValidationRejection -Result $harnessPrepFailure)) 'B: commit-preparation failure is not a validation rejection'
+Assert-True (-not (Test-SpaAutoDebugCodeValidationRejection -Result $harnessSourceFailure)) 'B: harness-sourced failure is not a validation rejection'
+Assert-True (Test-SpaAutoDebugCodeValidationRejection -Result $ordinaryFailure) 'B: a prescribed test rejection remains a validation rejection'
+
+# Invariant C: Pro-classified tasks keep Pro repair routing.
+Assert-True (Test-SpaAutoDebugProClass -Model 'deepseek-v4-pro' -ModelRoute 'DEEPSEEK_PRO') 'C: a Pro task is Pro-classified'
+Assert-True (-not (Test-SpaAutoDebugProClass -Model 'deepseek-v4-flash' -ModelRoute 'DEEPSEEK_FLASH')) 'C: a Flash task is not Pro-classified'
+$proStart = Get-SpaAutoDebugEscalationStartIndex -IsProClass $true
+Assert-True ($proStart -eq 2) 'C: a Pro task starts repair at PRO_REPAIR'
+Assert-True ([string](Get-SpaAutoDebugEscalationStep -Index $proStart).Model -eq 'deepseek-v4-pro') 'C: a Pro task first repair stage is DeepSeek Pro'
+Assert-True ([string](Get-SpaAutoDebugEscalationStep -Index $proStart).Model -ne 'deepseek-v4-flash') 'C: a Pro task never starts repair with Flash'
+Assert-True ((Get-SpaAutoDebugEscalationStartIndex -IsProClass $false) -eq 0) 'C: a Flash task keeps the existing Flash-first escalation'
+
 $trailEntry = New-SpaAutoDebugFailureTrailEntry `
     -Attempt 1 `
     -Stage 'FLASH_REPAIR' `
@@ -316,6 +340,25 @@ Assert-Match $trailPrompt 'Retry failed with exit code 7' 'V7 prompt forwards th
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('spa-auto-debug-test-' + [guid]::NewGuid().ToString('N'))
 try {
     New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
+
+    # Invariant A: the harness keeps its commit temp inside the Git directory
+    # (outside the worktree) and a stray harness artifact never enters
+    # candidate/worktree scope accounting.
+    $tempArtifactRepo = Initialize-RemotePair -Root $tempRoot -Name 'temp-artifact'
+    $harnessTempPath = Resolve-SpaHarnessCommitTempPath -RepositoryPath $tempArtifactRepo.Home
+    $gitDirectory = (Invoke-Git $tempArtifactRepo.Home @('rev-parse', '--absolute-git-dir')).Replace('\', '/')
+    Assert-True ($harnessTempPath.Replace('\', '/').StartsWith($gitDirectory, [System.StringComparison]::OrdinalIgnoreCase)) 'A: harness commit temp resolves inside the Git directory'
+    [System.IO.File]::WriteAllText($harnessTempPath, 'harness commit message', (New-Object System.Text.UTF8Encoding($false)))
+    Assert-True ([string]::IsNullOrWhiteSpace((Invoke-Git $tempArtifactRepo.Home @('status', '--porcelain=v1', '--untracked-files=normal')))) 'A: harness commit temp inside the Git directory is not a worktree change'
+    Remove-Item -LiteralPath $harnessTempPath -Force
+    Set-Content -LiteralPath (Join-Path $tempArtifactRepo.Home '.git-commit-temp') -Value 'stray harness artifact' -NoNewline
+    Assert-True ((Invoke-Git $tempArtifactRepo.Home @('status', '--porcelain=v1', '--untracked-files=normal')) -match '\.git-commit-temp') 'A: raw git status still reports the stray artifact'
+    Assert-True (Test-M1RepositoryLocalState -Name 'Backend' -Path $tempArtifactRepo.Home -ExpectedBranch $expectedBranch) 'A: a stray harness temp does not make the candidate dirty'
+    Assert-True (Test-SpaCandidateWorktreeClean -StatusOutput (Invoke-Git $tempArtifactRepo.Home @('status', '--porcelain=v1', '--untracked-files=normal'))) 'A: a stray harness temp does not enter candidate scope accounting'
+    Set-Content -LiteralPath (Join-Path $tempArtifactRepo.Home 'real-candidate.txt') -Value 'genuine change' -NoNewline
+    Assert-True (-not (Test-SpaCandidateWorktreeClean -StatusOutput (Invoke-Git $tempArtifactRepo.Home @('status', '--porcelain=v1', '--untracked-files=normal')))) 'A: a genuine candidate change is still counted'
+    Remove-Item -LiteralPath (Join-Path $tempArtifactRepo.Home 'real-candidate.txt') -Force
+    Remove-Item -LiteralPath (Join-Path $tempArtifactRepo.Home '.git-commit-temp') -Force
 
     $resetPair = Initialize-RemotePair -Root $tempRoot -Name 'v7-reset'
     $v7InitialHead = (Invoke-Git $resetPair.Home @('rev-parse', 'HEAD'))
@@ -677,6 +720,92 @@ try {
     $fStateAfter = Read-M1State -Path $scenarioF.StatePath
     Assert-True (-not [bool]$fStateAfter.tasks[0].evidence.reviewSucceeded) 'F: disabled review route never records a review result'
     Assert-True (-not ([string]$fStateAfter.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'F: disabled review route never completes the task'
+
+    # Scenario G: a harness/bookkeeping failure with no authoritative validation
+    # rejection must stop before any code-repair cycle. The candidate was never
+    # rejected by the prescribed validator, so no Flash/Pro repair is spent.
+    $scenarioG = New-AdScenario -Root $tempRoot -Name 'g'
+    $gCount = Join-Path $tempRoot 'g-debug-count.txt'
+    Set-AdEnvironment @{
+        SPA_AD_GATE_FILE = $null
+        SPA_AD_COUNT_FILE = $gCount
+        SPA_AD_ADD_DIR_CAPTURE = $null
+        SPA_AD_GATE_1 = $null
+        SPA_AD_GATE_2 = $null
+        SPA_AD_GATE_3 = $null
+        SPA_AD_REPAIR_REPO = $null
+        SPA_AD_DEBUG_EXIT = $null
+        SPA_AD_DETERMINISTIC_LINE = ('CANDIDATE STATUS:' + [System.Environment]::NewLine + '?? .git-commit-temp')
+        SPA_AD_DETERMINISTIC_CODE = '9'
+    }
+    $gEvidenceRoot = Join-Path $tempRoot 'g-evidence'
+    $gHealthRoot = Join-Path $tempRoot 'g-health'
+    New-Item -ItemType Directory -Path $gEvidenceRoot, $gHealthRoot -Force | Out-Null
+    $oldPathG = $env:PATH
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldPathG
+    try {
+        $runG = Invoke-SpaRunTolerant @(
+            '-Task', 'M1-REMAINING', '-TestMode', '-AllowTestExecution',
+            '-StatePath', $scenarioG.StatePath, '-RoutingPath', $routingPath,
+            '-BackendPath', $scenarioG.Backend.Home, '-FrontendPath', $scenarioG.Frontend.Home,
+            '-DependencyMarkerPath', $scenarioG.MarkerPath,
+            '-TestEvidenceRoot', $gEvidenceRoot, '-TestHealthPath', $gHealthRoot
+        )
+    }
+    finally {
+        $env:PATH = $oldPathG
+    }
+    Assert-True ($runG.Code -ne 0) 'B: harness failure stops the runner safely'
+    Assert-Match $runG.Output 'harness/orchestration failure' 'B: harness failure is classified as harness/orchestration'
+    Assert-Match $runG.Output 'DEBUG CYCLES\s+0' 'B: harness failure consumes zero code-repair cycles'
+    Assert-True (-not (Test-Path -LiteralPath $gCount -PathType Leaf)) 'B: no code-debug cycle was started'
+    Assert-True (@(Get-ChildItem -LiteralPath $gEvidenceRoot -File).Count -eq 0) 'B: no code-debug artifacts were produced'
+    $gState = Read-M1State -Path $scenarioG.StatePath
+    Assert-True (([string]$gState.tasks[0].status).Equals('RUNNING_LOCAL', [System.StringComparison]::OrdinalIgnoreCase)) 'B: harness failure never completes the original task'
+
+    # Scenario H: a Pro-classified originating task must keep Pro repair
+    # routing. Its first code-repair attempt must never downgrade to Flash.
+    $scenarioH = New-AdScenario -Root $tempRoot -Name 'h'
+    $hState = Read-M1State -Path $scenarioH.StatePath
+    $hState.tasks[0].implementationModel = 'deepseek-v4-pro'
+    Write-M1StateAtomic -State $hState -Path $scenarioH.StatePath
+    Invoke-Git $scenarioH.Frontend.Home @('add', '-A') | Out-Null
+    Invoke-Git $scenarioH.Frontend.Home @('commit', '-q', '-m', 'checkpoint P2T5 pro') | Out-Null
+    Invoke-Git $scenarioH.Frontend.Home @('push', '-q', 'origin', $expectedBranch) | Out-Null
+    $hGate = Join-Path $tempRoot 'h-gate.txt'
+    Set-Content -LiteralPath $hGate -Value 'fail-A' -NoNewline
+    $hCount = Join-Path $tempRoot 'h-debug-count.txt'
+    Set-AdEnvironment @{
+        SPA_AD_GATE_FILE = $hGate
+        SPA_AD_COUNT_FILE = $hCount
+        SPA_AD_ADD_DIR_CAPTURE = $null
+        SPA_AD_GATE_1 = 'pass'
+        SPA_AD_GATE_2 = $null
+        SPA_AD_GATE_3 = $null
+        SPA_AD_REPAIR_REPO = $scenarioH.Backend.Home
+        SPA_AD_BRANCH = $expectedBranch
+        SPA_AD_DEBUG_EXIT = $null
+        SPA_AD_DETERMINISTIC_LINE = $null
+        SPA_AD_DETERMINISTIC_CODE = $null
+    }
+    $oldPathH = $env:PATH
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldPathH
+    try {
+        $runH = Invoke-SpaRunTolerant @(
+            '-Task', 'M1-REMAINING', '-TestMode', '-AllowTestExecution',
+            '-StatePath', $scenarioH.StatePath, '-RoutingPath', $routingPath,
+            '-BackendPath', $scenarioH.Backend.Home, '-FrontendPath', $scenarioH.Frontend.Home,
+            '-DependencyMarkerPath', $scenarioH.MarkerPath,
+            '-TestEvidenceRoot', (Join-Path $tempRoot 'h-evidence'), '-TestHealthPath', (Join-Path $tempRoot 'h-health')
+        )
+    }
+    finally {
+        $env:PATH = $oldPathH
+    }
+    Assert-True ($runH.Code -eq 0) 'C: Pro task repair succeeds and M1 continues'
+    Assert-Match $runH.Output 'DEBUG CYCLES\s+1' 'C: Pro task consumed exactly one repair cycle'
+    Assert-Match $runH.Output 'DEBUG MODEL\s+deepseek-v4-pro' 'C: Pro task repair stays Pro-classified'
+    Assert-True (-not [regex]::IsMatch($runH.Output, 'DEBUG MODEL\s+deepseek-v4-flash', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) 'C: Pro task never downgrades the repair to Flash'
 
     # STATUS surface: Auto-Debug heartbeat fields and state transitions.
     $statusHealthRoot = Join-Path $tempRoot 'status-health'

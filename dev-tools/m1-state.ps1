@@ -9,6 +9,80 @@ $script:M1Statuses = @(
     'COMPLETE'
 )
 
+# Harness-owned plumbing artifacts. These are commit/bookkeeping temp files that
+# belong to the AutoDebug/V7 harness, never to a candidate change. The harness
+# materializes them inside the repository Git directory, outside the worktree;
+# the exact-name exclusion below is a narrow safety net only.
+$script:M1HarnessOwnedTempArtifacts = @('.git-commit-temp')
+
+function Get-SpaHarnessOwnedTempArtifactNames {
+    return @($script:M1HarnessOwnedTempArtifacts)
+}
+
+function Test-SpaHarnessOwnedTempArtifact {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $leaf = Split-Path -Leaf $Path
+    foreach ($artifact in @(Get-SpaHarnessOwnedTempArtifactNames)) {
+        if ($leaf.Equals($artifact, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+    }
+    return $false
+}
+
+function Get-SpaCandidateStatusLines {
+    param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$StatusOutput)
+
+    $kept = New-Object System.Collections.Generic.List[string]
+    foreach ($line in @($StatusOutput -split '\r?\n')) {
+        if ([string]::IsNullOrWhiteSpace($line)) { continue }
+        $match = [regex]::Match($line, '^(.{2})\s+(.+)$')
+        if (-not $match.Success) { [void]$kept.Add($line); continue }
+        $pathText = $match.Groups[2].Value
+        if ($pathText.Contains(' -> ')) {
+            $pathText = $pathText.Substring($pathText.LastIndexOf(' -> ', [System.StringComparison]::Ordinal) + 4)
+        }
+        $pathText = $pathText.Trim([char]0x22)
+        if (Test-SpaHarnessOwnedTempArtifact -Path $pathText) { continue }
+        [void]$kept.Add($line)
+    }
+    return $kept
+}
+
+function Test-SpaCandidateWorktreeClean {
+    param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$StatusOutput)
+
+    return (@(Get-SpaCandidateStatusLines -StatusOutput $StatusOutput).Count -eq 0)
+}
+
+function Resolve-SpaHarnessCommitTempPath {
+    param([Parameter(Mandatory = $true)][string]$RepositoryPath)
+
+    $gitDirectory = (Invoke-M1Git -Path $RepositoryPath -Arguments @('rev-parse', '--absolute-git-dir')).Output
+    if ([string]::IsNullOrWhiteSpace($gitDirectory)) {
+        throw ('Repository Git directory could not be resolved for harness commit temp: ' + $RepositoryPath)
+    }
+    return (Join-Path $gitDirectory '.git-commit-temp')
+}
+
+function Invoke-M1CommitWithHarnessTemp {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Message
+    )
+
+    $tempPath = Resolve-SpaHarnessCommitTempPath -RepositoryPath $Path
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    try {
+        [System.IO.File]::WriteAllText($tempPath, ($Message + [System.Environment]::NewLine), $encoding)
+        Invoke-M1Git -Path $Path -Arguments @('commit', '-q', '-F', $tempPath) | Out-Null
+    }
+    finally {
+        if (Test-Path -LiteralPath $tempPath) {
+            Remove-Item -LiteralPath $tempPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 function Test-M1HasProperty {
     param([Parameter(Mandatory = $true)][object]$InputObject, [Parameter(Mandatory = $true)][string]$Name)
 
@@ -773,7 +847,9 @@ function Test-M1RepositoryLocalState {
         throw "$Name repository is on wrong branch '$branch'; expected '$ExpectedBranch'."
     }
     $dirty = (Invoke-M1Git -Path $Path -Arguments @('status', '--porcelain=v1', '--untracked-files=normal')).Output
-    if (-not [string]::IsNullOrWhiteSpace($dirty)) { throw "$Name repository is dirty; recovery stopped without changing it." }
+    if (-not (Test-SpaCandidateWorktreeClean -StatusOutput $dirty)) {
+        throw "$Name repository is dirty; recovery stopped without changing it."
+    }
     return $true
 }
 
@@ -806,7 +882,9 @@ function Sync-M1Repository {
     }
 
     $dirtyAfter = (Invoke-M1Git -Path $Path -Arguments @('status', '--porcelain=v1', '--untracked-files=normal')).Output
-    if (-not [string]::IsNullOrWhiteSpace($dirtyAfter)) { throw "$Name repository became dirty during synchronization." }
+    if (-not (Test-SpaCandidateWorktreeClean -StatusOutput $dirtyAfter)) {
+        throw "$Name repository became dirty during synchronization."
+    }
     $finalCounts = (Invoke-M1Git -Path $Path -Arguments @('rev-list', '--left-right', '--count', ('HEAD...' + $remoteRef))).Output
     if ($finalCounts -notmatch '^0\s+0$') { throw "$Name repository is not synchronized after ff-only recovery." }
 
@@ -882,7 +960,7 @@ function Complete-M1ImplementationCandidate {
     )
 
     $status = (Invoke-M1Git -Path $Path -Arguments @('status', '--porcelain=v1', '--untracked-files=normal')).Output
-    if ([string]::IsNullOrWhiteSpace($status)) {
+    if (Test-SpaCandidateWorktreeClean -StatusOutput $status) {
         return [pscustomobject]@{
             Name = $Name
             Path = [System.IO.Path]::GetFullPath($Path)
@@ -898,12 +976,16 @@ function Complete-M1ImplementationCandidate {
         throw "$Name candidate verification failed before checkpoint (unstaged whitespace/conflict markers)."
     }
 
-    Invoke-M1Git -Path $Path -Arguments @('add', '-A') | Out-Null
+    $addArguments = @('add', '-A', '--', '.')
+    foreach ($artifact in @(Get-SpaHarnessOwnedTempArtifactNames)) {
+        $addArguments += (':(exclude)' + $artifact)
+    }
+    Invoke-M1Git -Path $Path -Arguments $addArguments | Out-Null
     $stagedCheck = Invoke-M1Git -Path $Path -Arguments @('diff', '--cached', '--check') -AllowFailure
     if ($stagedCheck.Code -ne 0) {
         throw "$Name candidate verification failed before checkpoint (staged whitespace/conflict markers)."
     }
-    Invoke-M1Git -Path $Path -Arguments @('commit', '-q', '-m', ("chore: checkpoint SPA M1 $TaskId IMPLEMENTED")) | Out-Null
+    Invoke-M1CommitWithHarnessTemp -Path $Path -Message ('chore: checkpoint SPA M1 ' + $TaskId + ' IMPLEMENTED')
     $push = Invoke-M1Git -Path $Path -Arguments @('push', 'origin', $ExpectedBranch) -AllowFailure
     if ($push.Code -ne 0) {
         throw "$Name candidate checkpoint was committed locally but push failed; '$TaskId' is not durable."

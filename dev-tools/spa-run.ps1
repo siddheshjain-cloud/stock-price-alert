@@ -271,7 +271,7 @@ function Publish-M1StateCheckpoint {
 
     Write-M1StateAtomic -State $State -Path $fullStatePath
     $changes = (Invoke-M1Git -Path $repositoryRoot -Arguments @('status', '--porcelain=v1', '--untracked-files=normal')).Output
-    $changeLines = @($changes -split '\r?\n' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    $changeLines = @(Get-SpaCandidateStatusLines -StatusOutput $changes)
     $singleChangePath = $null
     if ($changeLines.Count -eq 1 -and $changeLines[0] -match '^[MARCU?]{1,2}\s+(.+)$') {
         $singleChangePath = $Matches[1].Replace('\', '/')
@@ -281,7 +281,7 @@ function Publish-M1StateCheckpoint {
     }
 
     Invoke-M1Git -Path $repositoryRoot -Arguments @('add', '--', $relativeStatePath) | Out-Null
-    Invoke-M1Git -Path $repositoryRoot -Arguments @('commit', '-m', ("chore: checkpoint SPA M1 $TaskId $Status")) | Out-Null
+    Invoke-M1CommitWithHarnessTemp -Path $repositoryRoot -Message ('chore: checkpoint SPA M1 ' + $TaskId + ' ' + $Status)
     $push = Invoke-M1Git -Path $repositoryRoot -Arguments @('push', 'origin', ([string]$State.branch)) -AllowFailure
     if ($push.Code -ne 0) {
         throw "Checkpoint commit exists locally but push failed; '$TaskId' is not a durable cross-PC checkpoint."
@@ -850,6 +850,10 @@ function Invoke-SpaUnitWithAutoDebug {
         -State $State
     $candidateBaseline = if ([string]$implementationMeta.Repository -eq 'Backend') { $baselineBackend } else { $baselineFrontend }
 
+    # A Pro/deep originating task never downgrades its repair attempts to Flash.
+    $isProClass = Test-SpaAutoDebugProClass -Model ([string]$TaskRecord.implementationModel)
+    $escalationStartIndex = Get-SpaAutoDebugEscalationStartIndex -IsProClass $isProClass
+
     while ($true) {
         $isRetry = ($taskAttempt -gt 0)
         $healthModel = if ([string]$Unit.Stage -eq 'REVIEW') { [string]$TaskRecord.reviewerModel } else { [string]$TaskRecord.implementationModel }
@@ -894,6 +898,7 @@ function Invoke-SpaUnitWithAutoDebug {
                         Code = 1
                         Output = $candidateError
                         DisplayOutput = $candidateError
+                        Source = 'HARNESS'
                         Stdout = ''
                         Stderr = ''
                     }
@@ -929,6 +934,27 @@ function Invoke-SpaUnitWithAutoDebug {
             $script:SpaAutoDebugReason = $deterministicFailure.Reason
             Stop-SpaAutoDebug `
                 -Reason $deterministicStopReason `
+                -FailedRoute $routeId `
+                -Cycles $cycle
+        }
+
+        if (-not (Test-SpaAutoDebugCodeValidationRejection -Result $result)) {
+            $harnessEvidence = @(
+                ([string]$result.Output) -split '\r?\n' |
+                    Where-Object { $_ -match (Get-SpaAutoDebugHarnessFailurePattern) } |
+                    Select-Object -First 1
+            )
+            $harnessReason = 'Auto-Debug stopped before repair: no authoritative code-validation rejection was produced (harness/orchestration failure).'
+            if (-not [string]::IsNullOrWhiteSpace([string]$harnessEvidence)) {
+                $harnessReason += ' Evidence: ' + ([string]$harnessEvidence).Trim()
+            }
+            $script:SpaAutoDebugUsed = $true
+            $script:SpaAutoDebugOutcome = 'COULD NOT RESOLVE'
+            $script:SpaAutoDebugCycles = $cycle
+            $script:SpaAutoDebugFailedRoute = $routeId
+            $script:SpaAutoDebugReason = $harnessReason
+            Stop-SpaAutoDebug `
+                -Reason $harnessReason `
                 -FailedRoute $routeId `
                 -Cycles $cycle
         }
@@ -973,7 +999,7 @@ function Invoke-SpaUnitWithAutoDebug {
         $lastDebugFailed = $false
         $lastDebugNoHeadChange = $false
 
-        $escalationStep = Get-SpaAutoDebugEscalationStep -Index ([int]$failureTrail.Count)
+        $escalationStep = Get-SpaAutoDebugEscalationStep -Index ([int]$escalationStartIndex + [int]$failureTrail.Count)
         if ($escalationStep.IsHuman) {
             Stop-SpaAutoDebug `
                 -Reason ('The frozen Auto-Debug escalation order is exhausted and the failure requires human escalation.') `
