@@ -558,7 +558,7 @@
                   {
                       "id":  "P4T1",
                       "action":  "IMPLEMENT",
-                      "status":  "PENDING",
+                      "status":  "RUNNING_LOCAL",
                       "implementationProvider":  "deepseek",
                       "implementationModel":  "deepseek-v4-flash",
                       "reviewerProvider":  null,
@@ -578,7 +578,8 @@
                                        "reviewSucceeded":  false,
                                        "relevantCommitsPushed":  false
                                    },
-                      "updatedUtc":  "2026-09-06T00:00:00Z"
+                      "updatedUtc":  "2026-09-10T20:05:28.9895995+00:00",
+                      "activeRoute":  "P4T1"
                   },
                   {
                       "id":  "P4T2",
