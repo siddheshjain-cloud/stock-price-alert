@@ -451,6 +451,23 @@ exit /b %ERRORLEVEL%
     Assert-Match $dirty.Output 'WORKTREE\s+FAIL\s+DIRTY' 'dirty worktree failure is reported'
     Remove-Item -LiteralPath (Join-Path $workingRepo 'dirty.txt') -Force
 
+    $candidateRepo = Join-Path $tempRoot 'candidate-backend'
+    $candidateRemote = Join-Path $tempRoot 'candidate-backend-remote.git'
+    Initialize-TestGitRepo -WorkingRepo $candidateRepo -BareRemote $candidateRemote -Branch $expectedBranch
+    $candidateBaseline = Get-M1RepositoryBaseline -Name 'Backend' -Path $candidateRepo -ExpectedBranch $expectedBranch
+    Set-Content -LiteralPath (Join-Path $candidateRepo 'candidate.txt') -Value 'legitimate task diff' -NoNewline
+    $candidateResult = Complete-M1ImplementationCandidate `
+        -Name 'Backend' `
+        -Path $candidateRepo `
+        -ExpectedBranch $expectedBranch `
+        -Baseline $candidateBaseline `
+        -TaskId 'P2T5'
+    Assert-True ([bool]$candidateResult.CandidateCommitted) 'IMPLEMENTED plus a legitimate task diff is checkpointed instead of rejected as a dirty recovery failure'
+    Assert-True ([string]::IsNullOrWhiteSpace((& git -C $candidateRepo status --porcelain=v1 | Out-String))) 'candidate checkpoint leaves the backend worktree clean'
+    $candidateHead = (& git -C $candidateRepo rev-parse HEAD | Out-String).Trim()
+    $candidateRemoteHead = (& git -C $candidateRepo rev-parse ('refs/remotes/origin/' + $expectedBranch) | Out-String).Trim()
+    Assert-True ($candidateHead -eq $candidateRemoteHead) 'candidate checkpoint is pushed to the expected remote branch'
+
     git -C $workingRepo checkout -q -b wrong-branch
     git -C $workingRepo push -q -u origin wrong-branch
     $wrongBranch = Invoke-SpaRun -Arguments $preflightArgs

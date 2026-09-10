@@ -834,6 +834,21 @@ function Invoke-SpaUnitWithAutoDebug {
     $rejectionReason = ''
     $pendingStage = $null
     $pendingPatch = ''
+    $expectedBranch = [string]$State.branch
+    $baselineBackend = Get-M1RepositoryBaseline -Name 'Backend' -Path $BackendRepositoryPath -ExpectedBranch $expectedBranch
+    $baselineFrontend = Get-M1RepositoryBaseline -Name 'Frontend' -Path $FrontendRepositoryPath -ExpectedBranch $expectedBranch
+    $initialHeads = @{
+        backend = [string]$baselineBackend.Head
+        frontend = [string]$baselineFrontend.Head
+    }
+    $implementationMeta = Resolve-SpaDebugUnitMetadata `
+        -Unit $Unit `
+        -TaskRecord $TaskRecord `
+        -RoutingPath $RoutingPath `
+        -BackendRepositoryPath $BackendRepositoryPath `
+        -FrontendRepositoryPath $FrontendRepositoryPath `
+        -State $State
+    $candidateBaseline = if ([string]$implementationMeta.Repository -eq 'Backend') { $baselineBackend } else { $baselineFrontend }
 
     while ($true) {
         $isRetry = ($taskAttempt -gt 0)
@@ -856,16 +871,41 @@ function Invoke-SpaUnitWithAutoDebug {
                 $script:SpaAutoDebugCycles = $cycle
                 $script:SpaAutoDebugRetriedRoute = $routeId
             }
-            return $result
+            if ([string]$Unit.Stage -ne 'REVIEW') {
+                try {
+                    Complete-M1ImplementationCandidate `
+                        -Name ([string]$implementationMeta.Repository) `
+                        -Path ([string]$implementationMeta.RepositoryPath) `
+                        -ExpectedBranch $expectedBranch `
+                        -Baseline $candidateBaseline `
+                        -TaskId $taskId | Out-Null
+                }
+                catch {
+                    $candidateError = $_.Exception.Message
+                    $candidateStatus = (Invoke-M1Git -Path ([string]$implementationMeta.RepositoryPath) -Arguments @('status', '--porcelain=v1', '--untracked-files=normal') -AllowFailure).Output
+                    $candidateDiffStat = (Invoke-M1Git -Path ([string]$implementationMeta.RepositoryPath) -Arguments @('diff', '--stat') -AllowFailure).Output
+                    if (-not [string]::IsNullOrWhiteSpace($candidateStatus)) {
+                        $candidateError += [System.Environment]::NewLine + 'CANDIDATE STATUS:' + [System.Environment]::NewLine + $candidateStatus
+                    }
+                    if (-not [string]::IsNullOrWhiteSpace($candidateDiffStat)) {
+                        $candidateError += [System.Environment]::NewLine + 'CANDIDATE DIFFSTAT:' + [System.Environment]::NewLine + $candidateDiffStat
+                    }
+                    $result = [pscustomobject]@{
+                        Code = 1
+                        Output = $candidateError
+                        DisplayOutput = $candidateError
+                        Stdout = ''
+                        Stderr = ''
+                    }
+                }
+            }
+            if ($result.Code -eq 0) { return $result }
+            if ($result.DisplayOutput) { Write-Host $result.DisplayOutput }
         }
 
         $taskAttempt++
         $signature = Get-SpaFailureSignature -Result $result
-        if ($null -eq $initialHeads) {
-            $initialHeads = @{
-                backend = (Invoke-M1Git -Path $BackendRepositoryPath -Arguments @('rev-parse', 'HEAD')).Output
-                frontend = (Invoke-M1Git -Path $FrontendRepositoryPath -Arguments @('rev-parse', 'HEAD')).Output
-            }
+        if ($null -eq $originalFailure) {
             $originalFailure = [ordered]@{
                 code = [int]$result.Code
                 output = [string]$result.Output

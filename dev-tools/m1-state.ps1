@@ -715,6 +715,111 @@ function Sync-M1Repository {
     }
 }
 
+function Get-M1RepositoryBaseline {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$ExpectedBranch
+    )
+
+    Test-M1RepositoryLocalState -Name $Name -Path $Path -ExpectedBranch $ExpectedBranch | Out-Null
+    $head = (Invoke-M1Git -Path $Path -Arguments @('rev-parse', 'HEAD')).Output
+    $remoteRef = 'refs/remotes/origin/' + $ExpectedBranch
+    $remote = Invoke-M1Git -Path $Path -Arguments @('rev-parse', '--verify', $remoteRef) -AllowFailure
+    if ($remote.Code -ne 0) {
+        throw "$Name repository remote baseline origin/$ExpectedBranch is unavailable."
+    }
+
+    return [pscustomobject]@{
+        Name = $Name
+        Path = [System.IO.Path]::GetFullPath($Path)
+        Branch = $ExpectedBranch
+        Head = $head
+        RemoteRef = $remoteRef
+        RemoteHead = $remote.Output
+    }
+}
+
+function Assert-M1RepositoryBaseline {
+    param([Parameter(Mandatory = $true)][object]$Baseline)
+
+    if ($null -eq $Baseline) {
+        throw 'Repository baseline is missing.'
+    }
+    if (-not (Test-Path -LiteralPath $Baseline.Path -PathType Container)) {
+        throw "$($Baseline.Name) repository is missing: $($Baseline.Path)"
+    }
+
+    $branch = (Invoke-M1Git -Path $Baseline.Path -Arguments @('branch', '--show-current')).Output
+    if (-not $branch.Equals([string]$Baseline.Branch, [System.StringComparison]::Ordinal)) {
+        throw "$($Baseline.Name) repository branch changed from '$($Baseline.Branch)' to '$branch' during the task."
+    }
+
+    $head = (Invoke-M1Git -Path $Baseline.Path -Arguments @('rev-parse', 'HEAD')).Output
+    if (-not $head.Equals([string]$Baseline.Head, [System.StringComparison]::Ordinal)) {
+        throw "$($Baseline.Name) repository HEAD changed unexpectedly during the task."
+    }
+
+    $remote = Invoke-M1Git -Path $Baseline.Path -Arguments @('rev-parse', '--verify', $Baseline.RemoteRef) -AllowFailure
+    if ($remote.Code -ne 0) {
+        throw "$($Baseline.Name) repository remote state could not be inspected after the task."
+    }
+    if (-not $remote.Output.Equals([string]$Baseline.RemoteHead, [System.StringComparison]::Ordinal)) {
+        throw "$($Baseline.Name) repository remote state changed unexpectedly during the task."
+    }
+}
+
+function Complete-M1ImplementationCandidate {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$ExpectedBranch,
+        [Parameter(Mandatory = $true)][object]$Baseline,
+        [Parameter(Mandatory = $true)][string]$TaskId
+    )
+
+    $status = (Invoke-M1Git -Path $Path -Arguments @('status', '--porcelain=v1', '--untracked-files=normal')).Output
+    if ([string]::IsNullOrWhiteSpace($status)) {
+        return [pscustomobject]@{
+            Name = $Name
+            Path = [System.IO.Path]::GetFullPath($Path)
+            Head = $Baseline.Head
+            CandidateCommitted = $false
+        }
+    }
+
+    Assert-M1RepositoryBaseline -Baseline $Baseline
+
+    $unstagedCheck = Invoke-M1Git -Path $Path -Arguments @('diff', '--check') -AllowFailure
+    if ($unstagedCheck.Code -ne 0) {
+        throw "$Name candidate verification failed before checkpoint (unstaged whitespace/conflict markers)."
+    }
+
+    Invoke-M1Git -Path $Path -Arguments @('add', '-A') | Out-Null
+    $stagedCheck = Invoke-M1Git -Path $Path -Arguments @('diff', '--cached', '--check') -AllowFailure
+    if ($stagedCheck.Code -ne 0) {
+        throw "$Name candidate verification failed before checkpoint (staged whitespace/conflict markers)."
+    }
+    Invoke-M1Git -Path $Path -Arguments @('commit', '-q', '-m', ("chore: checkpoint SPA M1 $TaskId IMPLEMENTED")) | Out-Null
+    $push = Invoke-M1Git -Path $Path -Arguments @('push', 'origin', $ExpectedBranch) -AllowFailure
+    if ($push.Code -ne 0) {
+        throw "$Name candidate checkpoint was committed locally but push failed; '$TaskId' is not durable."
+    }
+
+    $remoteRef = 'refs/remotes/origin/' + $ExpectedBranch
+    $counts = (Invoke-M1Git -Path $Path -Arguments @('rev-list', '--left-right', '--count', ('HEAD...' + $remoteRef))).Output
+    if ($counts -notmatch '^0\s+0$') {
+        throw "$Name candidate checkpoint push returned but local/remote synchronization is not 0/0."
+    }
+
+    return [pscustomobject]@{
+        Name = $Name
+        Path = [System.IO.Path]::GetFullPath($Path)
+        Head = (Invoke-M1Git -Path $Path -Arguments @('rev-parse', 'HEAD')).Output
+        CandidateCommitted = $true
+    }
+}
+
 function Assert-M1CommitVisible {
     param([string]$RepositoryName, [string]$RepositoryPath, [string]$Sha, [string]$Branch)
 
