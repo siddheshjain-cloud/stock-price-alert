@@ -89,6 +89,13 @@ function Assert-M1State {
             }
         }
 
+        $humanAcceptedWithDeferrals =
+            (Test-M1HasProperty -InputObject $task -Name 'humanAcceptedWithDeferrals') -and
+            [bool]$task.humanAcceptedWithDeferrals
+        if ($humanAcceptedWithDeferrals -and $status -ne 'COMPLETE') {
+            throw ('M1 state is malformed: task {0} records human acceptance with deferrals without being COMPLETE.' -f $taskId)
+        }
+
         if ($status -eq 'REVIEW_PENDING' -and [string]::IsNullOrWhiteSpace([string]$task.reviewRoute)) {
             throw "M1 state is malformed: task '$taskId' is REVIEW_PENDING without a reviewRoute."
         }
@@ -97,14 +104,41 @@ function Assert-M1State {
         }
         if ($status -eq 'COMPLETE') {
             $evidence = $task.evidence
-            $reviewOk = (-not [bool]$evidence.reviewRequired) -or [bool]$evidence.reviewSucceeded
+            $reviewRequired = [bool]$evidence.reviewRequired
+            $reviewSucceeded = [bool]$evidence.reviewSucceeded
+            $humanAcceptanceOk = $false
+            if ($humanAcceptedWithDeferrals) {
+                if (-not $reviewRequired) {
+                    throw ('M1 state is malformed: task {0} records human acceptance with deferrals without a required review.' -f $taskId)
+                }
+                if ($reviewSucceeded) {
+                    throw ('M1 state is malformed: task {0} records human acceptance with deferrals while its review is marked successful.' -f $taskId)
+                }
+                $acceptanceReason = if (Test-M1HasProperty -InputObject $task -Name 'humanAcceptanceReason') { [string]$task.humanAcceptanceReason } else { '' }
+                $acceptedAtUtc = if (Test-M1HasProperty -InputObject $task -Name 'humanAcceptedAtUtc') { [string]$task.humanAcceptedAtUtc } else { '' }
+                $deferrals = @()
+                if (Test-M1HasProperty -InputObject $task -Name 'humanDeferrals') { $deferrals = @($task.humanDeferrals) }
+                $explicitDeferrals = @($deferrals | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+                if (-not [string]::IsNullOrWhiteSpace($acceptedAtUtc)) {
+                    $parsedAcceptedAt = [datetimeoffset]::MinValue
+                    if (-not [datetimeoffset]::TryParse($acceptedAtUtc, [ref]$parsedAcceptedAt)) {
+                        throw ('M1 state is malformed: task {0} has an invalid humanAcceptedAtUtc value.' -f $taskId)
+                    }
+                }
+                $humanAcceptanceOk =
+                    (-not [string]::IsNullOrWhiteSpace($acceptanceReason)) -and
+                    (-not [string]::IsNullOrWhiteSpace($acceptedAtUtc)) -and
+                    ($explicitDeferrals.Count -ge 1) -and
+                    ([string]$task.lastSuccessfulReviewVerdict).Trim().Equals('CHANGES REQUIRED', [System.StringComparison]::OrdinalIgnoreCase)
+            }
+            $reviewOk = (-not $reviewRequired) -or $reviewSucceeded -or $humanAcceptanceOk
             if (-not [bool]$evidence.implementationSucceeded -or
                 -not [bool]$evidence.testsSucceeded -or
                 -not $reviewOk -or
                 -not [bool]$evidence.relevantCommitsPushed) {
                 throw "M1 state is malformed: task '$taskId' is COMPLETE without all required objective evidence."
             }
-            if ([bool]$evidence.reviewRequired -and [string]::IsNullOrWhiteSpace([string]$task.lastSuccessfulReviewVerdict)) {
+            if ($reviewRequired -and [string]::IsNullOrWhiteSpace([string]$task.lastSuccessfulReviewVerdict)) {
                 throw "M1 state is malformed: task '$taskId' is COMPLETE without its required review verdict."
             }
         }
@@ -302,6 +336,75 @@ function Complete-M1ReviewTransition {
     if (-not [string]::IsNullOrWhiteSpace($FrontendHead)) {
         Set-M1ObjectProperty -InputObject $State.repositories.frontend -Name 'lastVerifiedSha' -Value $FrontendHead
     }
+
+    Assert-M1State -State $State | Out-Null
+    return $task
+}
+
+function Complete-M1HumanAcceptanceTransition {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][string]$TaskId,
+        [Parameter(Mandatory = $true)][string]$ReviewVerdict,
+        [Parameter(Mandatory = $true)][string]$Reason,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][string[]]$Deferrals,
+        [string]$AcceptedAtUtc = ''
+    )
+
+    $task = Get-M1StateTaskRecord -State $State -TaskId $TaskId
+
+    if (-not [bool]$task.evidence.reviewRequired) {
+        throw ('Human acceptance for {0} requires a task that requires review.' -f $TaskId)
+    }
+    if ([bool]$task.evidence.reviewSucceeded) {
+        throw ('Human acceptance for {0} cannot apply to a task whose review already succeeded.' -f $TaskId)
+    }
+
+    $status = ([string]$task.status).Trim().ToUpperInvariant()
+    if (@('RUNNING_LOCAL', 'REVIEW_PENDING', 'REMEDIATION_REQUIRED') -notcontains $status) {
+        throw ('Human acceptance for {0} is not valid from status {1}.' -f $TaskId, $status)
+    }
+
+    $parsedVerdict = Read-SpaReviewVerdict -Text $ReviewVerdict
+    if ($parsedVerdict -ne 'CHANGES REQUIRED') {
+        throw ('Human acceptance for {0} requires the preserved reviewer verdict CHANGES REQUIRED.' -f $TaskId)
+    }
+    $existingVerdict = ([string]$task.lastSuccessfulReviewVerdict).Trim()
+    if (-not [string]::IsNullOrWhiteSpace($existingVerdict) -and
+        -not $existingVerdict.Equals('CHANGES REQUIRED', [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw ('Human acceptance for {0} refuses to overwrite recorded reviewer verdict {1}.' -f $TaskId, $existingVerdict)
+    }
+
+    if ([string]::IsNullOrWhiteSpace($Reason)) {
+        throw ('Human acceptance for {0} requires a non-empty acceptance reason.' -f $TaskId)
+    }
+
+    $explicitDeferrals = @($Deferrals | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { ([string]$_).Trim() })
+    if ($explicitDeferrals.Count -eq 0) {
+        throw ('Human acceptance for {0} requires at least one explicit deferral.' -f $TaskId)
+    }
+
+    $acceptedAt = $AcceptedAtUtc
+    if ([string]::IsNullOrWhiteSpace($acceptedAt)) {
+        $acceptedAt = [datetimeoffset]::UtcNow.ToString('o')
+    }
+    else {
+        $parsedAcceptedAt = [datetimeoffset]::MinValue
+        if (-not [datetimeoffset]::TryParse([string]$acceptedAt, [ref]$parsedAcceptedAt)) {
+            throw ('Human acceptance for {0} has an invalid acceptance timestamp.' -f $TaskId)
+        }
+        $acceptedAt = $parsedAcceptedAt.ToUniversalTime().ToString('o')
+    }
+
+    Set-M1ObjectProperty -InputObject $task.evidence -Name 'reviewSucceeded' -Value $false
+    Set-M1ObjectProperty -InputObject $task -Name 'lastSuccessfulReviewVerdict' -Value $parsedVerdict
+    Set-M1ObjectProperty -InputObject $task -Name 'humanAcceptedWithDeferrals' -Value $true
+    Set-M1ObjectProperty -InputObject $task -Name 'humanAcceptanceReason' -Value $Reason.Trim()
+    Set-M1ObjectProperty -InputObject $task -Name 'humanAcceptedAtUtc' -Value $acceptedAt
+    Set-M1ObjectProperty -InputObject $task -Name 'humanDeferrals' -Value @($explicitDeferrals)
+    Set-M1ObjectProperty -InputObject $task -Name 'status' -Value 'COMPLETE'
+    Set-M1ObjectProperty -InputObject $task -Name 'activeRoute' -Value $null
+    Set-M1ObjectProperty -InputObject $task -Name 'updatedUtc' -Value ([datetimeoffset]::UtcNow.ToString('o'))
 
     Assert-M1State -State $State | Out-Null
     return $task

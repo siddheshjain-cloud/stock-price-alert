@@ -123,6 +123,27 @@ function New-TestState {
     }
 }
 
+function New-DeferralReviewState {
+    param(
+        [Parameter(Mandatory = $true)][string]$BackendSha,
+        [Parameter(Mandatory = $true)][string]$FrontendSha,
+        [string]$Status = 'REVIEW_PENDING',
+        [bool]$ReviewRequired = $true
+    )
+
+    $reviewRoute = if ($ReviewRequired) { 'P2T4-REVIEW' } else { $null }
+    $state = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status $Status -BackendSha $BackendSha -FrontendSha $FrontendSha -ReviewRequired $ReviewRequired -ReviewRoute $reviewRoute),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $state.tasks[0].implementationCommitSha = $BackendSha
+    $state.tasks[0].remediationCommitSha = $BackendSha
+    $state.tasks[0].evidence.implementationSucceeded = $true
+    $state.tasks[0].evidence.testsSucceeded = $true
+    $state.tasks[0].evidence.relevantCommitsPushed = $true
+    return $state
+}
+
 foreach ($required in @($stateTools, $seedState)) {
     Assert-True (Test-Path -LiteralPath $required -PathType Leaf) "required resumability artifact exists: $required"
 }
@@ -205,6 +226,84 @@ try {
     }
     Assert-True $inconsistentFailed 'inconsistent review route fails closed'
 
+    # Human acceptance with deferrals: a reviewed CHANGES REQUIRED task may close
+    # only through an explicit human acceptance carrying a reason and deferrals.
+    $closedState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Status 'COMPLETE'
+    $closedState.tasks[0].evidence.reviewSucceeded = $false
+    $closedState.tasks[0].lastSuccessfulReviewVerdict = 'CHANGES REQUIRED'
+    $closedFailed = $false
+    try { Assert-M1State -State $closedState | Out-Null } catch { $closedFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $closedFailed 'reviewRequired task without human acceptance still fails closed'
+
+    $deferralState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha
+    Complete-M1HumanAcceptanceTransition -State $deferralState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' `
+        -Reason 'Residual review findings accepted as deferred; no concrete production/security defect remains.' `
+        -Deferrals @('Deferred end-to-end stale-JWT proof.', 'Optional fixture optimization.') | Out-Null
+    Assert-True (([string]$deferralState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'valid human acceptance completes the task'
+    Assert-True ([bool]$deferralState.tasks[0].humanAcceptedWithDeferrals) 'valid human acceptance records the deferral flag'
+    Assert-True ([string]::IsNullOrWhiteSpace([string]$deferralState.tasks[0].activeRoute)) 'valid human acceptance clears activeRoute'
+    Assert-True (@($deferralState.tasks[0].humanDeferrals).Count -eq 2) 'valid human acceptance records explicit deferrals'
+    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$deferralState.tasks[0].humanAcceptanceReason)) 'valid human acceptance records the reason'
+    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$deferralState.tasks[0].humanAcceptedAtUtc)) 'valid human acceptance records an acceptance timestamp'
+    Assert-True (-not [bool]$deferralState.tasks[0].evidence.reviewSucceeded) 'human acceptance does not mutate reviewSucceeded to true'
+    Assert-True ([string]$deferralState.tasks[0].lastSuccessfulReviewVerdict -eq 'CHANGES REQUIRED') 'human acceptance preserves the CHANGES REQUIRED verdict'
+    Assert-True ([string]$deferralState.tasks[0].implementationCommitSha -eq $backend.Sha -and [string]$deferralState.tasks[0].remediationCommitSha -eq $backend.Sha) 'human acceptance preserves implementation and remediation commit SHAs'
+    Assert-True ((Get-M1NextUnit -State $deferralState).RouteId -eq 'P2T5') 'human-accepted task advances to the next task'
+    $validDeferralState = $true
+    try { Assert-M1State -State $deferralState | Out-Null } catch { $validDeferralState = $false }
+    Assert-True $validDeferralState 'human-accepted CHANGES REQUIRED task is a valid COMPLETE state'
+
+    $noReasonState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha
+    $noReasonFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $noReasonState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason '   ' -Deferrals @('Deferred item.') | Out-Null
+    }
+    catch { $noReasonFailed = ($_.Exception.Message -match 'acceptance reason') }
+    Assert-True $noReasonFailed 'human acceptance without a reason is rejected'
+
+    $noDeferralState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha
+    $noDeferralFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $noDeferralState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason 'Accepted.' -Deferrals @() | Out-Null
+    }
+    catch { $noDeferralFailed = ($_.Exception.Message -match 'explicit deferral') }
+    Assert-True $noDeferralFailed 'human acceptance without deferrals is rejected'
+
+    $blankDeferralState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha
+    $blankDeferralFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $blankDeferralState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason 'Accepted.' -Deferrals @('   ') | Out-Null
+    }
+    catch { $blankDeferralFailed = ($_.Exception.Message -match 'explicit deferral') }
+    Assert-True $blankDeferralFailed 'human acceptance with only blank deferrals is rejected'
+
+    $unreviewedState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Status 'RUNNING_LOCAL' -ReviewRequired $false
+    $unreviewedFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $unreviewedState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason 'Accepted.' -Deferrals @('Deferred item.') | Out-Null
+    }
+    catch { $unreviewedFailed = ($_.Exception.Message -match 'requires review') }
+    Assert-True $unreviewedFailed 'human acceptance cannot close an unreviewed task'
+
+    $wrongVerdictState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha
+    $wrongVerdictFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $wrongVerdictState -TaskId 'P2T4' -ReviewVerdict 'SAFE' -Reason 'Accepted.' -Deferrals @('Deferred item.') | Out-Null
+    }
+    catch { $wrongVerdictFailed = ($_.Exception.Message -match 'CHANGES REQUIRED') }
+    Assert-True $wrongVerdictFailed 'human acceptance refuses a SAFE verdict'
+
+    $routeState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Status 'RUNNING_LOCAL'
+    $routeState.tasks[0].activeRoute = 'P2T4-REVIEW'
+    $routeFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $routeState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason '' -Deferrals @('Deferred item.') | Out-Null
+    }
+    catch { $routeFailed = $true }
+    Assert-True ($routeFailed -and ([string]$routeState.tasks[0].activeRoute -eq 'P2T4-REVIEW')) 'failed human acceptance does not clear activeRoute'
+    Complete-M1HumanAcceptanceTransition -State $routeState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason 'Accepted.' -Deferrals @('Deferred item.') | Out-Null
+    Assert-True ([string]::IsNullOrWhiteSpace([string]$routeState.tasks[0].activeRoute)) 'valid human acceptance clears activeRoute'
+
     $advanceState = New-TestState @(
         (New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha),
         (New-TestTask -Id 'P2T6' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
@@ -284,7 +383,10 @@ try {
     $reviewNext = Get-M1NextUnit -State $reviewPending
     Assert-True ($reviewNext.RouteId -eq 'P2T4-REVIEW') 'P2T4 remains unresolved until review status and evidence are complete'
 
-    $seed = Read-M1State -Path $seedState
+    $seed = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
     $seedNext = Get-M1NextUnit -State $seed
     Assert-True ($seedNext.RouteId -eq 'P2T5') 'seed state identifies P2T5 as next unresolved implementation unit'
 
