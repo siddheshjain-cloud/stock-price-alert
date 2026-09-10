@@ -740,7 +740,7 @@
                   {
                       "id":  "P4T8",
                       "action":  "IMPLEMENT",
-                      "status":  "PENDING",
+                      "status":  "RUNNING_LOCAL",
                       "implementationProvider":  "deepseek",
                       "implementationModel":  "deepseek-v4-flash",
                       "reviewerProvider":  "openai",
@@ -760,7 +760,8 @@
                                        "reviewSucceeded":  false,
                                        "relevantCommitsPushed":  false
                                    },
-                      "updatedUtc":  "2026-09-06T00:00:00Z"
+                      "updatedUtc":  "2026-09-10T22:19:40.2001422+00:00",
+                      "activeRoute":  "P4T8"
                   },
                   {
                       "id":  "P4-FINAL-REVIEW",
