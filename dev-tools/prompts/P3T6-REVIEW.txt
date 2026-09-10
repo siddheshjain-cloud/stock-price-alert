@@ -1,8 +1,8 @@
 Perform an independent, read-only review of SPA Milestone 1 Plan 3 Task 6 in C:\GitHub\backendtest.
 
-Review only the exact Task 6 implementation:
+Review only the exact Task 6 implementation and its recorded remediation:
 - implementation commit: c907cd5e5be7562d0a2fd62545cf515d50fc4f33
-- remediation commit: none (this is the first independent review)
+- remediation commit: 118532f3b59b455484300de94d33d9bd66bb31d7
 - governing task: C:\GitHub\stock-price-alert\docs\superpowers\plans\2026-09-04-investment-operating-system-m1-entitlement-query-projection.md, Plan 3 Task 6
 
 Ignore unrelated earlier tasks and later hygiene or tooling commits. Inspect the complete Task 6 implementation and verify the frozen M1 security-matrix contract:
