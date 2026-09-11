@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$Task = '',
     [switch]$DryRun,
@@ -1209,7 +1209,7 @@ function Invoke-M1Remaining {
                     -ReviewerModel ([string]$taskRecord.reviewerModel) `
                     -BackendHead $backendSync.Head `
                     -FrontendHead $frontendSync.Head `
-                    -ReviewedCommitSha ([string]$taskRecord.remediationCommitSha) | Out-Null
+                    -ReviewedCommitSha $(if (-not [string]::IsNullOrWhiteSpace([string]$TaskRecord.remediationCommitSha)) { [string]$TaskRecord.remediationCommitSha } else { [string]$TaskRecord.implementationCommitSha }) | Out-Null
                 if (([string]$taskRecord.status).Equals('REMEDIATION_REQUIRED', [System.StringComparison]::OrdinalIgnoreCase) -and
                     [int]$taskRecord.remediationAttempts -ge 2) {
                     $hardStopAfterCheckpoint = $true
@@ -1350,7 +1350,7 @@ function Invoke-M1ReviewApplication {
             -ReviewerModel ([string]$taskRecord.reviewerModel) `
             -BackendHead $backendSync.Head `
             -FrontendHead $frontendSync.Head `
-            -ReviewedCommitSha ([string]$taskRecord.remediationCommitSha) | Out-Null
+            -ReviewedCommitSha $(if (-not [string]::IsNullOrWhiteSpace([string]$TaskRecord.remediationCommitSha)) { [string]$TaskRecord.remediationCommitSha } else { [string]$TaskRecord.implementationCommitSha }) | Out-Null
 
         Publish-M1StateCheckpoint `
             -State $state `
