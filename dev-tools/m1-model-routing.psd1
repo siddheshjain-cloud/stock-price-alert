@@ -1,4 +1,4 @@
-@{
+﻿@{
     Version = 1
 
     ModelRoutes = @{
@@ -113,7 +113,19 @@
             Sandbox = 'read-only'
             Prompt = 'prompts\P3T6-REVIEW.txt'
         }
-        'P4T8-REVIEW' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS'); Enabled = $false; IndependentReview = $true }
+        'P4T8-REVIEW' = @{
+    Action = 'REVIEW'
+    ModelRoute = 'SOL'
+    FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS')
+    Enabled = $true
+    IndependentReview = $true
+    Implementer = @{ Provider = 'openai'; Model = 'gpt-5.6-sol' }
+    Repository = 'Backend'
+    RepositoryPath = 'C:\GitHub\backendtest'
+    Branch = 'feature/investment-operating-system-m1'
+    Sandbox = 'read-only'
+    Prompt = 'prompts\P4T8-REVIEW.txt'
+}
         'P4-FINAL-REVIEW' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS'); Enabled = $false; IndependentReview = $true }
         'P5T1-REVIEW' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS'); Enabled = $false; IndependentReview = $true }
         'M1-FINAL-SOL' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; Enabled = $false; IndependentReview = $false }
@@ -126,3 +138,4 @@
         }
     }
 }
+

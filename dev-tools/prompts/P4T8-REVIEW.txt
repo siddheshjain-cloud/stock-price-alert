@@ -1,0 +1,23 @@
+﻿Perform an independent, read-only review of SPA Milestone 1 Plan 4 Task 8 in C:\GitHub\backendtest.
+
+Review only the exact P4T8 implementation and the document-query surfaces it affects.
+The governing task is Plan 4 Task 8: Rights-safe document queries.
+
+Verify that the implementation correctly enforces document access and rights at query boundaries, including:
+1. Unauthorized or non-entitled callers cannot discover restricted documents through list, search, lookup, filtering, counts, metadata, identifiers, or related query paths.
+2. Rights/access policy is applied consistently and cannot be bypassed through alternate query shapes.
+3. Document provenance, corrected/reissued lineage, fingerprints, institutional/source metadata, and audit metadata do not create unintended rights leakage.
+4. Query results preserve the distinction between internal SPA use and external redistribution/download rights.
+5. Deduplication or document relationships do not expose a document that the caller is not entitled to access.
+6. Repository/query implementation is efficient enough for M1 and does not introduce unnecessary queries or material maintainability problems.
+
+Inspect relevant P4T8 code, tests, and the governing Plan 4 specification. Ignore unrelated later hygiene or tooling changes.
+
+Run focused and relevant tests if this read-only repository sandbox permits writable temporary storage. Direct test caches and temporary files to an OS temporary directory where practical. If sandbox or temporary-storage constraints block a test, report that test as NOT PROVEN with the blocking evidence; never report an unexecuted or blocked test as passing.
+
+Make no edits. Make no commits or pushes. Do not close P4T8.
+
+End with exactly one review verdict on its own line:
+SAFE
+SAFE WITH NON-BLOCKING OBSERVATIONS
+CHANGES REQUIRED
