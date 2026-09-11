@@ -1179,10 +1179,16 @@ function Invoke-M1Remaining {
                 throw "Repeated remediation failure after 2 attempts for '$($unit.TaskId)'."
             }
 
-            Set-M1Property -InputObject $taskRecord -Name 'status' -Value 'RUNNING_LOCAL'
+            $preInvokeStatus = if (([string]$Unit.Stage).Equals('REVIEW', [System.StringComparison]::OrdinalIgnoreCase)) {
+                'REVIEW_PENDING'
+            } else {
+                'RUNNING_LOCAL'
+            }
+
+            Set-M1Property -InputObject $taskRecord -Name 'status' -Value $preInvokeStatus
             Set-M1Property -InputObject $taskRecord -Name 'activeRoute' -Value $unit.RouteId
             Set-M1Property -InputObject $taskRecord -Name 'updatedUtc' -Value ([datetimeoffset]::UtcNow.ToString('o'))
-            Publish-M1StateCheckpoint -State $state -StateFile $StatePath -ToolingRepository $toolingPath -TaskId $unit.TaskId -Status 'RUNNING_LOCAL'
+            Publish-M1StateCheckpoint -State $state -StateFile $StatePath -ToolingRepository $toolingPath -TaskId $unit.TaskId -Status $preInvokeStatus
 
             $healthRoot = if ([string]::IsNullOrWhiteSpace($TestHealthPath)) { $env:TEMP } else { $TestHealthPath }
             $result = Invoke-SpaUnitWithAutoDebug `
