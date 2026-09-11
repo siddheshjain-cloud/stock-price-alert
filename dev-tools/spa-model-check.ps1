@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$WorkingPath = 'C:\GitHub\backendtest'
 )
@@ -22,9 +22,9 @@ if ([string]::IsNullOrWhiteSpace($WorkingPath) -or -not (Test-Path -LiteralPath 
 $prompt = 'Reply with exactly: MODEL_CHECK_OK. Do not inspect, modify, or execute anything in the repository.'
 
 $codexArgs = @(
-    'exec',
     '--ask-for-approval',
     'never',
+    'exec',
     '--sandbox',
     'read-only',
     '--skip-git-repo-check',
@@ -96,3 +96,4 @@ if ($text.IndexOf('MODEL_CHECK_OK', [System.StringComparison]::Ordinal) -lt 0) {
     Write-Output 'Expected MODEL_CHECK_OK response was absent.'
 }
 exit 1
+
