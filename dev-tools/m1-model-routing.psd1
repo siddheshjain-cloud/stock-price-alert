@@ -119,7 +119,7 @@
     FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS')
     Enabled = $true
     IndependentReview = $true
-    Implementer = @{ Provider = 'openai'; Model = 'gpt-5.6-sol' }
+    Implementer = @{ Provider = 'deepseek'; Model = 'deepseek-v4-flash' }
     Repository = 'Backend'
     RepositoryPath = 'C:\GitHub\backendtest'
     Branch = 'feature/investment-operating-system-m1'
@@ -138,4 +138,6 @@
         }
     }
 }
+
+
 
