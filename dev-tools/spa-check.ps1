@@ -354,6 +354,13 @@ else {
 }
 if ($modelCommandExitCode -ne 0) {
     Write-Output ('MODEL CHECK FAIL exit={0}' -f $modelCommandExitCode)
+
+    $modelReason = 'model command produced no output'
+    if (-not [string]::IsNullOrWhiteSpace($codexText)) {
+        $modelReason = $codexText -replace '(?i)\bsk-[a-z0-9_\-]{8,}\b', '[REDACTED_API_KEY]' -replace '(?i)(\bbearer\s+)[a-z0-9_\-\.]+', '${1}[REDACTED]' -replace '(?i)(\bauthorization\s*:?\s*)[^\r\n]*', '${1}[REDACTED]'
+    }
+
+    Write-Output ('MODEL CHECK REASON {0}' -f $modelReason)
 }
 if (-not [string]::IsNullOrWhiteSpace($ExpectedApproval) -and -not $approvalText.Equals($ExpectedApproval, [System.StringComparison]::OrdinalIgnoreCase)) {
     Write-Output ('APPROVAL   FAIL expected={0} actual={1}' -f $ExpectedApproval, $approvalText)

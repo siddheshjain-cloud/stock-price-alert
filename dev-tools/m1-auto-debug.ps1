@@ -495,6 +495,31 @@ function Test-SpaAutoDebugDeterministicFailure {
         }
     }
 
+    # A spa-run preflight failure means the route never started: no candidate code
+    # was executed or validated. Classify generic preflight/model-check failures
+    # after the more specific provider categories so authentication, billing,
+    # provider-unavailable, and model-unavailable evidence keeps its precedence.
+    if ($text -match '(?i)Preflight did not prove the requested route ready|MODEL CHECK FAIL exit=\d+') {
+        $evidenceLine = @(
+            $text -split '\r?\n' |
+                Where-Object { $_ -match '(?i)MODEL CHECK FAIL exit=\d+' } |
+                Select-Object -First 1
+        )
+        if (-not $evidenceLine) {
+            $evidenceLine = @(
+                $text -split '\r?\n' |
+                    Where-Object { $_ -match '(?i)Preflight did not prove the requested route ready' } |
+                    Select-Object -First 1
+            )
+        }
+        return [pscustomobject]@{
+            IsDeterministic = $true
+            Category = 'PREFLIGHT_ENVIRONMENT'
+            Reason = 'The route preflight/model check did not prove the requested route ready.'
+            Evidence = ([string]$evidenceLine).Trim()
+        }
+    }
+
     return [pscustomobject]@{
         IsDeterministic = $false
         Category = ''

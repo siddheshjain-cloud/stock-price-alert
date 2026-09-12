@@ -279,6 +279,54 @@ Assert-True ($disabledRouteFailure.IsDeterministic -and [string]$disabledRouteFa
 Assert-True ($missingReviewMetadataFailure.IsDeterministic -and [string]$missingReviewMetadataFailure.Category -eq 'ORCHESTRATION_CONFIGURATION') 'V7 classifies missing review execution metadata as an orchestration/configuration failure'
 Assert-Match ([string]$disabledRouteFailure.Evidence) 'P3T6-REVIEW is recorded but not yet enabled' 'V7 preserves the exact disabled-route evidence'
 
+# A spa-run preflight failure means the route never started: no candidate code
+# was executed or validated. This is the observed P4T8-REVIEW failure, where the
+# reviewer route could not be verified (provider authentication). It must stop
+# orchestration deterministically instead of consuming a Flash/Pro code-repair
+# cycle.
+$observedPreflightFailure = [pscustomobject]@{
+    Code = 1
+    Output = @(
+        'SPA DEVELOPMENT PREFLIGHT'
+        '------------------------------------------------------------'
+        'TARGET     BACKEND'
+        'BRANCH     OK   feature/investment-operating-system-m1'
+        'WORKTREE   OK   CLEAN'
+        'MODEL      gpt-5.6-sol'
+        'PROVIDER   openai'
+        'REASONING  high'
+        'MODEL CHECK FAIL exit=1'
+        'APPROVAL   never'
+        'SANDBOX    read-only'
+        '------------------------------------------------------------'
+        'READY      NO'
+        'SPA-RUN FAIL: Preflight did not prove the requested route ready.'
+    ) -join [System.Environment]::NewLine
+    DisplayOutput = ''
+    Stdout = ''
+    Stderr = ''
+}
+$preflightFailure = Test-SpaAutoDebugDeterministicFailure -Result $observedPreflightFailure
+Assert-True ($preflightFailure.IsDeterministic) 'V7 classifies a route preflight failure as deterministic'
+Assert-True ([string]$preflightFailure.Category -eq 'PREFLIGHT_ENVIRONMENT') 'V7 classifies a route preflight failure as a preflight/environment condition'
+Assert-True ([string]$preflightFailure.Evidence -match 'MODEL CHECK FAIL exit=1') 'V7 preserves the exact preflight model-check evidence'
+Assert-True (-not (Test-SpaAutoDebugCodeValidationRejection -Result $observedPreflightFailure)) 'B: a route preflight failure is never a code-validation rejection'
+
+# When the preflight surfaces the provider reason, the specific provider
+# category is preserved instead of the generic preflight category.
+$authPreflightFailure = Test-SpaAutoDebugDeterministicFailure -Result ([pscustomobject]@{
+    Code = 1
+    Output = (
+        $observedPreflightFailure.Output +
+        [System.Environment]::NewLine +
+        'MODEL CHECK REASON unexpected status 401 Unauthorized: Missing bearer or basic authentication in header'
+    )
+    DisplayOutput = ''
+    Stdout = ''
+    Stderr = ''
+})
+Assert-True ($authPreflightFailure.IsDeterministic -and [string]$authPreflightFailure.Category -eq 'AUTHENTICATION') 'V7 classifies a provider-authentication preflight failure as AUTHENTICATION'
+
 # Invariant A: the harness-owned commit temp never enters candidate scope.
 Assert-True (Test-SpaHarnessOwnedTempArtifact -Path '.git-commit-temp') 'A: .git-commit-temp is a harness-owned artifact'
 Assert-True (-not (Test-SpaHarnessOwnedTempArtifact -Path 'src/app.ts')) 'A: ordinary paths are not harness-owned artifacts'
@@ -806,6 +854,60 @@ try {
     Assert-Match $runH.Output 'DEBUG CYCLES\s+1' 'C: Pro task consumed exactly one repair cycle'
     Assert-Match $runH.Output 'DEBUG MODEL\s+deepseek-v4-pro' 'C: Pro task repair stays Pro-classified'
     Assert-True (-not [regex]::IsMatch($runH.Output, 'DEBUG MODEL\s+deepseek-v4-flash', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) 'C: Pro task never downgrades the repair to Flash'
+
+    # Scenario I: the observed P4T8-REVIEW failure. The review route never
+    # started because its preflight could not verify the reviewer
+    # model/provider, so no candidate code was ever executed or validated. The
+    # supervisor must stop deterministically and spend zero repair cycles.
+    $scenarioI = New-AdScenario -Root $tempRoot -Name 'i'
+    $iCount = Join-Path $tempRoot 'i-debug-count.txt'
+    Set-AdEnvironment @{
+        SPA_AD_GATE_FILE = $null
+        SPA_AD_COUNT_FILE = $iCount
+        SPA_AD_ADD_DIR_CAPTURE = $null
+        SPA_AD_GATE_1 = $null
+        SPA_AD_GATE_2 = $null
+        SPA_AD_GATE_3 = $null
+        SPA_AD_REPAIR_REPO = $null
+        SPA_AD_DEBUG_EXIT = $null
+        # Reproduce the exact observed evidence shape: the preflight reports a
+        # model-check failure without any provider detail. Even without the
+        # reason text this must never be treated as a candidate code defect.
+        SPA_AD_DETERMINISTIC_LINE = @(
+            'SPA DEVELOPMENT PREFLIGHT'
+            'MODEL      gpt-5.6-sol'
+            'PROVIDER   openai'
+            'MODEL CHECK FAIL exit=1'
+            'READY      NO'
+            'SPA-RUN FAIL: Preflight did not prove the requested route ready.'
+        ) -join [System.Environment]::NewLine
+        SPA_AD_DETERMINISTIC_CODE = '1'
+    }
+    $iEvidenceRoot = Join-Path $tempRoot 'i-evidence'
+    $iHealthRoot = Join-Path $tempRoot 'i-health'
+    New-Item -ItemType Directory -Path $iEvidenceRoot, $iHealthRoot -Force | Out-Null
+    $oldPathI = $env:PATH
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldPathI
+    try {
+        $runI = Invoke-SpaRunTolerant @(
+            '-Task', 'M1-REMAINING', '-TestMode', '-AllowTestExecution',
+            '-StatePath', $scenarioI.StatePath, '-RoutingPath', $routingPath,
+            '-BackendPath', $scenarioI.Backend.Home, '-FrontendPath', $scenarioI.Frontend.Home,
+            '-DependencyMarkerPath', $scenarioI.MarkerPath,
+            '-TestEvidenceRoot', $iEvidenceRoot, '-TestHealthPath', $iHealthRoot
+        )
+    }
+    finally {
+        $env:PATH = $oldPathI
+    }
+    Assert-True ($runI.Code -ne 0) 'I: a preflight failure stops the runner safely'
+    Assert-Match $runI.Output 'deterministic PREFLIGHT_ENVIRONMENT' 'I: a preflight failure is reported as a deterministic preflight/environment stop'
+    Assert-Match $runI.Output 'MODEL CHECK FAIL exit=1' 'I: the preflight model-check evidence is preserved for the human'
+    Assert-Match $runI.Output 'DEBUG CYCLES\s+0' 'I: a preflight failure consumes zero code-repair cycles'
+    Assert-True (-not (Test-Path -LiteralPath $iCount -PathType Leaf)) 'I: no code-debug or self-repair cycle was started for a preflight failure'
+    Assert-True (@(Get-ChildItem -LiteralPath $iEvidenceRoot -File).Count -eq 0) 'I: no code-debug artifacts were produced for a preflight failure'
+    $iState = Read-M1State -Path $scenarioI.StatePath
+    Assert-True (([string]$iState.tasks[0].status).Equals('RUNNING_LOCAL', [System.StringComparison]::OrdinalIgnoreCase)) 'I: a preflight failure never promotes or completes the original task'
 
     # STATUS surface: Auto-Debug heartbeat fields and state transitions.
     $statusHealthRoot = Join-Path $tempRoot 'status-health'

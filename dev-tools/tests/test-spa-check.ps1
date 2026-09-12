@@ -274,6 +274,37 @@ exit /b 9
     Assert-True ($failedModelCode -ne 0) 'spa-check rejects an otherwise valid model header when the model command exits nonzero'
     Assert-True ([regex]::IsMatch($failedModelOutput, 'MODEL CHECK\s+FAIL\s+exit=9')) 'spa-check reports the nonzero model command exit code'
 
+    # The model probe can fail because the provider cannot authenticate the
+    # route (for example an expired or absent OpenAI login). spa-check must
+    # surface the probe reason in its own output: the failure evidence is what
+    # the supervisor classifies and what a human needs to fix the environment.
+    $authFailureShimDir = Join-Path $tempRoot 'auth-failure-shim'
+    New-Item -ItemType Directory -Path $authFailureShimDir -Force | Out-Null
+    @'
+@echo off
+echo 2026-09-11T10:24:20.000Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 401 Unauthorized, url: wss://api.openai.com/v1/responses
+echo ERROR: unexpected status 401 Unauthorized: Missing bearer or basic authentication in header sk-abcdef1234567890
+exit /b 1
+'@ | Set-Content -LiteralPath (Join-Path $authFailureShimDir 'codex.cmd') -Encoding ASCII
+    $authFailureArgs = @(
+        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $spaCheck,
+        '-Target', 'Frontend', '-FrontendPath', $frontendRepo,
+        '-ExpectedBranch', $expectedBranch,
+        '-ExpectedModel', 'gpt-5.6-sol', '-ExpectedProvider', 'openai', '-ExpectedReasoning', 'high'
+    )
+    $env:PATH = $authFailureShimDir + [System.IO.Path]::PathSeparator + $previousPath
+    try {
+        $authFailureOutput = & powershell.exe @authFailureArgs 2>&1 | Out-String
+        $authFailureCode = $LASTEXITCODE
+    }
+    finally {
+        $env:PATH = $previousPath
+    }
+    Assert-True ($authFailureCode -ne 0) 'spa-check fails closed when the model probe cannot authenticate'
+    Assert-True ([regex]::IsMatch($authFailureOutput, 'MODEL CHECK\s+FAIL\s+exit=1')) 'spa-check reports the failed model probe exit code'
+    Assert-True ([regex]::IsMatch($authFailureOutput, 'MODEL CHECK REASON\s+.*401 Unauthorized')) 'spa-check surfaces the provider authentication reason in the failure evidence'
+    Assert-NotContains $authFailureOutput 'sk-abcdef1234567890' 'spa-check never echoes provider credential material in the model-check reason'
+
     $effectiveSandboxShimDir = Join-Path $tempRoot 'effective-sandbox-shim'
     New-Item -ItemType Directory -Path $effectiveSandboxShimDir -Force | Out-Null
     @'
