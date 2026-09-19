@@ -1,0 +1,151 @@
+FINAL SPA-RUN M1 TOOLING FREEZE PATCH
+MODEL: GPT-5.6 SOL
+REASONING: HIGH
+
+REPOSITORY
+C:\GitHub\stock-price-alert
+
+BRANCH
+feature/investment-operating-system-m1
+
+PURPOSE
+Make exactly two final human-operability improvements to the already-working SPA development tooling, then freeze tooling for M1.
+
+CURRENT STATE
+- spa-run deterministic routing works.
+- M1-REMAINING/resume/recovery works.
+- All four tooling suites are currently GREEN.
+- Repo is synced.
+- Do not redesign or broaden spa-run.
+
+REQUIRED CHANGES — ONLY THESE TWO
+
+1) NON-INTERACTIVE GIT/PAGER SAFETY
+
+An unattended spa-run must never stop waiting for a human to press q or answer a Git terminal prompt.
+
+At spa-run process scope, ensure Git output is non-interactive using the smallest reliable mechanism, e.g.:
+- GIT_PAGER=cat
+- PAGER=cat
+- GIT_TERMINAL_PROMPT=0
+
+Prefer process-scoped environment variables or git --no-pager in the runner.
+Do not change the user's permanent/global Git configuration.
+Do not change credentials.
+Do not suppress useful Git output; only prevent pager/input blocking.
+
+Add a focused regression test proving the runner establishes the non-interactive Git environment / command behavior.
+
+2) COMPACT FINAL HUMAN SUMMARY
+
+Every real spa-run invocation must finish with one compact summary block immediately before control returns to PowerShell.
+
+The detailed logs remain available above. The final block is for the human.
+
+For successful task execution, include as available:
+============================================================
+SPA TASK SUMMARY
+============================================================
+TASK        <task id>
+ACTION      <IMPLEMENT/REVIEW/etc>
+RESULT      <COMPLETE/SAFE/etc>
+MODEL       <model>
+REASONING   <reasoning>
+TESTS       <compact status if known>
+COMMIT      <sha if known>
+PUSH        <SUCCESS/NOT APPLICABLE/etc>
+WORKTREE    <CLEAN/etc>
+REMOTE      <SYNCED/etc>
+NEXT        <next task/gate if known>
+============================================================
+
+For controlled failure/stop, include:
+============================================================
+SPA TASK SUMMARY
+============================================================
+TASK        <task id>
+RESULT      STOPPED
+REASON      <concise reason>
+LAST SAFE   <last verified task/checkpoint if known>
+REMOTE      <safe/synced status if known>
+NEXT        <required next action>
+============================================================
+
+For M1-REMAINING safe time-window stop, use a session summary:
+============================================================
+SPA SESSION SUMMARY
+============================================================
+COMPLETED   <tasks completed this session>
+LAST SAFE   <task/checkpoint>
+NEXT        <next unit>
+REMOTE      <SYNCED/etc>
+STOP REASON <time window / human gate / failure>
+RESUME      spa-run M1-REMAINING
+============================================================
+
+Requirements:
+- Summary must print on success and controlled failure/stop.
+- Summary must be the LAST meaningful spa-run output before returning to PowerShell.
+- Do not require the user to scroll to understand what happened.
+- Do not fabricate test/commit/push values. If unavailable, print NOT AVAILABLE / NOT APPLICABLE.
+- Keep summary compact.
+- Do not create a dashboard, log framework, or new subsystem.
+
+IMPLEMENTATION METHOD
+- Read current dev-tools/spa-run.ps1 and existing tests first.
+- Use TDD:
+  RED tests for pager safety and final-summary behavior.
+  Verify intended failures.
+  Implement smallest change.
+  GREEN.
+- Preserve all existing routing/resume/recovery behavior.
+- Do not touch product code, backend code, migrations, APIs, deployment, live systems, secrets, permissions, main/master.
+- Do not execute the real P2T4-REVIEW.
+- Do not start P2T5.
+
+VERIFICATION
+Run fresh:
+.\dev-tools\tests\test-dev-tools.ps1
+.\dev-tools\tests\test-spa-check.ps1
+.\dev-tools\tests\test-spa-run.ps1
+.\dev-tools\tests\test-spa-resume.ps1
+
+Require all four GREEN.
+
+Also run:
+git diff --check
+
+Run dry-runs only:
+.\dev-tools\spa-run.ps1 -Task P2T4-REVIEW -DryRun
+.\dev-tools\spa-run.ps1 -Task M1-REMAINING -DryRun
+
+Verify:
+- P2T4-REVIEW still resolves DeepSeek V4-Pro / deepseek / high.
+- M1-REMAINING still identifies P2T4-REVIEW as next unresolved gate.
+- dry-run consumes no model tokens.
+- final summary appears at bottom.
+- pager cannot block.
+- no secrets in changed files.
+
+If all green:
+git add only intended tooling/test files
+git commit -m "fix: finalize SPA runner human-safe output"
+git push
+
+Then verify:
+- worktree clean
+- local/remote divergence 0/0
+
+FINAL REPORT
+Print one compact final report containing:
+- files changed
+- all four test-suite results
+- dry-run results
+- pager protection mechanism
+- summary behavior
+- commit SHA
+- push result
+- worktree/remote status
+- "SPA RUNNER TOOLING FROZEN FOR M1: YES" only if all checks pass.
+
+Do not do any additional tooling enhancement after this.

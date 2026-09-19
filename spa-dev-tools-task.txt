@@ -1,0 +1,249 @@
+SPA DEVELOPMENT WORKFLOW STANDARDIZATION — ONE-TIME TOOLING TASK
+
+Repository to modify:
+C:\GitHub\stock-price-alert
+
+Backend referenced by tools:
+C:\GitHub\backendtest
+
+Permanent Python:
+C:\venvs\spa-m1\Scripts\python.exe
+
+Expected M1 branch:
+feature/investment-operating-system-m1
+
+This is a bounded developer-tooling task. Do NOT change SPA product behavior, backend source, frontend application source, migrations, live trading/Kite/Telegram/websocket code, secrets, auth, or deployment configuration.
+
+Before changing anything:
+1. Verify the repo is on feature/investment-operating-system-m1.
+2. Verify the working tree is clean.
+3. If either check fails, STOP and report. Do not reset, stash, switch, pull, or delete anything.
+
+Use TDD:
+- First create dev-tools/tests/test-dev-tools.ps1.
+- Run it and demonstrate the expected RED because the tooling files do not yet exist.
+- Then implement the minimum tooling.
+- Re-run the test GREEN.
+- Run the relevant read-only smoke checks.
+- Commit and push only after verification.
+
+CREATE ONLY these files:
+dev-tools/spa-check.ps1
+dev-tools/spa-model-check.ps1
+dev-tools/spa-deps-sync.ps1
+dev-tools/agent-prompt-header.txt
+dev-tools/README.md
+dev-tools/tests/test-dev-tools.ps1
+
+No other tracked file may change.
+
+============================================================
+1. spa-check.ps1 — DIAGNOSTIC ONLY
+============================================================
+
+Purpose:
+One command tells a non-developer whether the SPA development workspace is ready.
+
+Defaults:
+BackendPath = C:\GitHub\backendtest
+FrontendPath = C:\GitHub\stock-price-alert
+PythonPath = C:\venvs\spa-m1\Scripts\python.exe
+ExpectedBranch = feature/investment-operating-system-m1
+
+Allow these as optional parameters so tests can use temporary repos.
+
+Checks:
+- backend path exists and is a Git repo
+- frontend path exists and is a Git repo
+- current branch for each repo
+- short HEAD for each repo
+- working tree clean/dirty using git status --porcelain
+- local upstream name and local ahead/behind if an upstream already exists
+- DO NOT fetch or contact network
+- fixed Python exists
+- Python reports 3.12.x
+- pytest is available via:
+  <PythonPath> -m pytest --version
+
+Output should be compact and readable, approximately:
+
+BACKEND   OK  feature/investment-operating-system-m1  0ed2831a  CLEAN
+FRONTEND  OK  feature/investment-operating-system-m1  c6eb7d20  CLEAN
+PYTHON    OK  Python 3.12.10
+PYTEST    OK  pytest x.y.z
+READY     YES
+
+READY is YES only when both repos exist, are Git repos, are on ExpectedBranch, are clean, Python is 3.12.x, and pytest works.
+
+Exit 0 when READY YES; exit nonzero when READY NO.
+
+STRICT SAFETY:
+spa-check.ps1 must NOT run git pull/fetch/reset/checkout/switch/clean/commit/push,
+must NOT install anything,
+must NOT write to either repo,
+must NOT alter PATH, registry, environment variables, files, branches, or configuration.
+
+============================================================
+2. spa-model-check.ps1 — CHEAP READ-ONLY MODEL VERIFICATION
+============================================================
+
+Purpose:
+Verify the actual Codex CLI session model/provider before an expensive run.
+
+Defaults:
+WorkingPath = C:\GitHub\backendtest
+
+It must invoke Codex with this harmless prompt:
+"Reply with exactly: MODEL_CHECK_OK. Do not inspect, modify, or execute anything in the repository."
+
+Invocation must use:
+--ask-for-approval never
+--sandbox read-only
+exec
+--skip-git-repo-check
+-
+
+Capture output and display at least:
+model
+provider
+reasoning effort (when emitted)
+approval
+sandbox
+and MODEL_CHECK_OK
+
+If Codex is missing, header cannot be parsed, or MODEL_CHECK_OK is absent, return nonzero.
+
+Do NOT switch models.
+Do NOT modify Codex configuration.
+Do NOT write to the repository.
+Do NOT use danger-full-access.
+
+============================================================
+3. spa-deps-sync.ps1 — REUSE DEPENDENCIES
+============================================================
+
+Purpose:
+Avoid reinstalling Python/packages on every task.
+
+Defaults:
+BackendPath = C:\GitHub\backendtest
+PythonPath = C:\venvs\spa-m1\Scripts\python.exe
+
+Optional switches:
+-Force
+-CheckOnly
+
+Rules:
+- Never download/install Python.
+- Never create another venv.
+- Never modify repo files.
+- Require the fixed Python path to exist.
+- Require requirements-dev.txt to exist.
+- Fingerprint all requirements*.txt files in the backend root in deterministic filename order.
+- Store only the resulting fingerprint marker under C:\venvs\spa-m1, not in Git.
+- If fingerprint matches and -Force is not supplied: print DEPENDENCIES CURRENT and do nothing.
+- If -CheckOnly and fingerprint differs/missing: print SYNC NEEDED and do not install.
+- Otherwise run only:
+  <PythonPath> -m pip install -r <BackendPath>\requirements-dev.txt
+  <PythonPath> -m pip check
+- Write/update the fingerprint marker only after both commands succeed.
+- Fail closed on errors.
+
+Do NOT upgrade pip automatically.
+
+============================================================
+4. agent-prompt-header.txt
+============================================================
+
+Keep this concise because it will be reused in many AI prompts.
+
+It must state:
+Backend: C:\GitHub\backendtest
+Frontend/docs: C:\GitHub\stock-price-alert
+Python: C:\venvs\spa-m1\Scripts\python.exe
+Canonical full test:
+C:\venvs\spa-m1\Scripts\python.exe -m pytest -q
+
+Rules:
+- use the permanent Python for all Python/pytest commands
+- do not search for/download/install/provision another Python unless it is demonstrably unusable
+- do not reinstall dependencies merely as exploration; use spa-deps-sync.ps1 when dependency manifests changed or packages are genuinely missing
+- TDD: RED -> verify RED -> minimal GREEN -> regression
+- inspect branch/status before edits
+- no active DB, Kite, Telegram, websocket/live trading, deployment, secrets, ACL/config changes, main/master unless a task explicitly authorizes them
+- commit/push only after fresh verification
+
+Keep it short; no task-specific requirements or commit hashes.
+
+============================================================
+5. README.md
+============================================================
+
+Write for a non-developer.
+
+Show only the normal commands:
+
+Start-of-task:
+& C:\GitHub\stock-price-alert\dev-tools\spa-check.ps1
+
+Before an expensive model run:
+& C:\GitHub\stock-price-alert\dev-tools\spa-model-check.ps1
+
+Only when dependencies changed:
+& C:\GitHub\stock-price-alert\dev-tools\spa-deps-sync.ps1
+
+Explain that spa-check is read-only and will never pull/reset/change code.
+Explain that git pull remains an explicit manual action outside this tooling.
+
+============================================================
+6. TESTS
+============================================================
+
+dev-tools/tests/test-dev-tools.ps1 must be dependency-free PowerShell.
+
+At minimum test:
+- all expected files exist after GREEN
+- spa-check contains no repository/network/install mutation commands
+- spa-model-check is read-only, approval-never, and never danger-full-access
+- spa-deps-sync references the fixed venv, has CheckOnly behavior, and contains no Python installer/winget/choco/msiexec behavior
+- prompt header contains the canonical repo/Python/test paths
+- spa-check can be exercised against temporary Git repos:
+  create two temporary repos, create a local commit, create/switch to the expected branch, invoke spa-check using the optional path parameters and real permanent Python, and assert READY YES / exit 0
+- dirty one temporary repo and assert READY NO / nonzero
+- clean up only the temporary test directories that the test itself created
+
+Tests must not touch the actual SPA Git history or external network.
+
+Run:
+powershell -NoProfile -ExecutionPolicy Bypass -File .\dev-tools\tests\test-dev-tools.ps1
+
+Also run:
+powershell -NoProfile -ExecutionPolicy Bypass -File .\dev-tools\spa-check.ps1
+
+For the real repo smoke check, it is acceptable for spa-check to report READY NO before commit because the newly-created dev-tools files are uncommitted. After commit, run it again and it should report READY YES if both SPA repos are otherwise clean and synced.
+
+Do NOT run spa-model-check during automated tests because it consumes model tokens. Its invocation is inspected statically in tests; the user can run it manually later.
+
+============================================================
+GIT
+============================================================
+
+Before commit:
+git diff --check
+git status --short
+Verify only the six approved files changed.
+
+Commit message:
+chore: standardize spa development workflow
+
+Push the existing feature branch.
+
+After push:
+- git status must be clean
+- report HEAD
+- report ahead/behind
+- run spa-check once more
+- report exact test results
+- report any limitation honestly
+
+Do not modify anything outside this scope.

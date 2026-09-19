@@ -1,0 +1,301 @@
+SPA M1 — PLAN 2 TASK 4 REMEDIATION
+IMPLEMENTATION MODEL: DEEPSEEK V4-PRO
+REASONING: HIGH
+
+ROLE
+Act as the implementation agent for a narrowly scoped remediation of Plan 2 Task 4.
+Do not broaden scope. Do not redesign Task 4. Verify each independent-review finding against the actual codebase before changing anything.
+
+REPOSITORY
+C:\GitHub\backendtest
+
+BRANCH
+feature/investment-operating-system-m1
+
+GOVERNING PLAN
+C:\GitHub\stock-price-alert\docs\superpowers\plans\2026-09-04-investment-operating-system-m1-core-research-domain.md
+
+GOVERNING SPEC
+C:\GitHub\stock-price-alert\docs\superpowers\specs\2026-09-04-investment-operating-system-milestone-1-design.md
+
+TASK 4 IMPLEMENTATION COMMIT
+0ed2831a7d64a8bf70d72f9ef7d1e8b4bbe69b79
+
+CURRENT BRANCH ALSO CONTAINS LATER HYGIENE COMMITS
+Do not revert or disturb:
+- .gitignore
+- AGENTS.md
+- any unrelated tooling/hygiene work
+
+PURPOSE
+Remediate only verified defects from the independent Sol High review of Plan 2 Task 4.
+
+INDEPENDENT REVIEW FINDINGS TO VERIFY
+
+1. ORM immutability may not actually be enforced for ResearchRevision / ResearchPoint.
+2. Transaction/session cleanup after validation/conflict/integrity failure may be incomplete.
+3. IntegrityError handling may be too broad and may incorrectly translate unrelated integrity failures to:
+   ResearchConflictError("revision_conflict", "Research revision changed")
+4. Current-selection / locking semantics were NOT PROVEN in the read-only review.
+5. Same-base writers appear protected by database uniqueness, but real concurrency behavior was not fully proven.
+6. SQLite cannot prove production row-lock semantics.
+7. Focused pytest execution did not run in the Sol review because the review sandbox had no writable temp directory.
+
+IMPORTANT
+These are review findings, not automatically correct diagnoses.
+FIRST reproduce/inspect. THEN fix only verified defects.
+
+============================================================
+PHASE 1 — ROOT CAUSE VERIFICATION
+============================================================
+
+Before editing:
+
+1. Read AGENTS.md.
+2. Verify:
+   - current branch
+   - git status
+   - local/remote sync
+3. If unexpected unrelated changes exist, STOP and report.
+4. Inspect the exact Task 4 delta:
+   git diff 1bc32cfc49f00036946e044c2c386330b0919704..0ed2831a7d64a8bf70d72f9ef7d1e8b4bbe69b79
+5. Inspect current versions of:
+   - app/models/research.py
+   - app/services/research_command_service.py
+   - app/models/__init__.py
+   - tests/research/test_research_revisions.py
+6. Inspect existing patterns for:
+   - immutable ORM models
+   - SQLAlchemy IntegrityError inspection
+   - session rollback
+   - transactional command services
+   - uniqueness constraints
+7. Run the focused existing tests in the normal writable environment before changing code:
+   C:\venvs\spa-m1\Scripts\python.exe -m pytest tests/research/test_research_revisions.py tests/legacy/test_live_pipeline_boundaries.py -q -p no:cacheprovider
+
+Record the baseline result.
+
+For EACH review finding, classify:
+- VERIFIED DEFECT
+- ALREADY CORRECT
+- NOT PROVABLE IN SQLITE / DEPLOYMENT-DIALECT DEPENDENT
+
+Do not change code for ALREADY CORRECT findings.
+Do not pretend SQLite proves row locking.
+
+============================================================
+PHASE 2 — TDD REMEDIATION
+============================================================
+
+For every VERIFIED DEFECT:
+
+RED
+- Add the smallest focused failing test that demonstrates the defect.
+- Run it and confirm it fails for the intended reason.
+
+GREEN
+- Make the minimum implementation change needed.
+- Re-run the focused test.
+
+REGRESSION
+- Run the complete Task 4 focused suite.
+- Run the complete research suite.
+- Run the full backend suite before completion.
+
+Do not bundle unrelated refactors.
+
+============================================================
+REQUIRED BEHAVIOR AFTER REMEDIATION
+============================================================
+
+A. IMMUTABLE REVISION HISTORY
+
+ResearchRevision and ResearchPoint are append-only historical records.
+
+Required:
+- existing persisted ResearchRevision substantive fields cannot be modified and committed
+- existing persisted ResearchPoint substantive fields cannot be modified and committed
+- existing persisted ResearchRevision / ResearchPoint cannot be deleted through normal ORM/session usage if the frozen design promises ORM-level immutability
+- creation remains allowed
+- later revision creation does not mutate prior revision or prior points
+
+Choose the smallest SQLAlchemy-compatible enforcement mechanism consistent with this repository.
+Do not invent a general framework if a focused model/event guard suffices.
+
+If the frozen plan only promises command-level immutability and NOT direct ORM immutability, document that conflict clearly and do not overbuild. However, the Sol review explicitly flagged "general ORM immutability" as FAIL, so verify the governing spec/plan wording before deciding.
+
+B. TRANSACTION / SESSION CLEANUP
+
+On:
+- validation failure
+- stale base conflict
+- expected uniqueness race
+- unrelated IntegrityError
+
+the service must leave the session in a usable state according to the repository's service transaction contract.
+
+No partial ResearchRevision or ResearchPoint rows may remain after failed creation.
+
+Ensure rollback is complete where this service owns the transaction.
+Do not swallow errors.
+
+C. INTEGRITY ERROR CLASSIFICATION
+
+Only the specific database uniqueness violation that represents a concurrent attempt to create the same company revision number may be translated to:
+
+ResearchConflictError("revision_conflict", "Research revision changed")
+
+Unrelated IntegrityError must remain distinguishable and must NOT become revision_conflict.
+
+Use a robust, dialect-conscious approach.
+Do not rely only on fragile English-message substring matching if SQLAlchemy / database metadata provides a safer mechanism.
+If perfect portable constraint identification is not possible in this stack, implement the narrowest reliable approach for tested dialects and document the deployment-dialect caveat.
+
+D. CURRENT REVISION / LOCKING
+
+Verify current revision is selected by highest revision_number for the company.
+
+For an existing stream:
+- same-base concurrent writers cannot both successfully create the same next revision
+- uniqueness remains the hard safety backstop
+- no automatic retry may silently rebase a stale writer
+
+For first revision creation:
+- verify protection against two writers both attempting revision_number = 1
+- database uniqueness must reject one if both race
+
+Do not claim SQLite validates SELECT ... FOR UPDATE semantics.
+If production-dialect concurrency cannot be tested locally, preserve code-level locking intent plus uniqueness safety and document what remains deployment-dialect dependent.
+
+E. TIMESTAMPS / EXISTING CONTRACT
+Do not regress:
+- revision_number semantics
+- supersedes_revision_id semantics
+- change_reason
+- timezone-aware effective_at
+- audit created_at
+- ResearchPoint kinds/title/sort_order
+- unique (research_revision_id, kind, sort_order)
+- exact stale conflict code/message
+- no Task 5 models
+- no APIs/migrations/frontend
+
+============================================================
+TESTS TO ADD / IMPROVE IF FINDINGS ARE VERIFIED
+============================================================
+
+Add focused tests as needed for:
+
+1. persisted ResearchRevision update rejection
+2. persisted ResearchPoint update rejection
+3. delete rejection if required by frozen contract
+4. no partial rows after failed child validation / integrity failure
+5. session remains usable after translated conflict
+6. unrelated IntegrityError is NOT translated to revision_conflict
+7. first-revision uniqueness race safety at the database constraint level
+8. same-next-revision uniqueness race safety
+9. prior revision/points unchanged after later revision creation
+
+For concurrency:
+- use multiple independent SQLAlchemy sessions where SQLite can meaningfully test uniqueness/transaction behavior
+- clearly label any row-lock behavior not proven by SQLite
+- do not fake concurrency with a single session and call it proof
+
+============================================================
+SCOPE
+============================================================
+
+Allowed:
+- app/models/research.py
+- app/models/__init__.py only if genuinely required
+- app/services/research_command_service.py
+- tests/research/test_research_revisions.py
+- a narrowly focused additional Task 4 test file only if necessary
+
+Do NOT modify:
+- Task 5 ownership code
+- migrations
+- APIs
+- frontend
+- entitlement models
+- valuation/forecast models
+- unrelated services
+- .gitignore
+- AGENTS.md
+- live/Kite/Telegram/websocket behavior
+- active database
+- deployment configuration
+- secrets
+
+============================================================
+VERIFICATION
+============================================================
+
+Before completion run fresh:
+
+1. Focused Task 4 + live-boundary:
+C:\venvs\spa-m1\Scripts\python.exe -m pytest tests/research/test_research_revisions.py tests/legacy/test_live_pipeline_boundaries.py -q -p no:cacheprovider
+
+Include any new Task 4 test file if created.
+
+2. Complete research suite:
+C:\venvs\spa-m1\Scripts\python.exe -m pytest tests/research -q -p no:cacheprovider
+
+3. Legacy/migration regression appropriate to current repository.
+
+4. Full backend:
+C:\venvs\spa-m1\Scripts\python.exe -m pytest -q -p no:cacheprovider
+
+5. git diff --check
+6. git status --short
+
+No completion claim unless fresh verification passes.
+
+============================================================
+COMMIT / PUSH
+============================================================
+
+If and only if verified remediation is green:
+
+Commit message:
+fix: harden immutable research revision transactions
+
+Push the existing feature branch.
+
+After push:
+- verify working tree clean
+- verify local/remote synced
+
+============================================================
+FINAL REPORT
+============================================================
+
+Report:
+
+1. Root-cause classification for EACH Sol finding:
+   VERIFIED DEFECT / ALREADY CORRECT / DEPLOYMENT-DIALECT DEPENDENT
+
+2. For each verified defect:
+   - RED evidence
+   - exact fix
+   - GREEN evidence
+
+3. Exact files changed
+
+4. Fresh test results:
+   - focused
+   - research
+   - regression
+   - full backend
+
+5. Concurrency statement:
+   - what is proven locally
+   - what SQLite does NOT prove
+   - what uniqueness guarantees regardless
+
+6. Commit SHA and push result
+
+7. Whether Task 4 is ready for Sol High re-review
+
+Do NOT declare Task 4 formally closed.
+Final closure belongs to the independent Sol re-review.

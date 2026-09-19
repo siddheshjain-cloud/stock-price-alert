@@ -1,0 +1,156 @@
+IMPLEMENT THE APPROVED SPA-RUN RESUMABLE ORCHESTRATOR
+
+MODEL: GPT-5.6 Sol
+REASONING: High
+
+You are implementing development tooling in:
+C:\GitHub\stock-price-alert
+
+Sibling backend:
+C:\GitHub\backendtest
+
+Branch for both:
+feature/investment-operating-system-m1
+
+Read first:
+1. C:\GitHub\stock-price-alert\AGENTS.md if present
+2. C:\GitHub\backendtest\AGENTS.md
+3. C:\GitHub\stock-price-alert\docs\superpowers\plans\2026-09-06-spa-run-resumable-m1-orchestrator.md
+
+The plan is authoritative for this task.
+
+PURPOSE
+Build the approved `spa-run` runner so a long local M1 run can be stopped or can lose power and later continue safely from another PC using GitHub as the durable verified checkpoint.
+
+Critical user scenario:
+
+Office PC:
+    spa-run M1-REMAINING
+
+P2T5 COMPLETE
+P2T6 COMPLETE
+P2T7 running
+POWER FAILURE
+
+Home PC:
+    spa-run M1-REMAINING
+
+Required:
+- clean repos fast-forward from GitHub
+- P2T5/P2T6 remain complete
+- P2T7 is recognized as unfinished
+- P2T7 restarts from last verified remote checkpoint
+- no earlier completed task reruns
+- no unfinished task is falsely marked complete
+
+Also support planned soft stops:
+
+    spa-run M1-REMAINING -MaxMinutes 120
+    spa-run M1-REMAINING -Until "18:30"
+
+A planned deadline must stop before starting a new unit when within the safety buffer. It must not hard-kill an already-running unit merely because time expires.
+
+IMPORTANT ENGINEERING RULES
+- TDD throughout.
+- Do not run actual expensive M1 product tasks while building this tooling.
+- Use dry-run/fake command execution for orchestration tests.
+- Do not build cloud support.
+- Do not build WIP preservation branches.
+- GitHub is the durable verified checkpoint.
+- Local uncommitted work is never completion.
+- Dirty/diverged/wrong-branch state fails closed.
+- Never `git reset --hard`, `git clean`, or discard unrelated work.
+- Only verified + reviewed + pushed tasks become COMPLETE.
+- State push failure means checkpoint is not durable.
+- Model/provider/reasoning mismatch fails closed.
+- No secrets may be written to repo/output.
+- No active DB/migrations, Kite, Telegram, live systems, deployment, permissions, or main/master.
+- Independent reviewers cannot silently be the same model that implemented/remediated the code.
+- Unknown deployment dialect behavior must be reported as not proven, not hallucinated.
+
+CURRENT M1 STATUS TO VERIFY, NOT BLINDLY TRUST
+- Plan 1 complete.
+- Plan 2 Tasks 1–3 complete.
+- Plan 2 Task 4 remediation commit:
+  6c417294e5a060346c2294666a10a4cff610ee82
+- P2T4 independent re-certification is pending.
+- Therefore `M1-REMAINING -DryRun` should identify `P2T4-REVIEW` as the next unresolved gate after verifying history/state.
+- Do not start P2T5.
+
+CURRENT INDEPENDENT REVIEW ROUTE
+P2T4-REVIEW:
+- action REVIEW
+- provider deepseek
+- model DeepSeek V4-Pro
+- reasoning high
+- remediation implementer was GPT-5.6 Sol High
+- repo backendtest
+- review original Task4 commit:
+  0ed2831a7d64a8bf70d72f9ef7d1e8b4bbe69b79
+- review remediation commit:
+  6c417294e5a060346c2294666a10a4cff610ee82
+
+MODEL ROUTING
+Encode the previously frozen 37-task M1 routing table by inspecting the existing M1 plan documents and the approved routing in project docs/context. Do not invent missing plan filenames; discover them from `docs/superpowers/plans`.
+
+Provider selection:
+- inspect real installed `codex --help`, config/profile behavior and existing `spa-check.ps1`
+- prefer deterministic per-run/profile/CODEX_HOME isolation
+- inspect `claude --help` only if installed
+- if deterministic provider switching cannot be safely implemented for a provider, mark that provider route NOT ENABLED and fail closed rather than pretending
+- never embed API credentials
+
+FILES
+Expected focused files:
+- dev-tools\spa-run.ps1
+- dev-tools\m1-model-routing.psd1
+- dev-tools\state\m1-state.json
+- dev-tools\prompts\P2T4-REVIEW.txt
+- dev-tools\tests\...
+- minimal `spa-check.ps1` modification only if needed
+
+Do not modify application/product files.
+
+IMPLEMENTATION ORDER
+Follow the written plan task-by-task:
+1. routing core
+2. deterministic model/provider invocation + preflight
+3. durable state
+4. cross-PC recovery
+5. safe `-MaxMinutes` / `-Until`
+6. single-task + M1 sequential orchestration
+7. P2T4 review prompt + end-to-end dry run
+
+Every task:
+RED → verify intended failure → minimal GREEN → focused regression → commit if independently useful.
+
+FINAL PROOF REQUIRED
+- routing tests pass
+- state/recovery tests pass
+- deadline tests pass
+- dirty/wrong-branch/provider-mismatch tests fail closed
+- `spa-run P2T4-REVIEW -DryRun` => DeepSeek V4-Pro High
+- `spa-run M1-REMAINING -DryRun` => next unresolved gate P2T4-REVIEW
+- simulated power loss during P2T7 resumes P2T7, not P2T5/P2T6
+- simulated cross-PC fast-forward works
+- no secrets in repo changes
+- git diff --check passes
+- commit and push tooling
+- final repos clean/synced
+
+FINAL COMMIT
+chore: add resumable SPA M1 task orchestrator
+
+FINAL REPORT
+- files changed
+- model/provider switching mechanism actually used
+- state/checkpoint design
+- exact power-failure recovery behavior
+- exact planned-stop behavior
+- tests and dry-run evidence
+- what remains deliberately unsupported
+- commit SHA / push result
+- whether the runner is ready for the first real `P2T4-REVIEW`
+
+Do NOT execute the real P2T4 review as part of this implementation.
+Do NOT start P2T5.
