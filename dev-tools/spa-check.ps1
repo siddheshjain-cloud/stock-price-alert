@@ -298,6 +298,20 @@ if ($ExpectedProvider.Equals('openai', [System.StringComparison]::OrdinalIgnoreC
         finally {
             Pop-Location
         }
+        # codex.exe emits ANSI/VT100 styling codes (e.g. bold around its own
+        # "model:"/"provider:" banner labels) even when stdout is redirected
+        # through a PowerShell pipeline rather than a real console. Those
+        # codes sit directly adjacent to the label with no whitespace (e.g.
+        # "\x1b[1mmodel:\x1b[0m gpt-5.6-sol"), which silently breaks the
+        # "^\s*model:\s*(.+)$" style regexes below on every successful call --
+        # a genuine success then gets reported as "unavailable" with no
+        # diagnostic, since the exit-code-based failure branch below never
+        # fires. Stripping standard CSI escape sequences here is a read-only
+        # text normalization; it does not change what is being probed.
+        if ($codexText) {
+            $escapeChar = [char]27
+            $codexText = $codexText -replace ([regex]::Escape($escapeChar) + '\[[0-9;]*[a-zA-Z]'), ''
+        }
     }
 }
 
