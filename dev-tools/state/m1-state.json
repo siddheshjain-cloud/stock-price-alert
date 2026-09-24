@@ -766,7 +766,7 @@
                   {
                       "id":  "P4-FINAL-REVIEW",
                       "action":  "REVIEW",
-                      "status":  "REMEDIATION_REQUIRED",
+                      "status":  "RUNNING_LOCAL",
                       "implementationProvider":  "openai",
                       "implementationModel":  "gpt-5.6-sol",
                       "reviewerProvider":  "openai",
@@ -786,8 +786,8 @@
                                        "reviewSucceeded":  false,
                                        "relevantCommitsPushed":  true
                                    },
-                      "updatedUtc":  "2026-09-24T17:09:37.6372511+00:00",
-                      "activeRoute":  null
+                      "updatedUtc":  "2026-09-24T17:09:41.4725428+00:00",
+                      "activeRoute":  "P4-FINAL-REVIEW"
                   },
                   {
                       "id":  "P5T1",
