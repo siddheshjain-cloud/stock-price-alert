@@ -49,6 +49,8 @@
 
   Expected new table set is exactly: `business_group`, `company`, `user_entitlement`, `research_revision`, `research_point`, `ownership_snapshot`, `governance_flag`, `company_disclosure`, `market_plan_revision`, `forecast_revision`, `forecast_line`, `valuation_revision`, `valuation_reference_line`, `institution`, `document`, `document_company_link`, `institutional_report_metadata`, and `document_audit_event`.
 
+  **Approved amendment (2026-09-25):** the Plan 4 content-addressed document storage refactor was implemented and independently reviewed after this task's table list was frozen. It added `document_content` and `document_storage_location`, which `20260904_02`'s legacy-column migration step requires in order to move `document.content_hash_sha256`/`storage_provider`/`storage_key` data before dropping those legacy columns. Human-authorized: keep the 20-table set (the 18 above plus these two) as an explicit superseding change to this task's frozen list, not scope drift. The authoritative 20-table set lives in `migrations/m1_table_inventory.py` in `backendtest`; both the migration and its tests are pinned to it. This does not relax anything else in Step 2 -- legacy tables must still be unaffected and every invariant above still holds.
+
 - [ ] **Step 3: Run tests to verify the additive revision is missing**
 
   Run: `python -m pytest tests/migrations/test_milestone1_fresh_upgrade.py tests/migrations/test_milestone1_existing_schema_upgrade.py -q`
