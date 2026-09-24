@@ -139,7 +139,19 @@
     Sandbox = 'read-only'
     Prompt = 'prompts\P4-FINAL-REVIEW.txt'
 }
-        'P5T1-REVIEW' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS'); Enabled = $false; IndependentReview = $true }
+        'P5T1-REVIEW' = @{
+    Action = 'REVIEW'
+    ModelRoute = 'SOL'
+    FallbackModelRoutes = @('DEEPSEEK_PRO', 'CLAUDE_OPUS')
+    Enabled = $true
+    IndependentReview = $true
+    Implementer = @{ Provider = 'deepseek'; Model = 'deepseek-v4-pro' }
+    Repository = 'Backend'
+    RepositoryPath = 'C:\GitHub\backendtest'
+    Branch = 'feature/investment-operating-system-m1'
+    Sandbox = 'read-only'
+    Prompt = 'prompts\P5T1-REVIEW.txt'
+}
         'M1-FINAL-SOL' = @{ Action = 'REVIEW'; ModelRoute = 'SOL'; Enabled = $false; IndependentReview = $false }
         'M1-FINAL-CLAUDE' = @{
             Action = 'REVIEW'
