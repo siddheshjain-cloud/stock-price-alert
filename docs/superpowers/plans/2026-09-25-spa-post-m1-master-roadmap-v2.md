@@ -34,15 +34,14 @@ All of the following can begin at the same time. None depends on any other item 
 Direct continuation of M1's Company Research Brain: richer document ingestion for M1's existing document types, structured extraction where currently manual. **Depends on:** M1 (satisfied).
 
 ### 0.2 Capture-early cluster
-Three independent, cheap, append-only capture mechanisms, started here specifically because delaying them destroys history that can never be recovered later:
-- Research-side point-in-time price/volume snapshots (distinct from the legacy live `Ticker.last_price`, which the research/websocket import boundary deliberately keeps out of reach).
+Two independent, cheap, append-only capture mechanisms, started here specifically because delaying them destroys history that can never be recovered later. Historical OHLCV price/volume itself is generally backfillable from external vendors later and does not need early capture; what must be preserved early is **SPA's own contemporaneous market interpretation** — disclosure-to-reaction timing, and other point-in-time judgment/context tied to a specific research event — which cannot be honestly reconstructed after the fact once the outcome is already known:
+- SPA's point-in-time market-interpretation capture: disclosure-to-reaction timing markers and other contemporaneous readings of price action relative to a research event, distinct from the legacy live `Ticker.last_price`, which the research/websocket import boundary deliberately keeps out of reach.
 - Forward management-commitment capture (what was said, when, sourced to a document) — the forward half of Promise-vs-Delivery; the historical half is Tier 1.
-- Disclosure-to-reaction timing markers.
 
 **Depends on:** nothing beyond 0.1's document-ingestion capability existing.
 
 ### 0.3 Minimal Portfolio Foundation (capture only)
-Bare holdings/transactions/rationale-at-decision-time. A genuinely separate data domain — its own `Holding`/`Transaction`/actor tables, referencing `company_id` only as a loose identifier, never a foreign-key relationship into the research schema, mirroring how `CompanyDisclosure` references `document.id` and how the M1 websocket/research import boundary was kept clean. Started here, not with the Portfolio *intelligence* that consumes it later, because real transactions and their rationale are happening regardless of what SPA has built, and that rationale cannot be reconstructed retroactively. **Depends on:** nothing.
+Bare holdings/transactions/rationale-at-decision-time. Portfolio remains a genuinely separate bounded domain from Research — its own `Holding`/`Transaction`/actor tables, not merged into or made structurally dependent on the research schema. The exact cross-domain identity/reference mechanism (for example, whether `company_id` is carried as a loose identifier, a formal foreign key, or some other linkage) is **not fixed by this roadmap** and is deferred to the Portfolio Foundation specification, which should weigh precedents such as how `CompanyDisclosure` references `document.id` and how the M1 websocket/research import boundary was kept clean, without this document pre-deciding the outcome. Started here, not with the Portfolio *intelligence* that consumes it later, because real transactions and their rationale are happening regardless of what SPA has built, and that rationale cannot be reconstructed retroactively. **Depends on:** nothing.
 
 ### 0.4 World Context tracking
 A neutral, epistemically-disciplined, append-only observation log of macro, policy, geopolitical, regulatory, liquidity/capital-flow, technological-disruption, and commodity/supply-demand developments. Grounded in the North-Star spec's Section 6 (Epistemic Separation): records fact/evidence and hedged hypothesis, never asserts unsupported motive (fiscal deficits, dollar movement, and geopolitical tension are observable; "this administration caused it" is not a valid conclusion without direct evidence). This is the "World" node of the seven-node chain and the first two questions of the six-question engine (what changed; why might it matter). **Depends on:** nothing. Architecturally the topmost layer in the documented North-Star hierarchy (§22: `WORLD → DISCOVERY → RESEARCH BRAIN → ...`), not a subset of SPA Legacy/Wealth Brain.
@@ -114,7 +113,7 @@ Sizing decisions, opportunity-cost comparisons, and the "did I actually act on t
 "Find exceptional business/change early" more generally than Tier 1.1's theme-triggered exposure screening. Needs a reasonably broad base of researched companies to compare candidates against, but not deep forecast/valuation/thesis maturity. Rejection rationale for considered-and-rejected candidates is mandatory from its first version, for the same point-in-time-belief reason as 3.1 and 4.1's rationale fields. **Depends on:** 0.6.
 
 ### 5.2 Technical Analysis
-Its only hard dependency — the 0.2 price/volume history — was captured in Tier 0. Everything here is analysis over already-accumulated data; there is no urgency to sequence it earlier, since nothing else in this roadmap waits on it. **Depends on:** 0.2.
+Raw OHLCV price/volume history is generally backfillable from external vendors and imposes no hard early-capture requirement of its own. Where Technical Analysis draws on SPA's own contemporaneous market-interpretation readings (disclosure-to-reaction timing and similar point-in-time context), that depends on 0.2 having captured it at the time. Either way, there is no urgency to sequence Technical Analysis earlier, since nothing else in this roadmap waits on it. **Depends on:** 0.2 (for SPA's own interpretive context only; not for raw price history).
 
 ---
 
@@ -138,8 +137,9 @@ M1 (frozen)
  │
  ├─ TIER 0 (parallel, starts immediately) ───────────────────────────────┐
  │   0.1 Research Intelligence Deepening                                 │
- │   0.2 Capture-early cluster (price/volume, forward commitments,       │
- │        disclosure-reaction timing)                                    │
+ │   0.2 Capture-early cluster (SPA's contemporaneous market-           │
+ │        interpretation/disclosure-reaction timing -- not raw OHLCV,   │
+ │        which is backfillable; forward commitments)                   │
  │   0.3 Minimal Portfolio Foundation (capture only)                     │
  │   0.4 World Context tracking                                          │
  │   0.5 Causal-Chain/Theme structure mechanism  ◄── depends on 0.4      │
@@ -197,6 +197,8 @@ M1 (frozen)
 **Immutability / hindsight-preservation discipline.** M1 already applies immutable, append-only revision history uniformly across `ResearchRevision`, `ForecastRevision`, and `ValuationRevision`. Every new record type this roadmap adds inherits the same discipline: explicit genesis records distinct from later revisions (0.5), point-in-time beneficiary/loser lists preserved per revision rather than drifting forward (1.1), status as a revision stream rather than a mutable field (1.5), and point-in-time belief/rationale fields that are never retroactively editable (3.1, 4.1, 5.1). This is what makes Tier 6's Learning Brain evaluation honest rather than a hindsight-smoothed narrative.
 
 **Epistemic separation.** Grounded in the North-Star spec's Section 6 invariant (`Source → Evidence → Fact → Hypothesis/Inference → Forecast → Valuation → SPA Research View`). World Context (0.4) and the Causal-Chain mechanism (0.5) must record fact/evidence and hedged hypothesis only, never asserted motive — competing explanations are preserved neutrally and updated as evidence arrives, not collapsed into a single narrative or political attribution.
+
+**World/Macro context linkage.** Where a Forecast (2.1), Valuation (2.2), or Thesis (1.5, 3.1) revision is created for a company inside an active theme, it must reference the applicable immutable/versioned World Context (0.4) and Causal-Chain/Theme (0.5) revision it relied on — a pointer to that specific revision, not a copy of it. Macro/theme state is never duplicated into the referencing record: the World/Theme revision remains the single source of truth, and the reference lets a later reader (including Tier 6's Learning Brain evaluation) reconstruct exactly which point-in-time World/Macro understanding a given Forecast, Valuation, or Thesis was reasoned under, without every downstream record re-stating that state itself. This applies only where an applicable World/Macro theme exists for the company in question — it does not require every Forecast/Valuation/Thesis revision to carry a macro reference regardless of relevance.
 
 ---
 
