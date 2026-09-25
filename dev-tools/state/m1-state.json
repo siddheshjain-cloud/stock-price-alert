@@ -1002,7 +1002,7 @@
                       "remediationRoute":  "M1-FINAL-SOL",
                       "lastVerifiedBackendSha":  null,
                       "lastVerifiedFrontendSha":  null,
-                      "implementationCommitSha":  null,
+                      "implementationCommitSha":  "6ac295daf161dde1a711702dacdd976816a9f7c8",
                       "remediationCommitSha":  null,
                       "lastSuccessfulReviewVerdict":  null,
                       "remediationAttempts":  0,
@@ -1013,7 +1013,7 @@
                                        "reviewSucceeded":  false,
                                        "relevantCommitsPushed":  false
                                    },
-                      "updatedUtc":  "2026-09-25T05:55:09.3359610+00:00",
+                      "updatedUtc":  "2026-09-25T07:00:29.5868223+00:00",
                       "activeRoute":  "M1-FINAL-SOL"
                   },
                   {
