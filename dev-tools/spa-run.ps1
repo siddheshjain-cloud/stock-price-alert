@@ -1188,6 +1188,20 @@ function Invoke-M1Remaining {
             Set-M1Property -InputObject $taskRecord -Name 'status' -Value $preInvokeStatus
             Set-M1Property -InputObject $taskRecord -Name 'activeRoute' -Value $unit.RouteId
             Set-M1Property -InputObject $taskRecord -Name 'updatedUtc' -Value ([datetimeoffset]::UtcNow.ToString('o'))
+            if ($preInvokeStatus -eq 'REVIEW_PENDING' -and
+                [string]::IsNullOrWhiteSpace([string]$taskRecord.implementationCommitSha) -and
+                [string]::IsNullOrWhiteSpace([string]$taskRecord.remediationCommitSha)) {
+                # A self-referential milestone-review task (action: REVIEW with
+                # no separate implementation stage, e.g. M1-FINAL-SOL or
+                # M1-FINAL-CLAUDE) never goes through the IMPLEMENT-stage
+                # completion that normally populates implementationCommitSha.
+                # Complete-M1ReviewTransition still requires a commit to check
+                # the review against, so record it here from the harness's own
+                # already-synced backend HEAD -- the same trusted value used
+                # for every other checkpoint and evidence field in this loop,
+                # not a value supplied by the operator.
+                Set-M1Property -InputObject $taskRecord -Name 'implementationCommitSha' -Value $backendSync.Head
+            }
             Publish-M1StateCheckpoint -State $state -StateFile $StatePath -ToolingRepository $toolingPath -TaskId $unit.TaskId -Status $preInvokeStatus
 
             $healthRoot = if ([string]::IsNullOrWhiteSpace($TestHealthPath)) { $env:TEMP } else { $TestHealthPath }
