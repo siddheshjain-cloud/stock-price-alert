@@ -206,19 +206,43 @@ function Assert-M1State {
                     ([string]$task.lastSuccessfulReviewVerdict).Trim().Equals('CHANGES REQUIRED', [System.StringComparison]::OrdinalIgnoreCase)
             }
             $reviewOk = (-not $reviewRequired) -or $reviewSucceeded -or $humanAcceptanceOk
-            # A REVIEW-action task (e.g. M1-FINAL-SOL/M1-FINAL-CLAUDE) has no
-            # IMPLEMENT stage of its own, so implementationSucceeded/
-            # testsSucceeded/relevantCommitsPushed can never be set by any
-            # existing completion path -- only its review evidence is
-            # objective evidence for this task shape. Every other action
-            # keeps the full, unchanged requirement.
+            # A REVIEW-action task (e.g. M1-FINAL-SOL) has no IMPLEMENT stage
+            # of its own, so implementationSucceeded/testsSucceeded/
+            # relevantCommitsPushed can never be set by any existing
+            # completion path -- only its review evidence is objective
+            # evidence for this task shape. Every other action keeps the
+            # full, unchanged requirement.
             $isReviewOnlyTask = ([string]$task.action).Equals('REVIEW', [System.StringComparison]::OrdinalIgnoreCase)
-            $implementationEvidenceOk = $isReviewOnlyTask -or (
+            # A HUMAN_GATE task (e.g. M1-FINAL-CLAUDE) has neither an
+            # IMPLEMENT stage nor a review requirement of its own -- the
+            # original M1 orchestrator design requires it to close only on
+            # explicit human approval, with no automated bypass (see
+            # Complete-M1HumanGateTransition). Its objective evidence is the
+            # recorded approval itself, not implementation/test/push/review
+            # evidence.
+            $isHumanGateTask = ([string]$task.action).Equals('HUMAN_GATE', [System.StringComparison]::OrdinalIgnoreCase)
+            $implementationEvidenceOk = $isReviewOnlyTask -or $isHumanGateTask -or (
                 [bool]$evidence.implementationSucceeded -and
                 [bool]$evidence.testsSucceeded -and
                 [bool]$evidence.relevantCommitsPushed
             )
-            if (-not $implementationEvidenceOk -or -not $reviewOk) {
+            $humanGateApprovalOk = $true
+            if ($isHumanGateTask) {
+                $humanGateApproved = (Test-M1HasProperty -InputObject $task -Name 'humanGateApproved') -and [bool]$task.humanGateApproved
+                $humanGateApprovalReason = if (Test-M1HasProperty -InputObject $task -Name 'humanGateApprovalReason') { [string]$task.humanGateApprovalReason } else { '' }
+                $humanGateApprovedAtUtc = if (Test-M1HasProperty -InputObject $task -Name 'humanGateApprovedAtUtc') { [string]$task.humanGateApprovedAtUtc } else { '' }
+                if (-not [string]::IsNullOrWhiteSpace($humanGateApprovedAtUtc)) {
+                    $parsedHumanGateApprovedAt = [datetimeoffset]::MinValue
+                    if (-not [datetimeoffset]::TryParse($humanGateApprovedAtUtc, [ref]$parsedHumanGateApprovedAt)) {
+                        throw ('M1 state is malformed: task {0} has an invalid humanGateApprovedAtUtc value.' -f $taskId)
+                    }
+                }
+                $humanGateApprovalOk =
+                    $humanGateApproved -and
+                    (-not [string]::IsNullOrWhiteSpace($humanGateApprovalReason)) -and
+                    (-not [string]::IsNullOrWhiteSpace($humanGateApprovedAtUtc))
+            }
+            if (-not $implementationEvidenceOk -or -not $reviewOk -or -not $humanGateApprovalOk) {
                 throw "M1 state is malformed: task '$taskId' is COMPLETE without all required objective evidence."
             }
             if ($reviewRequired -and [string]::IsNullOrWhiteSpace([string]$task.lastSuccessfulReviewVerdict)) {
@@ -485,6 +509,64 @@ function Complete-M1HumanAcceptanceTransition {
     Set-M1ObjectProperty -InputObject $task -Name 'humanAcceptanceReason' -Value $Reason.Trim()
     Set-M1ObjectProperty -InputObject $task -Name 'humanAcceptedAtUtc' -Value $acceptedAt
     Set-M1ObjectProperty -InputObject $task -Name 'humanDeferrals' -Value @($explicitDeferrals)
+    Set-M1ObjectProperty -InputObject $task -Name 'status' -Value 'COMPLETE'
+    Set-M1ObjectProperty -InputObject $task -Name 'activeRoute' -Value $null
+    Set-M1ObjectProperty -InputObject $task -Name 'updatedUtc' -Value ([datetimeoffset]::UtcNow.ToString('o'))
+
+    Assert-M1State -State $State | Out-Null
+    return $task
+}
+
+function Complete-M1HumanGateTransition {
+    <#
+    Closes a HUMAN_GATE task (e.g. M1-FINAL-CLAUDE) on explicit human
+    approval only. This is the sole path that can complete a HUMAN_GATE
+    task -- there is no automated/model-review substitute for it, matching
+    the original M1 orchestrator design's hard stop condition ("final M1
+    release gate requiring explicit human approval ... No automated
+    human-approval bypass", docs/superpowers/plans/2026-09-06-spa-run-
+    resumable-m1-orchestrator.md:320). It fabricates no implementation,
+    test, push, or review evidence -- it records only that a human
+    approved, with what reason, and when.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][string]$TaskId,
+        [Parameter(Mandatory = $true)][string]$Reason,
+        [string]$ApprovedAtUtc = ''
+    )
+
+    $task = Get-M1StateTaskRecord -State $State -TaskId $TaskId
+
+    $action = ([string]$task.action).Trim()
+    if (-not $action.Equals('HUMAN_GATE', [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw ('Human gate approval for {0} requires a HUMAN_GATE task; action is {1}.' -f $TaskId, $action)
+    }
+
+    $status = ([string]$task.status).Trim().ToUpperInvariant()
+    if (@('PENDING', 'RUNNING_LOCAL') -notcontains $status) {
+        throw ('Human gate approval for {0} is not valid from status {1}.' -f $TaskId, $status)
+    }
+
+    if ([string]::IsNullOrWhiteSpace($Reason)) {
+        throw ('Human gate approval for {0} requires a non-empty approval reason.' -f $TaskId)
+    }
+
+    $approvedAt = $ApprovedAtUtc
+    if ([string]::IsNullOrWhiteSpace($approvedAt)) {
+        $approvedAt = [datetimeoffset]::UtcNow.ToString('o')
+    }
+    else {
+        $parsedApprovedAt = [datetimeoffset]::MinValue
+        if (-not [datetimeoffset]::TryParse([string]$approvedAt, [ref]$parsedApprovedAt)) {
+            throw ('Human gate approval for {0} has an invalid approval timestamp.' -f $TaskId)
+        }
+        $approvedAt = $parsedApprovedAt.ToUniversalTime().ToString('o')
+    }
+
+    Set-M1ObjectProperty -InputObject $task -Name 'humanGateApproved' -Value $true
+    Set-M1ObjectProperty -InputObject $task -Name 'humanGateApprovalReason' -Value $Reason.Trim()
+    Set-M1ObjectProperty -InputObject $task -Name 'humanGateApprovedAtUtc' -Value $approvedAt
     Set-M1ObjectProperty -InputObject $task -Name 'status' -Value 'COMPLETE'
     Set-M1ObjectProperty -InputObject $task -Name 'activeRoute' -Value $null
     Set-M1ObjectProperty -InputObject $task -Name 'updatedUtc' -Value ([datetimeoffset]::UtcNow.ToString('o'))

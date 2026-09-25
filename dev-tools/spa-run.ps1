@@ -5,6 +5,8 @@ param(
     [switch]$Status,
     [switch]$ApplyReview,
     [string]$ReviewVerdict = '',
+    [switch]$ApproveHumanGate,
+    [string]$ApprovalReason = '',
     [switch]$TestMode,
     [string]$RoutingPath = '',
     [string]$BackendPath = '',
@@ -1395,6 +1397,67 @@ function Invoke-M1ReviewApplication {
     }
 }
 
+function Invoke-M1HumanGateApproval {
+    <#
+    The sole way to complete a HUMAN_GATE task (e.g. M1-FINAL-CLAUDE). Takes
+    only an operator-supplied approval reason; dispatches no model, computes
+    no review verdict, and fabricates no implementation/test/push/review
+    evidence. See Complete-M1HumanGateTransition.
+    #>
+    param([Parameter(Mandatory = $true)][string]$Reason)
+
+    Import-M1StateTools
+    $statePath = if ([string]::IsNullOrWhiteSpace($StatePath)) {
+        Join-Path $PSScriptRoot 'state\m1-state.json'
+    }
+    else {
+        $StatePath
+    }
+    $toolingPath = if ([string]::IsNullOrWhiteSpace($FrontendPath)) { Split-Path -Parent $PSScriptRoot } else { $FrontendPath }
+    $backendRepositoryPath = if ([string]::IsNullOrWhiteSpace($BackendPath)) { 'C:\GitHub\backendtest' } else { $BackendPath }
+    $requiredBranch = 'feature/investment-operating-system-m1'
+
+    try {
+        $state = Read-M1State -Path $statePath
+        if (-not ([string]$state.branch).Equals($requiredBranch, [System.StringComparison]::Ordinal)) {
+            throw "M1 state branch '$($state.branch)' does not match required branch '$requiredBranch'."
+        }
+
+        Test-M1RepositoryLocalState -Name 'Backend' -Path $backendRepositoryPath -ExpectedBranch $requiredBranch | Out-Null
+        Test-M1RepositoryLocalState -Name 'Frontend' -Path $toolingPath -ExpectedBranch $requiredBranch | Out-Null
+        Sync-M1Repository -Name 'Backend' -Path $backendRepositoryPath -ExpectedBranch $requiredBranch | Out-Null
+        Sync-M1Repository -Name 'Frontend' -Path $toolingPath -ExpectedBranch $requiredBranch | Out-Null
+        Test-M1RecordedShas -State $state -BackendPath $backendRepositoryPath -FrontendPath $toolingPath -Branch $requiredBranch | Out-Null
+
+        $taskRecord = Get-M1TaskRecord -State $state -TaskId $script:SpaTaskId
+        Complete-M1HumanGateTransition `
+            -State $state `
+            -TaskId $script:SpaTaskId `
+            -Reason $Reason | Out-Null
+
+        Publish-M1StateCheckpoint `
+            -State $state `
+            -StateFile $statePath `
+            -ToolingRepository $toolingPath `
+            -TaskId $script:SpaTaskId `
+            -Status ([string]$taskRecord.status)
+
+        $next = Get-M1NextUnit -State $state
+        $nextLabel = if ($null -eq $next) { 'NONE' } else { $next.RouteId }
+        Write-Output 'SPA HUMAN GATE APPROVED'
+        Write-Output ('TASK       {0}' -f $script:SpaTaskId)
+        Write-Output ('REASON     {0}' -f ([string]$taskRecord.humanGateApprovalReason))
+        Write-Output ('APPROVED   {0}' -f ([string]$taskRecord.humanGateApprovedAtUtc))
+        Write-Output ('STATE      {0}' -f ([string]$taskRecord.status))
+        Write-Output ('CHECKPOINT {0} {1} PUSHED' -f $script:SpaTaskId, $taskRecord.status)
+        Write-Output ('NEXT       {0}' -f $nextLabel)
+        Write-Output 'TOKENS     NONE'
+    }
+    catch {
+        Stop-SpaRun $_.Exception.Message
+    }
+}
+
 $testOnlyOverrides = @(
     'RoutingPath',
     'BackendPath',
@@ -1415,6 +1478,9 @@ if ($Status) {
     Invoke-SpaStatus
     exit 0
 }
+if ($ApplyReview -and $ApproveHumanGate) {
+    Stop-SpaRun '-ApplyReview and -ApproveHumanGate cannot be combined.'
+}
 if ($ApplyReview) {
     if ([string]::IsNullOrWhiteSpace($taskId) -or $taskId -eq 'M1-REMAINING') {
         Stop-SpaRun '-ApplyReview requires a known M1 task ID other than M1-REMAINING.'
@@ -1426,6 +1492,19 @@ if ($ApplyReview) {
         Stop-SpaRun '-ApplyReview requires -ReviewVerdict.'
     }
     Invoke-M1ReviewApplication -Verdict $ReviewVerdict
+    exit 0
+}
+if ($ApproveHumanGate) {
+    if ([string]::IsNullOrWhiteSpace($taskId) -or $taskId -eq 'M1-REMAINING') {
+        Stop-SpaRun '-ApproveHumanGate requires a known M1 task ID other than M1-REMAINING.'
+    }
+    if ($DryRun) {
+        Stop-SpaRun '-ApproveHumanGate persists a completion transition and cannot be combined with -DryRun.'
+    }
+    if ([string]::IsNullOrWhiteSpace($ApprovalReason)) {
+        Stop-SpaRun '-ApproveHumanGate requires -ApprovalReason.'
+    }
+    Invoke-M1HumanGateApproval -Reason $ApprovalReason
     exit 0
 }
 if ($TestMode -and -not $DryRun -and -not $AllowTestExecution) {

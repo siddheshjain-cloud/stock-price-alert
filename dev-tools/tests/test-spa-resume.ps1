@@ -560,6 +560,88 @@ exit /b 99
     Assert-True $implementNoPushFailed 'IMPLEMENT task COMPLETE without relevantCommitsPushed still fails closed (test 3)'
     Assert-Match $afterDryRun.Output 'NEXT\s+P2T5' 'M1 dry-run identifies P2T5 after P2T4 is applied'
     Assert-True (-not (Test-Path -LiteralPath $tokenMarker)) 'post-apply M1 dry-run consumes no model tokens'
+
+    # HUMAN_GATE completion semantics: the original M1 design requires an
+    # explicit, non-bypassable human approval to close a HUMAN_GATE task
+    # (e.g. M1-FINAL-CLAUDE) -- no automated/model review can substitute.
+    $humanGateUnapprovedState = New-TestState @(
+        (New-TestTask -Id 'M1-GATE-TEST' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Action 'HUMAN_GATE')
+    )
+    $humanGateUnapprovedFailed = $false
+    try { Assert-M1State -State $humanGateUnapprovedState | Out-Null } catch { $humanGateUnapprovedFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $humanGateUnapprovedFailed 'HUMAN_GATE cannot COMPLETE without explicit human approval'
+
+    $humanGateReviewSubstituteState = New-TestState @(
+        (New-TestTask -Id 'M1-GATE-TEST' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Action 'HUMAN_GATE')
+    )
+    $humanGateReviewSubstituteState.tasks[0].evidence.reviewSucceeded = $true
+    $humanGateReviewSubstituteFailed = $false
+    try { Assert-M1State -State $humanGateReviewSubstituteState | Out-Null } catch { $humanGateReviewSubstituteFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $humanGateReviewSubstituteFailed 'automated/model review evidence cannot substitute for HUMAN_GATE approval'
+
+    $humanGateApprovedState = New-TestState @(
+        (New-TestTask -Id 'M1-GATE-TEST' -Status 'PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Action 'HUMAN_GATE')
+    )
+    Complete-M1HumanGateTransition -State $humanGateApprovedState -TaskId 'M1-GATE-TEST' -Reason 'All P1-P5 tasks and the independent M1-FINAL-SOL review are complete; I approve the M1 release.' | Out-Null
+    Assert-True (([string]$humanGateApprovedState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'explicit human approval completes a HUMAN_GATE task'
+    Assert-True ([bool]$humanGateApprovedState.tasks[0].humanGateApproved) 'human gate approval records the approval flag'
+    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$humanGateApprovedState.tasks[0].humanGateApprovalReason)) 'human gate approval records the reason'
+    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$humanGateApprovedState.tasks[0].humanGateApprovedAtUtc)) 'human gate approval records an approval timestamp'
+    Assert-True ([string]::IsNullOrWhiteSpace([string]$humanGateApprovedState.tasks[0].activeRoute)) 'human gate approval clears activeRoute'
+    Assert-True (-not [bool]$humanGateApprovedState.tasks[0].evidence.implementationSucceeded) 'human gate approval does not fabricate implementationSucceeded'
+    Assert-True (-not [bool]$humanGateApprovedState.tasks[0].evidence.testsSucceeded) 'human gate approval does not fabricate testsSucceeded'
+    Assert-True (-not [bool]$humanGateApprovedState.tasks[0].evidence.reviewSucceeded) 'human gate approval does not fabricate reviewSucceeded'
+    $humanGateApprovedValid = $true
+    try { Assert-M1State -State $humanGateApprovedState | Out-Null } catch { $humanGateApprovedValid = $false }
+    Assert-True $humanGateApprovedValid 'human-approved HUMAN_GATE task is a valid COMPLETE state'
+
+    $humanGateWrongActionState = New-TestState @(
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $humanGateWrongActionFailed = $false
+    try { Complete-M1HumanGateTransition -State $humanGateWrongActionState -TaskId 'P2T5' -Reason 'Approved.' | Out-Null } catch { $humanGateWrongActionFailed = ($_.Exception.Message -match 'requires a HUMAN_GATE task') }
+    Assert-True $humanGateWrongActionFailed 'human gate approval refuses a non-HUMAN_GATE task'
+
+    $humanGateNoReasonState = New-TestState @(
+        (New-TestTask -Id 'M1-GATE-TEST' -Status 'PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Action 'HUMAN_GATE')
+    )
+    $humanGateNoReasonFailed = $false
+    try { Complete-M1HumanGateTransition -State $humanGateNoReasonState -TaskId 'M1-GATE-TEST' -Reason '   ' | Out-Null } catch { $humanGateNoReasonFailed = ($_.Exception.Message -match 'approval reason') }
+    Assert-True $humanGateNoReasonFailed 'human gate approval without a reason is rejected'
+
+    # End-to-end CLI proof: the same -ApproveHumanGate/-ApprovalReason path
+    # the operator will actually run, dispatching no model.
+    $gateBackend = Initialize-RemotePair -Root $tempRoot -Name 'gate-backend'
+    $gateFrontend = Initialize-RemotePair -Root $tempRoot -Name 'gate-frontend'
+    $gateStatePath = Join-Path $gateFrontend.Home 'state.json'
+    $gateState = New-TestState @(
+        (New-TestTask -Id 'M1-GATE-TEST' -Status 'PENDING' -BackendSha $gateBackend.Sha -FrontendSha $gateFrontend.Sha -Action 'HUMAN_GATE')
+    )
+    $gateState.repositories.backend.lastVerifiedSha = $gateBackend.Sha
+    $gateState.repositories.frontend.lastVerifiedSha = $gateFrontend.Sha
+    Write-M1StateAtomic -State $gateState -Path $gateStatePath
+    Invoke-Git $gateFrontend.Home @('add', '-A') | Out-Null
+    Invoke-Git $gateFrontend.Home @('commit', '-q', '-m', 'checkpoint state') | Out-Null
+    Invoke-Git $gateFrontend.Home @('push', '-q', 'origin', $expectedBranch) | Out-Null
+
+    $oldGatePath = $env:PATH
+    $oldGateSecret = $env:DEEPSEEK_API_KEY
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldGatePath
+    $env:DEEPSEEK_API_KEY = $secretSentinel
+    try {
+        $gateApproval = Invoke-SpaRun @(
+            '-Task', 'M1-GATE-TEST', '-ApproveHumanGate', '-ApprovalReason', 'I have reviewed the complete M1 evidence and approve the release.', '-TestMode',
+            '-StatePath', $gateStatePath, '-BackendPath', $gateBackend.Home, '-FrontendPath', $gateFrontend.Home
+        )
+    }
+    finally {
+        $env:PATH = $oldGatePath
+        $env:DEEPSEEK_API_KEY = $oldGateSecret
+    }
+    Assert-True ($gateApproval.Code -eq 0) 'human gate approval applies once through the CLI'
+    Assert-Match $gateApproval.Output 'STATE\s+COMPLETE' 'CLI-applied human gate approval marks the task complete'
+    Assert-Match $gateApproval.Output 'TOKENS\s+NONE' 'CLI-applied human gate approval consumes no model tokens'
+    Assert-True (-not (Test-Path -LiteralPath $tokenMarker)) 'human gate approval does not invoke any model CLI'
 }
 finally {
     if (Test-Path -LiteralPath $tempRoot) {
