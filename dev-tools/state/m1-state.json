@@ -1019,7 +1019,7 @@
                   {
                       "id":  "M1-FINAL-CLAUDE",
                       "action":  "HUMAN_GATE",
-                      "status":  "PENDING",
+                      "status":  "COMPLETE",
                       "implementationProvider":  "anthropic",
                       "implementationModel":  "claude-opus",
                       "reviewerProvider":  null,
@@ -1039,7 +1039,11 @@
                                        "reviewSucceeded":  false,
                                        "relevantCommitsPushed":  false
                                    },
-                      "updatedUtc":  "2026-09-06T00:00:00Z"
+                      "updatedUtc":  "2026-09-25T10:02:07.1023959+00:00",
+                      "humanGateApproved":  true,
+                      "humanGateApprovalReason":  "M1 final human release approval after successful regression suite and independent M1-FINAL-SOL review. Approved for M1 freeze.",
+                      "humanGateApprovedAtUtc":  "2026-09-25T10:02:07.0668199+00:00",
+                      "activeRoute":  null
                   }
               ]
 }
