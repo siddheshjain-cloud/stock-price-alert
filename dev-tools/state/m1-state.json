@@ -998,7 +998,7 @@
                       "implementationModel":  "gpt-5.6-sol",
                       "reviewerProvider":  null,
                       "reviewerModel":  null,
-                      "reviewRoute":  null,
+                      "reviewRoute":  "M1-FINAL-SOL",
                       "remediationRoute":  "M1-FINAL-SOL",
                       "lastVerifiedBackendSha":  null,
                       "lastVerifiedFrontendSha":  null,
@@ -1009,7 +1009,7 @@
                       "evidence":  {
                                        "implementationSucceeded":  false,
                                        "testsSucceeded":  false,
-                                       "reviewRequired":  false,
+                                       "reviewRequired":  true,
                                        "reviewSucceeded":  false,
                                        "relevantCommitsPushed":  false
                                    },
