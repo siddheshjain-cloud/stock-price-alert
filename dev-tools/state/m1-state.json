@@ -792,7 +792,7 @@
                   {
                       "id":  "P5T1",
                       "action":  "IMPLEMENT",
-                      "status":  "REMEDIATION_REQUIRED",
+                      "status":  "RUNNING_LOCAL",
                       "implementationProvider":  "deepseek",
                       "implementationModel":  "deepseek-v4-pro",
                       "reviewerProvider":  "openai",
@@ -812,8 +812,8 @@
                                        "reviewSucceeded":  false,
                                        "relevantCommitsPushed":  true
                                    },
-                      "updatedUtc":  "2026-09-25T03:56:38.9522941+00:00",
-                      "activeRoute":  null
+                      "updatedUtc":  "2026-09-25T03:56:42.4617045+00:00",
+                      "activeRoute":  "P5T1"
                   },
                   {
                       "id":  "P5T2",
