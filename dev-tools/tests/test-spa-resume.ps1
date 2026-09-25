@@ -80,11 +80,18 @@ function New-TestTask {
         [string]$BackendSha,
         [string]$FrontendSha,
         [bool]$ReviewRequired = $false,
-        [string]$ReviewRoute = ''
+        [string]$ReviewRoute = '',
+        [string]$Action = 'IMPLEMENT'
     )
+    # A REVIEW-only task (e.g. M1-FINAL-SOL/M1-FINAL-CLAUDE) never goes
+    # through an IMPLEMENT stage, so implementationSucceeded/testsSucceeded/
+    # relevantCommitsPushed are never set true by any real completion path --
+    # default them to false here regardless of status, matching reality,
+    # rather than the IMPLEMENT-task status-based defaults below.
+    $isReviewOnly = $Action.Equals('REVIEW', [System.StringComparison]::OrdinalIgnoreCase)
     [ordered]@{
         id = $Id
-        action = 'IMPLEMENT'
+        action = $Action
         status = $Status
         implementationProvider = 'deepseek'
         implementationModel = 'deepseek-v4-flash'
@@ -99,11 +106,11 @@ function New-TestTask {
         lastSuccessfulReviewVerdict = $null
         remediationAttempts = 0
         evidence = [ordered]@{
-            implementationSucceeded = ($Status -eq 'COMPLETE' -or $Status -eq 'REVIEW_PENDING')
-            testsSucceeded = ($Status -eq 'COMPLETE' -or $Status -eq 'REVIEW_PENDING')
+            implementationSucceeded = (-not $isReviewOnly) -and ($Status -eq 'COMPLETE' -or $Status -eq 'REVIEW_PENDING')
+            testsSucceeded = (-not $isReviewOnly) -and ($Status -eq 'COMPLETE' -or $Status -eq 'REVIEW_PENDING')
             reviewRequired = $ReviewRequired
             reviewSucceeded = ($Status -eq 'COMPLETE')
-            relevantCommitsPushed = ($Status -eq 'COMPLETE' -or $Status -eq 'REVIEW_PENDING')
+            relevantCommitsPushed = (-not $isReviewOnly) -and ($Status -eq 'COMPLETE' -or $Status -eq 'REVIEW_PENDING')
         }
         updatedUtc = '2026-09-06T00:00:00Z'
     }
@@ -505,6 +512,52 @@ exit /b 99
         $env:PATH = $oldAfterPath
         $env:DEEPSEEK_API_KEY = $oldAfterSecret
     }
+
+    # REVIEW-only completion semantics: a self-referential milestone-review
+    # task (action: REVIEW, e.g. M1-FINAL-SOL/M1-FINAL-CLAUDE) has no
+    # IMPLEMENT stage, so COMPLETE must be reachable on review evidence alone
+    # -- without fabricating implementationSucceeded/testsSucceeded/
+    # relevantCommitsPushed -- while IMPLEMENT tasks keep the full,
+    # unchanged requirement.
+    $reviewOnlyAcceptedState = New-TestState @(
+        (New-TestTask -Id 'M1-FINAL-TEST' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'M1-FINAL-TEST' -Action 'REVIEW')
+    )
+    Complete-M1ReviewTransition -State $reviewOnlyAcceptedState -TaskId 'M1-FINAL-TEST' -ReviewRoute 'M1-FINAL-TEST' -Verdict 'SAFE WITH NON-BLOCKING OBSERVATIONS' `
+        -ReviewerProvider 'openai' -ReviewerModel 'gpt-5.6-sol' `
+        -BackendHead $backend.Sha -FrontendHead $frontend.Sha -ReviewedCommitSha $backend.Sha | Out-Null
+    Assert-True (([string]$reviewOnlyAcceptedState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'REVIEW-only task with a successful review completes (test 1)'
+    Assert-True (-not [bool]$reviewOnlyAcceptedState.tasks[0].evidence.implementationSucceeded) 'REVIEW-only completion does not fabricate implementationSucceeded'
+    Assert-True (-not [bool]$reviewOnlyAcceptedState.tasks[0].evidence.testsSucceeded) 'REVIEW-only completion does not fabricate testsSucceeded'
+    Assert-True (-not [bool]$reviewOnlyAcceptedState.tasks[0].evidence.relevantCommitsPushed) 'REVIEW-only completion does not fabricate relevantCommitsPushed'
+    $reviewOnlyAcceptedValid = $true
+    try { Assert-M1State -State $reviewOnlyAcceptedState | Out-Null } catch { $reviewOnlyAcceptedValid = $false }
+    Assert-True $reviewOnlyAcceptedValid 'REVIEW-only COMPLETE task with a successful review is a valid state (test 1)'
+
+    $reviewOnlyUnsuccessfulState = New-TestState @(
+        (New-TestTask -Id 'M1-FINAL-TEST' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'M1-FINAL-TEST' -Action 'REVIEW')
+    )
+    $reviewOnlyUnsuccessfulState.tasks[0].evidence.reviewSucceeded = $false
+    $reviewOnlyUnsuccessfulFailed = $false
+    try { Assert-M1State -State $reviewOnlyUnsuccessfulState | Out-Null } catch { $reviewOnlyUnsuccessfulFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $reviewOnlyUnsuccessfulFailed 'REVIEW-only COMPLETE task without a successful review still fails closed (test 2)'
+
+    $implementIncompleteState = New-TestState @((New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha))
+    $implementIncompleteState.tasks[0].evidence.implementationSucceeded = $false
+    $implementIncompleteFailed = $false
+    try { Assert-M1State -State $implementIncompleteState | Out-Null } catch { $implementIncompleteFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $implementIncompleteFailed 'IMPLEMENT task COMPLETE without implementationSucceeded still fails closed (test 3)'
+
+    $implementNoTestsState = New-TestState @((New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha))
+    $implementNoTestsState.tasks[0].evidence.testsSucceeded = $false
+    $implementNoTestsFailed = $false
+    try { Assert-M1State -State $implementNoTestsState | Out-Null } catch { $implementNoTestsFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $implementNoTestsFailed 'IMPLEMENT task COMPLETE without testsSucceeded still fails closed (test 3)'
+
+    $implementNoPushState = New-TestState @((New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha))
+    $implementNoPushState.tasks[0].evidence.relevantCommitsPushed = $false
+    $implementNoPushFailed = $false
+    try { Assert-M1State -State $implementNoPushState | Out-Null } catch { $implementNoPushFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $implementNoPushFailed 'IMPLEMENT task COMPLETE without relevantCommitsPushed still fails closed (test 3)'
     Assert-Match $afterDryRun.Output 'NEXT\s+P2T5' 'M1 dry-run identifies P2T5 after P2T4 is applied'
     Assert-True (-not (Test-Path -LiteralPath $tokenMarker)) 'post-apply M1 dry-run consumes no model tokens'
 }

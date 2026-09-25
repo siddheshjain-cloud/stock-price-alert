@@ -206,10 +206,19 @@ function Assert-M1State {
                     ([string]$task.lastSuccessfulReviewVerdict).Trim().Equals('CHANGES REQUIRED', [System.StringComparison]::OrdinalIgnoreCase)
             }
             $reviewOk = (-not $reviewRequired) -or $reviewSucceeded -or $humanAcceptanceOk
-            if (-not [bool]$evidence.implementationSucceeded -or
-                -not [bool]$evidence.testsSucceeded -or
-                -not $reviewOk -or
-                -not [bool]$evidence.relevantCommitsPushed) {
+            # A REVIEW-action task (e.g. M1-FINAL-SOL/M1-FINAL-CLAUDE) has no
+            # IMPLEMENT stage of its own, so implementationSucceeded/
+            # testsSucceeded/relevantCommitsPushed can never be set by any
+            # existing completion path -- only its review evidence is
+            # objective evidence for this task shape. Every other action
+            # keeps the full, unchanged requirement.
+            $isReviewOnlyTask = ([string]$task.action).Equals('REVIEW', [System.StringComparison]::OrdinalIgnoreCase)
+            $implementationEvidenceOk = $isReviewOnlyTask -or (
+                [bool]$evidence.implementationSucceeded -and
+                [bool]$evidence.testsSucceeded -and
+                [bool]$evidence.relevantCommitsPushed
+            )
+            if (-not $implementationEvidenceOk -or -not $reviewOk) {
                 throw "M1 state is malformed: task '$taskId' is COMPLETE without all required objective evidence."
             }
             if ($reviewRequired -and [string]::IsNullOrWhiteSpace([string]$task.lastSuccessfulReviewVerdict)) {
