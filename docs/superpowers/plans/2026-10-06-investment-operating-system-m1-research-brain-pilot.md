@@ -36,7 +36,7 @@ This pilot does **not** include, and any growth toward these must be a separate,
 
 ## What is genuinely new
 
-Three small, additive tables and one read method — nothing else.
+Four small, additive tables and one read method — nothing else.
 
 ### `ExtractionRun`
 Provenance for one extraction pass over one document. Immutable.
@@ -94,6 +94,61 @@ Composite-PK join table, same shape as the existing `DocumentCompanyLink`.
 | `created_at` | |
 
 This is what makes cross-document corroboration representable: one `ExtractedFact` row links to N `Evidence` rows, each pointing at a different source `Document`.
+
+### `ExtractionUnit` (amendment, 2026-10-07) -- the persistence gap between Document and Evidence
+
+Snapshot A (the IKIO/UNO Minda pilot run) worked by downloading each PDF ad
+hoc and reading it directly into an `Evidence.text_snippet` -- nothing
+persisted the document's actual extracted text. Before Snapshot B processes
+the full 87-document corpus, that gap must close: re-extracting the same PDF
+from scratch for every new fact is wasteful and risks two passes extracting
+slightly different text from the same page (observed directly during
+Snapshot A's table extraction).
+
+`ExtractionUnit` is one page/section/table-level machine-readable content
+unit, produced by one `ExtractionRun` (reused exactly as-is -- no change to
+that model) over one `Document`. Immutable, same discipline as
+`Evidence`/`ExtractedFact`.
+
+| Field | Notes |
+|---|---|
+| `id` | PK |
+| `extraction_run_id` | FK → `extraction_run.id` -- which pass produced this |
+| `document_id` | FK → `document.id`, denormalized, same pattern as `Evidence.document_id` |
+| `unit_type` | enum `PAGE` \| `SECTION` \| `TABLE` -- one discriminator, same minimal-ontology move as `ExtractedFact.value_type` |
+| `sequence_number` | int -- ordering/addressing within the document (e.g. page number) |
+| `locator` | nullable str, same shape as `Evidence.locator` |
+| `content_text` | the extracted text for this unit -- unbounded `Text`, not `String(4000)`; a real page/table routinely exceeds that |
+| `created_by_user_id` | FK → `user.id` |
+| `created_at` | |
+
+`UniqueConstraint(extraction_run_id, unit_type, sequence_number)` -- blocks
+duplicate units within one pass only.
+
+**Resolved design point (per explicit instruction, 2026-10-07): existing
+units mean "already processed," never "permanently prohibited from
+reprocessing."** A later `ExtractionRun` may intentionally reprocess the
+same `Document` with a different or improved extraction method, producing
+a fresh set of `ExtractionUnit` rows tied to the new run -- the prior run
+and its units are never edited or deleted, exactly the same
+append-only/supersession-by-addition discipline already used everywhere
+else in this design. For the current corpus pass specifically, a document
+with existing units is simply skipped as a normal, non-mandatory
+optimization (checked via `get_extraction_units(document_id)` returning
+non-empty) -- that skip is a per-run choice, not a constraint enforced by
+the schema.
+
+`Evidence` gains exactly **one new nullable column**,
+`source_extraction_unit_id` (FK → `extraction_unit.id`) -- additive only.
+Every other `Evidence` field, its immutability, and all existing behavior
+are unchanged. The 4 Snapshot-A `Evidence` rows remain valid with this
+column null; no backfill is implied or required.
+
+`ResearchBrainService` gains two new methods and one new optional
+parameter, nothing else changes:
+- `record_extraction_unit(extraction_run_id, document_id, unit_type, sequence_number, content_text, created_by_user_id, locator=None)`
+- `get_extraction_units(document_id)` -- also the "already processed?" check
+- `record_evidence(..., source_extraction_unit_id: str | None = None)`
 
 ### Research View (read method, not a new table)
 One new read-only service method, sibling to `list_company_documents()`:
