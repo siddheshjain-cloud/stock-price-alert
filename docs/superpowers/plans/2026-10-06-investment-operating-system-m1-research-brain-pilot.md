@@ -63,22 +63,26 @@ One excerpt of source text, tied to exactly one extraction run and document. Imm
 | `created_at` | |
 
 ### `ExtractedFact`
-A structured, typed data point. **Resolved design point (per explicit instruction):**
+A structured, typed data point. **Resolved design points (per explicit instruction):**
 
 1. **Many-to-many with Evidence**, via a join table — not a single FK — because cross-document corroboration (one fact, multiple independent source documents) is a core pilot success criterion, and a single-FK design cannot represent that at all.
 2. **Point-in-time semantics via explicit supersession**, not update-in-place — identical in shape to `ResearchRevision.supersedes_revision_id`. A later, contradictory reading of the same `(company_id, fact_type, period)` creates a **new** `ExtractedFact` row that names the fact it supersedes; the original row is never edited or deleted. "Current" is defined the same way M1 already defines "current revision" elsewhere: the row not referenced by any other row's `supersedes_fact_id`.
+3. **`as_of_date` is distinct from `created_at`.** `created_at` is row-insert bookkeeping — when this pilot happened to record the fact. `as_of_date` is epistemic time — when the underlying information actually became knowable/applicable (e.g. the concall date, the results-announcement date, the document's own `document_date`/`original_published_at`). `period` names the business reporting period (e.g. `"Q1 FY2027"`); `as_of_date` names the specific point in time within/around that period the fact is anchored to. Point-in-time research needs to ask "what was knowable as of date X" — that question must be answerable from `as_of_date`, never from `created_at`.
+4. **`value_type` lets one `value` column hold either a numeric metric or a textual/management assertion**, without a larger ontology: one discriminator field (`NUMERIC` | `TEXT`), not a family of fact-subtype tables or per-type columns. `unit` only applies when `value_type = NUMERIC`.
 
 | Field | Notes |
 |---|---|
 | `id` | PK |
 | `company_id` | FK → `company.id` |
-| `fact_type` | e.g. `"quarterly_revenue"`, `"ebitda_margin"` |
-| `value` | |
-| `unit` | nullable |
-| `period` | e.g. `"Q1 FY2027"` |
+| `fact_type` | e.g. `"quarterly_revenue"`, `"ebitda_margin"`, `"management_commentary"` |
+| `value_type` | `NUMERIC` \| `TEXT` — the one discriminator needed to support both metrics and textual assertions |
+| `value` | stored as text regardless of `value_type`; a numeric fact's literal value, or a management assertion's quoted/paraphrased text |
+| `unit` | nullable; meaningful only when `value_type = NUMERIC` |
+| `period` | e.g. `"Q1 FY2027"` — the business reporting period |
+| `as_of_date` | when the underlying information became knowable/applicable (see above) — distinct from `created_at` |
 | `supersedes_fact_id` | nullable FK → `extracted_fact.id` — append-only revision chain |
 | `created_by_user_id` | |
-| `created_at` | |
+| `created_at` | row-insert bookkeeping only, not epistemic time |
 
 ### `FactEvidence` (join table)
 Composite-PK join table, same shape as the existing `DocumentCompanyLink`.
@@ -118,7 +122,7 @@ UNO Minda is explicitly a portability check, not a second primary pilot — it c
 
 1. At least one real figure (e.g., a specific quarterly revenue or margin number) extracted from IKIO's Q1 FY2027 Quarterly Results document, recorded as an `ExtractedFact` with a linked `Evidence` row pointing at the exact source text.
 2. The same fact corroborated by a **second, independent** `Evidence` row from either IKIO's Concall or Investor Presentation for the same quarter — proving the many-to-many `FactEvidence` design, not just its schema.
-3. A deliberately-introduced contradiction test: record a second `ExtractedFact` for the same `(company_id, fact_type, period)` that supersedes the first, and confirm `get_company_facts()` returns only the current one while the original row remains intact and queryable via its revision chain — proving point-in-time semantics actually hold, not just that the column exists.
+3. A contradiction-acceptance test proving supersession actually works, not just that the column exists: confirm `get_company_facts()` returns only the current `ExtractedFact` for a given `(company_id, fact_type, period)` while a superseded row remains intact and queryable via its revision chain. This test runs against the test database/fixture (the same pattern already established by `tests/spa_bridge/fixtures/manifest_snapshot_2026-10-06.json`), or against genuine contradictory source evidence if the pilot documents happen to contain a real one (e.g. a provisional figure later restated) — **never** by inserting a synthetic, deliberately-false fact into the real `instance/trading_app.db` Research Brain tables. The real database only ever holds facts the pilot actually believes, even provisionally.
 4. `get_company_facts('IKIO')` returns results with every fact traceable to real `Evidence` and `Document` rows.
 5. The same mechanism (extraction → evidence → fact) produces at least one fact for UNO Minda without any schema or service change — the portability check.
 
