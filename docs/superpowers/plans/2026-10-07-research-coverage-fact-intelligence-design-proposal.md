@@ -1,0 +1,186 @@
+# Research Coverage & Fact Intelligence — Design Proposal (NOT YET APPROVED)
+
+**Status:** Architecture (§1–7) accepted as the approved design, including `CoverageDocumentSubtype` as the additive mechanism for document types outside the frozen `Document.document_type` enum, with that enum/table explicitly not to be altered. Implementation sequencing (§8) is a recommendation only — no implementation has started.
+
+**Revision note:** this supersedes an earlier draft of this same document. That draft proposed a parallel `DocumentType`/`DocumentTypeAssignment` identity alongside the existing `Document.document_type`, which would have duplicated an already-approved M1 responsibility rather than closing a real gap. This revision starts from an explicit reconciliation against the frozen M1 design and the Research Brain Pilot, corrects that mistake, and narrows the actually-missing surface.
+
+**Requirements evidence:** `docs/superpowers/research/equisense-benchmark/2026-10-07-ikio-spa-vs-equisense-benchmark.md`, `2026-10-07-unominda-spa-vs-equisense-benchmark.md`, and `2026-10-07-cross-company-capability-gap-assessment.md`. Fact-authoring-coverage gaps are ~71% of all classified misses across both companies; extraction misses are 0%; the dominant missed content type is governance/related-party disclosure; the failure mode is "narrow-task tunnel vision"; a lower-confidence reasoning/synthesis miss-type appeared once; SPA's corroboration/supersession discipline was repeatedly identified as a strength to preserve.
+
+## 1. Reconciliation: this is a gap inside Tier 0.1, not a new tier
+
+The Master Roadmap V2 (`docs/superpowers/plans/2026-09-25-spa-post-m1-master-roadmap-v2.md`) names, with no further elaboration, **Tier 0.1 "Research Intelligence Deepening"**: *"Direct continuation of M1's Company Research Brain: richer document ingestion for M1's existing document types, structured extraction where currently manual. Depends on: M1 (satisfied)."* That one-liner is the entire existing specification of this tier. The Research Brain Pilot (approved for planning only) was the first real elaboration of it, establishing the chain:
+
+```
+Document → Extraction (ExtractionRun/ExtractionUnit) → Evidence → Fact (ExtractedFact/FactEvidence) → Research View
+```
+
+— itself the first three links of the North-Star epistemic chain already named in the roadmap's cross-cutting principles: `Source → Evidence → Fact → Hypothesis/Inference → Forecast → Valuation → SPA Research View`. This proposal is a second elaboration of the same Tier 0.1 one-liner, not a new tier and not a new chain link. It must not re-walk ground the pilot already covers.
+
+### 1.1 What already exists and is reused as-is (confirmed directly against code and the approved/proposal specs, not assumed)
+
+- **`Document.document_type`** (`app/models/document.py:134-151`) — a real, closed, DB-level enum: `ANNUAL_REPORT`, `QUARTERLY_RESULTS`, `INVESTOR_PRESENTATION`, `CONCALL`, `SCREENER`, `REG30_ATTACHMENT`, `CREDIT_RATING_REPORT`, `INDUSTRY_REPORT`, `INSTITUTIONAL_RESEARCH`, `OTHER` (M1 spec §5.1). **This is the canonical document-type classification. It is reused directly — not duplicated — wherever it already covers a type.** Six of the type families named in this capability's requirement (Annual Report, Quarterly/Annual Results, Investor Presentation, Concall, Reg-30 filing, Credit-Rating Report) already have a native enum value today.
+- **`ExtractionRun` / `ExtractionUnit`** (`app/models/research_brain.py`) — one immutable row per page/section/table of already-extracted text, produced by the Research Brain Pilot's Task 6 amendment. This capability starts *after* this layer, unchanged.
+- **`Evidence` / `ExtractedFact` / `FactEvidence`** — immutable, many-to-many corroboration, append-only supersession via `supersedes_fact_id`. Reused exactly as-is; promotion of a new finding into a Fact is still, and only ever, a call to the existing `record_evidence`/`record_fact`.
+- **The append-only/supersession idiom itself** — already used by `ResearchRevision`, `ForecastRevision`, `ValuationRevision`, `OwnershipSnapshot`, `ExtractedFact`, and `Document.supersedes_document_id`. New state (coverage, candidate decisions) reuses this idiom rather than inventing update-in-place semantics.
+- **The "extensible slug instead of closed enum" pattern** — M1 §4.9 deliberately made `ValuationReferenceLine.reference_metric`/`reference_metric_unit` validated slugs, not closed enums, specifically "so company- and industry-specific metrics can be introduced without a schema migration." `document_type`, by contrast, **was** built as a closed native enum (verified in code, not assumed) — meaning it does not have this extensibility property today. That mismatch, not a missing concept, is the actual reason document-type coverage for DRHP/RHP/etc. needs a small additive answer (§2.2), not a reason to duplicate `document_type` wholesale.
+- **Manual/human-curated triage as existing product philosophy** — `CompanyDisclosure.is_key` is explicitly "a manual designation only... Milestone 1 does not calculate an importance score or classify important disclosures automatically" (M1 §4.6). `GovernanceFlag` similarly requires `factual_evidence` plus a separately-labeled `interpretation`, never inferred. This capability's human-triaged Candidate→Fact promotion step (§2.4) is consistent with, not a departure from, that existing philosophy.
+- **A status-progression-over-time precedent** — `GovernanceFlag.status` (`OPEN → MONITORING → RESOLVED/DISMISSED`) already tracks one flag's lifecycle with dated transitions. It is a single-item lifecycle, not a cross-document, cross-Fact thread — it is not what §2.5's longitudinal linkage needs — but it establishes that "a tracked item progresses through named states over time" is already an accepted pattern in this system, not a foreign one.
+
+### 1.2 Confirmed absent (grepped for in `backendtest`, zero hits): coverage, review, sweep, candidate, ambiguity-tracking, document-dimension-applicability, proposition/longitudinal-linkage, derived-fact provenance. Nothing in this proposal duplicates an existing or previously-proposed responsibility.
+
+### 1.3 The precise gap, stated once
+
+`ExtractionUnit` proves a page's text was *captured*. It proves nothing about whether that text was ever *looked at* for any particular purpose. `Evidence`/`ExtractedFact` only come into existence where a human already knew exactly what they were looking for and went and got it. **There is no record, anywhere, of "this document was checked for topic X and nothing material was found," and no mechanism that makes checking every required topic for a document's type a tracked obligation rather than a matter of individual reviewer initiative.** That is the entire gap — a missing *accounting and obligation layer* sitting between the existing Extraction step and the existing Evidence/Fact step, not a new epistemic stage, not a replacement for anything, and (per the two benchmarks) the direct, named cause of ~71% of the IKIO/UNO Minda misses: the material was already captured by `ExtractionUnit` in every single one of those cases.
+
+## 2. The smallest missing capability
+
+Three reusable idioms, all already established in this codebase, carry the whole design: (a) a small lookup/taxonomy table for an open-ended category (already precedented by the extensible-slug philosophy, even where the underlying column happens to be a closed enum); (b) an append-only state log, "latest row wins" (already `ExtractedFact.supersedes_fact_id`'s own idiom); (c) a check-constrained "exactly one of" polymorphic link row (not yet used elsewhere, but the smallest way to let one row cite either a Fact or an Evidence/Candidate without a nullable-everything mess).
+
+### 2.1 `ResearchDimension` — what gets checked for
+
+A seed/lookup table of material research topics (`GOVERNANCE_RPT`, `AUDITOR_CONTROLS`, `CORPORATE_STRUCTURE_MA`, `SEGMENT_MIX`, `CAPACITY_CAPEX`, `MANAGEMENT_GUIDANCE`, `JV_EXECUTION_RISK`, `CREDIT_DEBT`, `OWNERSHIP_SHAREHOLDING`, `LITIGATION_REGULATORY`, `COMPUTED_METRIC_OPPORTUNITY`), discovered inductively from the two benchmarks. New dimensions are a data insert, never a migration.
+
+### 2.2 Document-type coverage contracts — reusing `document_type`, not duplicating it
+
+**`CoverageProfile(id, document_type_code: String, supersedes_profile_id nullable FK→self, effective_from, created_by_user_id, created_at)`** — `document_type_code` is a plain validated string, not a foreign key into a new identity table. For the six type families `document_type`'s existing enum already names, it holds exactly that enum's string value — there is no second classification for an `ANNUAL_REPORT` to carry. **`CoverageProfileDimension(coverage_profile_id, research_dimension_id, is_required, notes)`** declares which `ResearchDimension`s a given document type's contract requires.
+
+**Approved decision (2026-10-07, resolves §5 Q4 below):** there is no `is_active` flag. `CoverageProfile` is fully immutable and append-only, same as every other row in this design. **`supersedes_profile_id` is lineage/audit history only — it does not gate activation.** The profile actually governing lookups for a `document_type_code` as of a given date is purely: among rows with `effective_from <= that date`, the one with the latest `effective_from` (ties broken by `created_at`). This was a real bug in the first implementation: checking "not referenced by any other row's `supersedes_profile_id`" *in addition to* `effective_from <= today` meant a brand-new, future-dated revision could make the still-current prior revision disappear from "active" lookups the instant it was inserted, before its own `effective_from` ever arrived. `supersedes_profile_id` still records which row a revision was intended to replace, for history/auditing — it just never participates in deciding what's active today.
+
+For the type families named in the requirement that `document_type`'s closed enum does **not** yet cover — DRHP, RHP, Letter/Offer documents, Shareholding/ownership filings as a dedicated type, Merger/Scheme documents — two honest options exist, and this proposal recommends the second:
+
+- **(a) Widen the native enum.** Rejected: `document_type` is a real DB-level enum on the existing, previously-frozen `document` table (confirmed in code, §1.1); altering it means an ALTER-type migration against a table this and every prior capability has committed not to touch. This is exactly the kind of "new architectural layer bleeding into existing architecture" the reconciliation is supposed to prevent, just in the opposite direction (modifying old architecture instead of duplicating it).
+- **(b) `CoverageDocumentSubtype(document_id, subtype_code, assigned_by_user_id, created_at)` — one small, purely additive, append-only table, scoped narrowly to this capability.** For a document whose real nature is a DRHP (filed today under the existing, unchanged `document_type = OTHER`), this table records `subtype_code = "DRHP"` *for coverage-profile lookup purposes only*. It does not claim to be, replace, or compete with `document_type` as the canonical classification — `document_type` stays `OTHER`, unchanged, exactly as M1 defines it. `CoverageProfile.document_type_code` may then hold either a real `document_type` enum value or a `CoverageDocumentSubtype.subtype_code` value; which kind it is doesn't matter to anything outside this capability. This is the one piece of this design that is new identity rather than reused identity, and it exists only because the alternative (b) touches frozen schema and the requirement (document-type-aware DRHP/RHP/etc. support) is explicit and real.
+
+This directly satisfies "extensible beyond Annual Reports... without duplicating the existing architecture": six of eleven-plus named type families cost zero new tagging at all; the remainder cost one narrow, clearly-scoped side table, not a parallel `Document` identity.
+
+### 2.3 Coverage tracking — the core of the missing accounting layer
+
+**`CoverageReviewPass(id, document_id, extraction_run_id, research_dimension_id, coverage_profile_id nullable, units_considered_count, units_considered_min_seq, units_considered_max_seq, performed_by_user_id, notes, created_at)`** — one row per sweep attempt of one document against one dimension, recording exactly which *contiguous* range of the document's current `ExtractionRun`'s `ExtractionUnit`s this pass actually walked.
+
+**`CoverageRecord(id, document_id, extraction_run_id, research_dimension_id, state: NOT_REVIEWED|REVIEWED_NO_FINDING|FINDING_GENERATED, review_pass_id, created_at)`** — append-only; current state = most recent row (identical idiom to Fact supersession).
+
+**Completeness rule (service-layer, same enforcement style as `record_fact`'s "≥1 evidence" rule), as actually implemented after a code-review finding:** the original draft of this rule compared a raw *sum* of `units_considered_count` across passes to the document's total — which a code review caught as wrong: two passes that re-read the same pages (or overlap) would double-count and could falsely close a dimension, exactly the "narrow-task tunnel vision" failure this capability exists to prevent. The shipped rule instead requires each pass to describe one contiguous range (`units_considered_count` must equal `max_seq - min_seq + 1`, enforced by a DB check constraint) and merges every pass's range for the pair as true integer intervals before comparing the merged union's length to the total — overlaps and re-reads contribute zero extra toward completion. Both `extraction_run_id` fields exist for the same reason: if a document is later reprocessed under a new `ExtractionRun`, a pass or closing record against the *old* run must never count toward the *new* run's completeness; "current run" resolves to the latest run that actually has recorded `ExtractionUnit` content, not merely the latest row, since real corpora can carry empty, abandoned runs.
+
+`get_document_coverage_status(document_id)` resolves the document's type (native enum, or `CoverageDocumentSubtype` for the overflow types) → its active `CoverageProfile` → required dimensions → each one's state → an overall `NOT_STARTED`/`IN_PROGRESS`/`FULLY_SWEPT` rollup, giving a precise, type-aware answer to "how much of what we already have has actually been looked at" — the question neither benchmark could get a straight answer to.
+
+### 2.4 Candidate findings — evidence-backed, pre-authoritative staging
+
+**`CandidateFinding(id, document_id, research_dimension_id, source_extraction_unit_id, review_pass_id, raw_quote, proposed_fact_type, proposed_value, proposed_value_type, proposed_unit, proposed_period, proposed_as_of_date, created_by_user_id, created_at)`** — immutable once created.
+
+**`CandidateFindingDecision(id, candidate_finding_id, decision: PROMOTED|REJECTED|DUPLICATE, promoted_to_fact_id nullable, duplicate_of_candidate_id nullable, reason, created_by_user_id, created_at)`** — append-only; current status = most recent row, `OPEN` if none exist.
+
+Promotion calls the existing `record_evidence`/`record_fact` unchanged — still requires ≥1 Evidence, still participates in existing supersession. A promoted Candidate Finding is exactly as rigorous as a Fact authored today; it is just arrived at systematically instead of ad hoc.
+
+### 2.5 Provenance-safe derived/computed facts
+
+**`FactDerivation(id, derived_fact_id FK→ExtractedFact unique, formula_description, created_by_user_id, created_at)`** + **`FactDerivationInput(id, fact_derivation_id, input_fact_id nullable, input_evidence_id nullable, role_label nullable)`** with a check constraint requiring exactly one of `input_fact_id`/`input_evidence_id`. `ExtractedFact` itself is untouched — a derived Fact looks like any other Fact; a reader who wants to know "stated by the company or computed by SPA" joins to `FactDerivation` (present = computed, absent = direct quote). Reuses the existing `FactEvidence` many-to-many for the derived Fact's own evidence citation — no change there either.
+
+### 2.6 Longitudinal proposition linkage
+
+**`ResearchProposition(id, company_id, title, description, created_by_user_id, created_at)`** — the thread. **`PropositionStageType`** — taxonomy-as-data (seed: `PROMISED`, `COMMITTED`, `CAPEX_DEPLOYED`, `COMMISSIONED`, `UTILIZATION_RAMP`, `EARNINGS_IMPACT`). **`PropositionLink(id, proposition_id, stage_type_id, fact_id nullable, candidate_finding_id nullable, document_id, as_of_date, period, stage_note, created_by_user_id, created_at)`** with an exactly-one-of check constraint on `fact_id`/`candidate_finding_id` — a link always points at something already evidence-backed, never a bare narrative claim. `get_proposition_timeline(proposition_id)` returns the chain ordered by date, spanning documents and document types. Linking a stage is a deliberate, reviewer-initiated act (no automated matching — consistent with the "no ML" non-goal and with `GovernanceFlag`'s existing "never inferred, always attributed" discipline).
+
+### 2.7 What stays explicitly out, because it already exists or isn't needed
+
+- No `DocumentType`/`DocumentTypeAssignment` table (corrected in this revision — see revision note). `document_type` is reused directly; `CoverageDocumentSubtype` is the only, narrowly-scoped addition, and only for the subset the native enum doesn't cover.
+- No per-page × per-dimension coverage row — (document × dimension) granularity, whole-document traversal enforced by `units_considered_count`.
+- No automated document-type classifier, no automated proposition matcher — both stay human judgment, consistent with existing `GovernanceFlag`/`CompanyDisclosure.is_key` philosophy.
+- No new Fact "kind," no change to `ExtractedFact`/`Evidence`/`FactEvidence`/`ExtractionUnit`/`ExtractionRun`/`Document` schemas.
+- Does not address the discovery-layer gap (e.g., UNO Minda's missing Shareholding Pattern filing type) — that is document *acquisition*, a different problem from document *review*, out of scope here.
+- No forecasting/valuation — `FactDerivation` covers only arithmetic derivation from already-sourced raw inputs.
+
+## 3. Service layer (new `ResearchCoverageService`, mirroring `ResearchBrainService`'s existing style)
+
+- `tag_document_subtype(document_id, subtype_code, assigned_by_user_id)` — only for documents whose real type falls outside the native `document_type` enum.
+- `create_coverage_profile(document_type_code, dimension_ids_with_required_flags, created_by_user_id)` — versions automatically, deactivates the prior version for that type.
+- `get_required_dimensions(document_id)` — resolves via `document_type` (or `CoverageDocumentSubtype`) → active `CoverageProfile`.
+- `open_review_pass(document_id, dimension_id, performed_by_user_id)`
+- `record_review_pass_result(pass_id, units_considered_count, units_considered_min_seq, units_considered_max_seq, candidate_findings)` → writes `CandidateFinding` rows and, once cumulative coverage is complete, a `CoverageRecord`.
+- `get_document_dimension_coverage(document_id)`, `get_document_coverage_status(document_id)`, `get_company_coverage_summary(company_id)`
+- `triage_candidate_finding(candidate_id, decision, reason, promoted_fact_payload)` → internally calls existing `record_evidence`/`record_fact` (+ `record_fact_derivation` if applicable) on promotion.
+- `record_fact_derivation(derived_fact_id, formula_description, inputs)`
+- `create_proposition(company_id, title, description, created_by_user_id)`, `link_proposition_stage(...)`, `get_proposition_timeline(proposition_id)`
+
+## 4. End-to-end workflow
+
+1. Document already registered and 100%-extracted (unchanged).
+2. Required dimensions resolve from the document's existing `document_type` (or, for the enum's overflow, a `CoverageDocumentSubtype` tag) via its active `CoverageProfile` — no open-ended reviewer discretion about what's "relevant."
+3. For each required dimension, a reviewer opens a `CoverageReviewPass` and walks the *whole* document's `ExtractionUnit`s (possibly across several passes for long documents) until `units_considered_count` reaches the total.
+4. Each pass logs zero or more `CandidateFinding`s.
+5. Once cumulative coverage is complete, a `CoverageRecord` closes the dimension; once every required dimension is closed, the document is `FULLY_SWEPT` under its contract.
+6. Each `CandidateFinding` is triaged: promoted (→ real `Evidence`+`ExtractedFact`+`FactEvidence`, optionally +`FactDerivation`), rejected (with a reason), or marked duplicate.
+7. Optionally, a promoted Fact (or an un-promoted Candidate Finding) is linked to a `ResearchProposition` at a named stage.
+8. `get_company_coverage_summary`/`get_document_coverage_status`/`get_proposition_timeline` answer "what fraction of our own corpus have we actually reviewed, by topic and contract" and "how has this commitment evolved over time."
+
+## 5. Open design questions for approval
+
+1. **`PARTIALLY_REVIEWED` coverage state** — needed, or is `NOT_REVIEWED`-until-complete sufficient?
+2. **Seed `ResearchDimension` list** (§2.1) — right-sized?
+3. **Seed `CoverageProfile` contents per document type**, including which dimensions apply to the `CoverageDocumentSubtype` overflow types (DRHP, RHP, Letter/Offer, Merger/Scheme) — a short review session before seeding, not locked in here.
+4. ~~**Profile versioning policy**~~ — **RESOLVED and approved 2026-10-07** (see §2.2's "Approved decision"): `supersedes_profile_id` is lineage-only; `effective_from` alone gates which profile is active as of any given date. Documents already swept under an older, still-cited profile version are not automatically flagged for re-review — `CoverageReviewPass.coverage_profile_id` preserves which contract version a pass was run under, so a report can show "swept under an older contract version" without forcing retroactive rework.
+5. **Confirm `document_type`'s exact enum extensibility** one more time against `backendtest` at implementation time (confirmed closed-native-enum in this design pass, §1.1) before committing to the `CoverageDocumentSubtype` side-table as the resolution, in case the team would rather spend a dedicated, explicitly-approved migration to convert `document_type` to the extensible-slug pattern (mirroring `ValuationReferenceLine`) instead. This proposal defaults to *not* doing that, to keep this capability additive-only, but it's a real fork in the road worth a deliberate choice rather than a default.
+6. **Should Candidate-Finding-first be mandatory** (no fast-path straight to `record_fact`), to directly prevent the ad hoc instinct that caused the original gaps?
+7. **Proposition creation** — reviewer-initiated only (as designed), confirmed as the right scope for this phase?
+
+## 6. Acceptance / regression criteria (IKIO + UNO Minda as fixtures; Annual Reports as the first, not the only, document type exercised)
+
+Run against the already-frozen, already-extracted IKIO (`c8b839a8-5319-498f-b480-0d6971299094`) and UNO Minda (`9cbdabe1-3008-45dc-8ef6-dad859946990`) corpora. `CandidateFinding` is non-authoritative, so these sweeps are safe to run against the real corpus without touching any existing Fact.
+
+1. A `GOVERNANCE_RPT` pass over `IKIO_AR_FY2026` yields candidate findings covering: the parent-level Agarwal & Saxena auditor appointment, FY26 employee/worker turnover (49%/43%), the audit-trail/edit-log gap, the ₹112 Cr inter-corporate loan at 8.25%, and the NSE RPT fine with its waiver.
+2. A `CORPORATE_STRUCTURE_MA` pass over `IKIO_AR_FY2026` yields candidate findings covering the Gravus Tech 88% acquisition and the Royalux General Trading LLC (UAE) incorporation.
+3. A `SEGMENT_MIX` pass and a multi-year-ratio pass over `UNOMINDA_PRESENTATION_Q1_FY2027` yield candidate findings covering the segment revenue-mix table (page 11) and the 5-year ROCE/ROE/D:E table (page 19).
+4. A `JV_EXECUTION_RISK` pass over `UNOMINDA_CONCALL_Q1_FY2027` yields a candidate finding covering the Suzhou Inovance China-regulatory-delay commentary (page 8).
+5. A `CORPORATE_STRUCTURE_MA` pass over `UNOMINDA_RESULTS_Q1_FY2027` yields a candidate finding covering the Rinder Riduco (Colombia) acquisition (page 3).
+6. A `GOVERNANCE_RPT` pass over `UNOMINDA_AR_FY2026` yields candidate findings covering the audit-trail gap, the Katolec CARO qualification, the RPT amounts, the Chairman remuneration ratio, and the Code on Wages exceptional item.
+7. Promoting the UNO Minda standalone-EBITDA candidate produces an `ExtractedFact` plus a `FactDerivation` citing the five raw P&L-line `Evidence` rows, distinguishable from a directly-quoted Fact on read.
+8. A `CoverageReviewPass` covering only a fraction of a document's `ExtractionUnit`s cannot close that document/dimension's coverage — direct test of the completeness rule.
+9. Promotion still enforces "≥1 Evidence" (unchanged `record_fact`); no new table permits update or delete.
+10. `IKIO_AR_FY2026` and `UNOMINDA_AR_FY2026` are swept under the `ANNUAL_REPORT` native-enum `CoverageProfile` through the same service calls as criteria 1–6 — proving Annual Reports run through the general mechanism, not a special path.
+11. A disposable test-fixture document is tagged via `CoverageDocumentSubtype(subtype_code="DRHP")`, given a `CoverageProfile`, and swept through the identical `open_review_pass`/`record_review_pass_result` calls used for Annual Reports — no new code path, proving the mechanism generalizes to a document type `document_type`'s native enum cannot represent, without altering that enum. (A real DRHP's presence in either company's corpus was not confirmed in this design pass; this criterion does not depend on one existing.)
+12. A `PropositionLink` cannot be created pointing at neither a `Fact` nor a `CandidateFinding`; `get_proposition_timeline` returns chronologically ordered stages spanning more than one `Document` and, ideally, more than one `document_type`.
+13. Every new table ships in its own migration under its own frozen table-inventory constant; applying/reverting it alters nothing in `Document`, `Company`, `Ticker`, `ExtractionRun`, `ExtractionUnit`, `Evidence`, `ExtractedFact`, or `FactEvidence` — including `document_type`'s existing enum values and column type.
+
+## 7. Why this is the smallest capability the requirement set allows
+
+Thirteen new tables (`ResearchDimension`; `CoverageDocumentSubtype`, `CoverageProfile`, `CoverageProfileDimension`; `CoverageReviewPass`, `CoverageRecord`; `CandidateFinding`, `CandidateFindingDecision`; `FactDerivation`, `FactDerivationInput`; `ResearchProposition`, `PropositionStageType`, `PropositionLink`), down from fourteen in the superseded draft after removing the one genuinely duplicative pair (`DocumentType`/`DocumentTypeAssignment`) and reusing `Document.document_type` directly wherever it already applies. Zero altered tables; the existing enum's value set is explicitly left untouched rather than widened (§2.2, option (a) rejected). All thirteen are instances of only the three idioms named in §2's preamble — none of which is new to this codebase except the "exactly one of" link row, which is the minimum needed to let a Candidate/Proposition link cite either a Fact or something not yet promoted to one.
+
+## 8. Implementation sequencing (recommended; approval requested for sequence, not yet for code)
+
+All thirteen tables are approved architecture (§1–7) and all thirteen ship — this section sequences *delivery*, it does not cut anything. No component is deferred because it's unimportant; each is deferred only where a real dependency or a real testability/risk reason requires it.
+
+### 8.1 Recommendation: staged, not one slice
+
+Big-bang delivery of all thirteen tables in one migration is explicitly **not** recommended, for four reasons grounded in this project's own precedent and in the design itself:
+
+1. **This is exactly how the project has already shipped this chain once before.** The Research Brain Pilot itself shipped in two stages — the original four tables (`ExtractionRun`/`Evidence`/`ExtractedFact`/`FactEvidence`), then the `ExtractionUnit` layer as a separate, later, explicitly-amended migration once a real gap (re-extraction waste) was observed in between. Staging this capability the same way is consistency with house style, not a deviation from it.
+2. **The four conceptual groups have a real, one-directional dependency chain** (§8.2) — `CandidateFinding` cannot exist without a `research_dimension_id` and a `review_pass_id` to point at; `PropositionLink` is close to meaningless without real `ExtractedFact`/`CandidateFinding` rows to link. Building in dependency order is not optional once that chain is acknowledged.
+3. **The acceptance criteria (§6) are already naturally staged.** AC10/11 need only the foundation layer; AC1–6 and AC9 need Candidate Findings on top of it; AC7 needs Derived Facts; AC12 needs Proposition linkage. Shipping in the same order means every slice lands with its own real, passing regression proof instead of one enormous, late integration test.
+4. **The highest-value slice should be de-risked and validated independently before the lowest-certainty slice is built on top of it.** Candidate Findings (§8.2, Slice 2) is where the measured ~71% benchmark gap actually closes — it deserves to ship and be measured against the real IKIO/UNO Minda corpus on its own. Longitudinal Proposition linkage (Slice 4) is the piece with the most open design questions still unresolved (§5 Q7) and the piece the benchmarks themselves never directly evidenced a gap for — it is real, approved, and will ship, but it should be informed by real usage of Slices 1–3, not guessed at upfront.
+
+### 8.2 The four slices, in dependency order
+
+**Slice 1 — Coverage Foundation.** Tables: `ResearchDimension`, `CoverageDocumentSubtype`, `CoverageProfile`, `CoverageProfileDimension`, `CoverageReviewPass`, `CoverageRecord`. One migration, one frozen table-inventory constant (e.g. `RESEARCH_COVERAGE_FOUNDATION_TABLES`). This is the entire "accounting layer" from §1.3 — it can run real sweeps over the live IKIO/UNO Minda corpus and produce an honest coverage baseline (almost certainly near-0% "fully swept" today) before a single new finding exists. Proves AC8 (completeness rule), AC10 (Annual Reports run the general mechanism), AC11 (a disposable DRHP-tagged fixture runs the identical mechanism). No dependency on anything in Slices 2–4; depends only on already-existing `Document`/`ExtractionUnit`/`User`.
+*Pre-work, not a migration:* resolve §5 Q2/Q3 (seed `ResearchDimension` list; seed `CoverageProfile` contents per document type, including the `CoverageDocumentSubtype` overflow types) as a short data/config review before writing this migration, so the seed data ships with the schema rather than being bolted on after.
+
+**Slice 2 — Candidate Findings.** Tables: `CandidateFinding`, `CandidateFindingDecision`. One migration, one frozen constant. Depends on Slice 1 (a Candidate Finding is always tagged to a `research_dimension_id` and a `review_pass_id`) and on the existing `ExtractionUnit`/`ExtractedFact`/`Evidence`/`record_fact`/`record_evidence`, unchanged. This is the slice that directly closes the benchmarked gap: proves AC1–6 (the specific named IKIO/UNO Minda misses become recoverable through the general mechanism) and AC9 (promotion still enforces ≥1 Evidence, nothing becomes updatable). **This is the slice to prioritize if the team wants benchmark-closing value measured as early as possible** — Slices 3 and 4 add real but secondary capability on top of it.
+
+**Slice 3 — Derived Facts.** Tables: `FactDerivation`, `FactDerivationInput`. One migration, one frozen constant. Structurally independent of Slices 1–2 (it only touches the already-existing `ExtractedFact`/`Evidence`), so it **could** be built in parallel with Slice 1 if the team has two tracks of capacity. Recommended sequencing if single-threaded: right after Slice 2, so AC7 (the standalone-EBITDA derivation) can be proven against a real promoted Candidate Finding from the UNO Minda corpus rather than a synthetic fixture — a strictly stronger acceptance proof for the same amount of work.
+
+**Slice 4 — Longitudinal Proposition Linkage.** Tables: `ResearchProposition`, `PropositionStageType`, `PropositionLink`. One migration, one frozen constant. Last, deliberately: (a) it depends on real `ExtractedFact`/`CandidateFinding` rows from Slices 1–3 to link to anything meaningfully — built first, it would have nothing real to point at; (b) §5 Q7 (how a Proposition gets created/triggered) is a genuinely open workflow question, and a few weeks of real Slice 1–3 usage will answer it better than speculation does today; (c) unlike Slices 1–3, no item in either benchmark directly evidenced a longitudinal-tracking miss — this slice answers your forward-looking requirement, not a measured gap, so it carries the most schedule flexibility if priorities shift mid-stream. Proves AC12.
+
+### 8.3 Cross-cutting, every slice
+
+- Each slice: its own Alembic migration, its own frozen table-inventory constant, additive only — matching §6 AC13 and the project's existing convention exactly. No slice alters `Document`, `ExtractionUnit`, `Evidence`, `ExtractedFact`, `FactEvidence`, or any other previously frozen table.
+- Each slice ships with both a `tests/research/`-style model+service test set and a `tests/migrations/`-style schema-shape/upgrade-downgrade/frozen-inventory test set, mirroring the Pilot's own testing split.
+- Each slice's acceptance criteria (§6) are run and must pass before the next slice starts — not deferred to one final integration pass at the end.
+- Nothing is cut to fit this sequence: all thirteen tables, all four conceptual groups, ship exactly as approved in §1–7. Sequencing only changes delivery order, never scope.
+
+## 9. Slice 1 — Coverage Foundation: closed (2026-10-07)
+
+**Status: implemented, tested, code-reviewed, remediated, and approved. Slice 2 has not started.**
+
+- **Delivered:** `ResearchDimension`, `CoverageDocumentSubtype`, `CoverageProfile`, `CoverageProfileDimension`, `CoverageReviewPass`, `CoverageRecord` — `backendtest`, branch `feature/research-coverage-foundation`, commits `e0ae616` (initial build) and `8c3ae3d` (remediation). Pushed to `origin/feature/research-coverage-foundation`.
+- **Seed data (§5 Q2/Q3, resolved as pre-work):** 11 `ResearchDimension` rows and 11 `CoverageProfile` contracts (6 keyed to existing `document_type` enum values, 5 to `CoverageDocumentSubtype` overflow codes), each with an evidenced required/optional dimension set drawn from the two benchmarks.
+- **Code review (`/code-review high`) found four real correctness bugs before this closed, all fixed in `8c3ae3d`:** (1) completeness was a raw sum, not a true union, so overlapping/re-read passes could falsely close a dimension — fixed via required-contiguous-range passes merged as true intervals; (2) total-units was computed across every `ExtractionRun` ever created for a document, not the current one — fixed by scoping to the latest run with actual recorded content; (3) a closed pair could receive a redundant second `CoverageRecord` — fixed with an explicit already-closed check; (4) no row locking on the read-then-conditionally-write completeness decision — fixed with `.with_for_update()`, matching existing codebase convention. A fifth bug, found during my own re-validation against the real corpus (not the code review) — real documents can carry empty, abandoned `ExtractionRun` rows, and "latest run by `created_at`" picked one of those — was also fixed (§2.3). 9 new adversarial tests lock in all five fixes. Full suite: 1301 passed, 0 regressions.
+- **The owner-approved semantic decision** is recorded above in §2.2 and resolves §5 Q4: `supersedes_profile_id` is lineage only; `effective_from` alone gates activation.
+- **Real coverage baseline**, verified via `get_company_coverage_summary` against the live corpus after all fixes: **IKIO 1.44%** required-dimension coverage (1 of 43 documents fully swept), **UNO Minda 1.37%** (1 of 49). Both companies' short `QUARTERLY_RESULTS` filings are genuinely, completely swept; both 292/627-page Annual Reports honestly remain `NOT_REVIEWED` for `GOVERNANCE_RPT` (181/292 and 88/627 pages actually read) rather than being falsely marked complete. Facts/Evidence confirmed unmodified throughout (IKIO still 8 `ExtractedFact` rows, UNO Minda still 11).
+- **Not started:** Slice 2 (Candidate Findings) and everything after it, per explicit instruction.
