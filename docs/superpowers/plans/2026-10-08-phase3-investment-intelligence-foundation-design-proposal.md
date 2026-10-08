@@ -128,7 +128,7 @@ Ten-year histories need no change at all — `ExtractedFact` is already one row 
 
 ### 3.4 Genuinely new (additive columns on existing frozen tables — each requires explicit sign-off)
 
-All schema-touching items in this proposal, consolidated (see §5 for the full table): the `scenario` column on `ForecastRevision`/`ValuationRevision`; `basis`, `supersede_reason`, and `accounting_standard` on `ExtractedFact`; and the `origin`/`promoted_by_user_id`/`promoted_at` columns on `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, and `InvestmentCase` (§4 P3-A, automation boundary).
+All schema-touching items in this proposal, consolidated (see §5 for the full table): the `scenario` column on `ForecastRevision`/`ValuationRevision`; `basis`, `supersede_reason`, and `accounting_standard` on `ExtractedFact`; and the `origin` column (no longer paired with `promoted_by_user_id`/`promoted_at` — see §9a) on `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, and `InvestmentCase` (§4 P3-A, automation boundary).
 
 ### 3.5 Market-agnostic core — jurisdiction differences stay in adapters, not in the engines
 
@@ -152,7 +152,7 @@ Verified against the live, frozen M1 models before writing this section (not ass
 
 Defines, without implementing:
 - **Shared vocabulary.** A `Scenario` slug (`BULL`, `BASE`, `BEAR`, `MID_CYCLE`). A shared "exactly one provenance source" value shape — `{fact_id | candidate_finding_id | evidence_id | cycle_observation_id | cycle_assessment_id | research_proposition_id}`, the discriminated-union idiom `PropositionLink`/`FactDerivationInput` already established, reused by every new citing field.
-- **The system-draft / governed-promotion boundary (automation, refined per owner instruction).** `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, and `InvestmentCase` each carry `origin: SYSTEM_DRAFT|HUMAN_AUTHORED` (default `HUMAN_AUTHORED`) plus `promoted_by_user_id`/`promoted_at` (nullable; both required before a `SYSTEM_DRAFT` row counts as authoritative — every "current" query excludes any `SYSTEM_DRAFT` row with `promoted_by_user_id IS NULL`). This is **not** a prohibition on future automated analytical proposals — it is the seam that lets one exist later without a schema change, while every row remains `created_by_user_id`-attributed and no `SYSTEM_DRAFT` row is ever treated as authoritative until a human explicitly promotes it. The Research Orchestrator (§6) is not built now; this field only reserves the room for it. Columns flagged in §5.
+- **The system-draft / governed-promotion boundary (automation; corrected during Slice A implementation — see §9a).** `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, and `InvestmentCase` each carry `origin: SYSTEM_DRAFT|HUMAN_AUTHORED` (default `HUMAN_AUTHORED`), set once at insertion. There is no `promoted_by_user_id`/`promoted_at` field — these tables (and, once built, `InvestmentHypothesis`/`InvestmentCase`) are immutable after insertion, so a field meant to be set later by an `UPDATE` is not implementable against that existing contract (confirmed by reading the actual `ForecastRevision`/`ValuationRevision` code during Slice A implementation, not assumed). **Promotion is instead a new `HUMAN_AUTHORED` row whose `supersedes_revision_id`/`supersedes_case_id` names the exact `SYSTEM_DRAFT` row it promotes** — reusing the existing revision-chain mechanism rather than inventing a second one. This is distinguishable from an ordinary human-authored replacement by one join: a promotion's superseded row has `origin = SYSTEM_DRAFT`; an ordinary replacement's superseded row has `origin = HUMAN_AUTHORED` (or no `scenario`, for a pre-Phase-3 row). The promoting actor, timestamp, and exact superseded draft are the superseding row's own `created_by_user_id`, `created_at`, and `supersedes_revision_id`/`supersedes_case_id` — already present, immutable, and audited; no separate promotion-audit fields are needed. This is **not** a prohibition on future automated analytical proposals — `origin` is the seam that lets one exist later without a schema change, while every row remains `created_by_user_id`-attributed and no `SYSTEM_DRAFT` row is ever treated as authoritative until a human-authored row actually supersedes it. The Research Orchestrator (§6) is not built now; this field only reserves the room for it. Column flagged in §5.
 - **Scenario-family coherence (creation-time rule, no new table).** `ForecastEngineService.create_scenario_forecast` must stamp every scenario in one coherent family with the same `as_of_date` and require they cite `ForecastAssumption` rows sharing the same `investment_hypothesis_id` revision. Reconstruction of the *exact* family actually used by a given decision is guaranteed at the `InvestmentCase` level by `InvestmentCaseForecast`/`InvestmentCaseValuation` (§4 P3-G) — those link tables name the exact immutable revision ids, which is stronger than inferring coherence from shared `as_of_date` alone. A separate `ScenarioSet` wrapper table is rejected: it would freeze what this rule plus the link tables already make exact and queryable.
 - **Service ownership boundary — one service owns each write path, none reaches into another's tables directly:**
 
@@ -238,7 +238,7 @@ This also resolves the three cycle-type question cleanly: **industry/commodity c
 
 **Layer:** Research Brain (the Hypothesis/Inference step — new). **Chain position:** `Fact → Hypothesis/Inference → (feeds) Forecast`.
 
-- **`InvestmentHypothesis`**: `(id, company_id, title, thesis_narrative, consensus_view, variant_view, why_market_is_wrong, falsifiers, confidence [mandatory from v1], cites: list of Fact/ResearchProposition/CompanyExposure ids — cycle-side and transformation-side cited separately per P3-C when both apply, revision_number, supersedes_revision_id, origin: SYSTEM_DRAFT|HUMAN_AUTHORED, promoted_by_user_id, promoted_at, created_by_user_id, created_at, change_reason)`.
+- **`InvestmentHypothesis`**: `(id, company_id, title, thesis_narrative, consensus_view, variant_view, why_market_is_wrong, falsifiers, confidence [mandatory from v1], cites: list of Fact/ResearchProposition/CompanyExposure ids — cycle-side and transformation-side cited separately per P3-C when both apply, revision_number, supersedes_revision_id, origin: SYSTEM_DRAFT|HUMAN_AUTHORED, created_by_user_id, created_at, change_reason)`. No `promoted_by_user_id`/`promoted_at` — see §9a; promotion is a `HUMAN_AUTHORED` row superseding a `SYSTEM_DRAFT` one.
 - **`ForecastAssumption`**: `(id, investment_hypothesis_id [required], scenario [BULL|BASE|BEAR|MID_CYCLE], assumption_statement, metric_slug [optional, references FinancialMetricDefinition], assumed_value, assumed_unit, provenance: exactly one of {cycle_exposure_id, research_proposition_id, fact_id, candidate_finding_id, evidence_id}, created_by_user_id, created_at)`. One hypothesis typically produces three scenario-forked assumption sets (Bull/Base/Bear) plus, where relevant, one `MID_CYCLE` set (§4 P3-E) — each row atomic and independently citable.
 
   **Atomicity rule (explicit, owner-confirmed):** one `ForecastAssumption` row = one driver = one provenance source. The existing discriminated-union `provenance` shape already enforces "exactly one source" at the constraint level; this rule additionally requires that **one row never carries two drivers' reasoning in its `assumption_statement`**. When one scenario's forecast depends on both a commodity-cycle driver and a company-transformation driver (Chemplast's "PVC normalization" + "capacity ramp" is the canonical case), it is represented as **two separate `ForecastAssumption` rows for that scenario** — one with `provenance.cycle_exposure_id` set, one with `provenance.research_proposition_id` set — both linked to the same `ForecastRevision` via `ForecastRevisionAssumption` (§4 P3-E). This is a direct, mechanical extension of §4 P3-C's citation-separation rule down to the assumption layer, not a new mechanism.
@@ -251,7 +251,7 @@ This also resolves the three cycle-type question cleanly: **industry/commodity c
 
 **Layer:** Research Brain (the Forecast step). **Chain position:** `Hypothesis/Inference → Forecast → (feeds) Valuation`.
 
-Reuses `ForecastRevision`/`ForecastLine`, unchanged in every field except `scenario` (§5) and `origin`/`promoted_by_user_id`/`promoted_at` (§4 P3-A). Adds:
+Reuses `ForecastRevision`/`ForecastLine`, unchanged in every field except `scenario` and `origin` (§5, §4 P3-A, §9a). Adds:
 - **`ForecastRevisionAssumption`**: `(forecast_revision_id, forecast_assumption_id)`.
 - `ForecastEngineService.create_scenario_forecast(company_id, scenario, assumption_ids, as_of_date, ...)` — resolves cited assumptions, computes `ForecastLine` values (arithmetic deliberately not specified here), calls the existing `create_forecast_revision` path unchanged, now scenario-tagged, and enforces the §4 P3-A coherence rule.
 - **`MID_CYCLE` is a normalized-earnings reference, not a probability-weighted scenario (owner refinement).** It answers "what would this company earn at a representative point in its own cycle," used for valuation anchoring and sanity-checking. It is a valid `scenario` column value — same mechanics as Bull/Base/Bear — but `InvestmentCaseService`'s expected-return weighting (§4 P3-G) must explicitly exclude it from any probability-weighted calculation. This is a query-logic rule, not a schema difference.
@@ -276,7 +276,7 @@ Expected return, risk framing, and kill switches are **not** added to `Valuation
 
 **The one rule this component cannot violate (§7, §19.D): no second authoritative research-view table.**
 
-- **`InvestmentCase`**: `(id, company_id, research_revision_id [required FK], investment_hypothesis_id [required FK], cycle_assessment_id [nullable FK], view: ADD|HOLD|DO_NOT_ADD|REDUCE|EXIT, expected_return_pct, expected_return_basis, as_of_date, revision_number, supersedes_case_id, origin: SYSTEM_DRAFT|HUMAN_AUTHORED, promoted_by_user_id, promoted_at, created_by_user_id, created_at, change_reason)`.
+- **`InvestmentCase`**: `(id, company_id, research_revision_id [required FK], investment_hypothesis_id [required FK], cycle_assessment_id [nullable FK], view: ADD|HOLD|DO_NOT_ADD|REDUCE|EXIT, expected_return_pct, expected_return_basis, as_of_date, revision_number, supersedes_case_id, origin: SYSTEM_DRAFT|HUMAN_AUTHORED, created_by_user_id, created_at, change_reason)`. No `promoted_by_user_id`/`promoted_at` — see §9a.
 - **`InvestmentCaseForecast`/`InvestmentCaseValuation`** (link tables): `(investment_case_id, forecast_revision_id)` / `(investment_case_id, valuation_revision_id)` — the exact, authoritative record of which immutable scenario-family revisions this case was built from. This is what guarantees point-in-time scenario-family reconstruction (§4 P3-A); no `ScenarioSet` table is needed.
 - **`InvestmentCaseKillSwitch`**: `(id, investment_case_id, condition, data_source_hint, triggered_at [nullable, set once, never cleared])`.
 - **`InvestmentCaseService.get_scenario_return_spread(investment_case_id)`** — a read-only query contract computed live from the linked Bull/Base/Bear valuations against price as of `as_of_date`, surfacing upside/downside/priced-in-return reasoning without a new stored field. `MID_CYCLE` is excluded from this weighting (§4 P3-E).
@@ -301,7 +301,7 @@ All additive, all nullable where applicable, all classified `SMALL COMPATIBILITY
 | 2 | `basis: VARCHAR, nullable` (`STANDALONE`\|`CONSOLIDATED`) | `ExtractedFact` | Promotes standalone/consolidated basis from free-text prose to a queryable field, scoped to `fin.*` fact types only | B |
 | 3 | `supersede_reason: VARCHAR, nullable` (`RESTATEMENT`\|`CORRECTION`) | `ExtractedFact` | Distinguishes "the company restated this number" (a research signal) from "we fixed our own extraction" (hygiene) | B |
 | 3b | `accounting_standard: VARCHAR, nullable` (`IND_AS`\|`US_GAAP`\|`IFRS`) | `ExtractedFact` | Records which standard produced a `fin.*` Fact's value, since the same canonical `FinancialMetricDefinition` slug may be filed under different standards by different companies (§3.5, cross-market requirement) | B |
-| 4 | `origin: VARCHAR, default 'HUMAN_AUTHORED'` (`SYSTEM_DRAFT`\|`HUMAN_AUTHORED`); `promoted_by_user_id: nullable FK(user.id)`; `promoted_at: nullable timestamp` | `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, `InvestmentCase` | Reserves the automation seam without authorizing automated authorship of anything authoritative; every "current" query must exclude unpromoted `SYSTEM_DRAFT` rows | D, E, F, G respectively |
+| 4 | `origin: VARCHAR, default 'HUMAN_AUTHORED'` (`SYSTEM_DRAFT`\|`HUMAN_AUTHORED`) — no paired `promoted_by_user_id`/`promoted_at`; see §9a for why | `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, `InvestmentCase` | Reserves the automation seam without authorizing automated authorship of anything authoritative; every "current" query must exclude any `SYSTEM_DRAFT` row not superseded by a `HUMAN_AUTHORED` one | D, E, F, G respectively |
 | 5 | New table `InvestmentCaseGateResult`, with `gate` and `status` as closed `CHECK`-constrained enums (not open lookup tables) | — | The nine-gate assessment representation; **the closed-enum choice is itself flagged for sign-off** as a deviation from the codebase's usual open-vocabulary convention | G |
 
 **Item 1, corrected: why a composite UNIQUE constraint is not sufficient.** SQL NULL is never equal to another NULL for uniqueness purposes. A plain `UniqueConstraint(company_id, scenario, revision_number)` with `scenario` nullable does **not** block two rows at `(company_id, NULL, revision_number)` from coexisting — verified empirically against SQLite 3.49.1 (this project's engine): a composite UNIQUE with a nullable column silently admitted a duplicate `(C1, NULL, 1)` row, while correctly rejecting a duplicate named-scenario row. This would have silently broken the "exactly one current forecast per company per revision, when `scenario IS NULL`" invariant that is the entire reason item 1 exists — the legacy single-stream guarantee Phase 3 must not weaken.
@@ -338,7 +338,7 @@ Item 1 carries forward from the base proposal's original §5 in intent (unchange
 
 ## 6. Research Orchestrator contract (specified, not implemented)
 
-Unchanged from the original draft in mechanism. Per owner instruction, explicitly reaffirmed: **the Orchestrator is not implemented now**, and nothing in this revision changes that. The `origin`/`promoted_by_user_id`/`promoted_at` columns (§5 item 4) are not part of the Orchestrator — they exist independently so that a future automated analytical proposal (whether or not it is ever wired to an Orchestrator-style trigger) has a place to land without a further schema change. Building the consumer, the queue, or any automatic wiring still requires separate, explicit approval.
+Unchanged from the original draft in mechanism. Per owner instruction, explicitly reaffirmed: **the Orchestrator is not implemented now**, and nothing in this revision changes that. The `origin` column (§5 item 4) is not part of the Orchestrator — it exists independently so that a future automated analytical proposal (whether or not it is ever wired to an Orchestrator-style trigger) has a place to land without a further schema change. Building the consumer, the queue, or any automatic wiring still requires separate, explicit approval.
 
 **Trigger sources** — every P3 write path that should eventually emit a revalidation signal: `promote_candidate_finding`, `link_proposition_stage`, `record_fact_derivation` (existing); `CycleIntelligenceService` writes; `HypothesisAssumptionService` writes (new).
 
@@ -419,6 +419,24 @@ historical financials (fin.raw.* Facts, standalone + consolidated)
 
 ---
 
+## 9a. The promotion contract (corrected during Slice A implementation, owner-approved)
+
+Reading the actual `ForecastRevision`/`ValuationRevision` code during Slice A implementation surfaced a real conflict: both tables have had a `before_update` event listener since before Phase 3 that **raises** on any mutation after insertion. The originally-approved `promoted_by_user_id`/`promoted_at` columns assumed a row could be created as a draft and later mutated to record its promotion — impossible against that pre-existing contract. The same immutable-revision idiom will apply to `InvestmentHypothesis`/`InvestmentCase` once built in Slices D/G, so this is a correction to the contract everywhere `origin` appears, not a Slice-A-only patch.
+
+**The corrected mechanism:** `promoted_by_user_id`/`promoted_at` do not exist. Promotion is a new row with `origin = HUMAN_AUTHORED` whose `supersedes_revision_id` (or `supersedes_case_id` for `InvestmentCase`) names the exact `SYSTEM_DRAFT` row it promotes — the same supersession chain every revisioned object in this codebase already uses, not a second mechanism.
+
+**Distinguishing a promotion from an ordinary human-authored replacement:** both are a `HUMAN_AUTHORED` row with a `supersedes_*_id`. They differ in exactly one place — the `origin` of the row being superseded:
+- **Promotion:** the superseded row has `origin = SYSTEM_DRAFT`.
+- **Ordinary replacement:** the superseded row has `origin = HUMAN_AUTHORED` (or, for a pre-Phase-3 row, no `scenario` at all).
+
+This is a one-join check (`SELECT origin FROM <table> WHERE id = <new_row.supersedes_*_id>`), not a new field.
+
+**Traceability (actor, timestamp, exact superseded draft):** all three are already present on the superseding row itself — `created_by_user_id` (the promoting actor), `created_at` (the promotion timestamp), and `supersedes_revision_id`/`supersedes_case_id` (the exact draft promoted). No separate promotion-audit columns are needed; the existing revision mechanism already is the audit trail.
+
+**What remains unimplemented:** no service in Slice A creates a `SYSTEM_DRAFT` row (`HypothesisAssumptionService`/`ForecastEngineService`/`ValuationEngineService`/`InvestmentCaseService` are Slice D/E/F/G, not built yet) — Slice A only adds the `origin` column so that when those services exist, this mechanism is already the one they write against.
+
+---
+
 ## 10. Open questions — status after owner review (2026-10-08)
 
 Resolved by the owner:
@@ -428,7 +446,7 @@ Resolved by the owner:
 3. **`CapitalAllocationSnapshot`:** owner confirmed deferral until real reconstruction requirements justify it, as recommended. Resolved.
 4. **Market/Jurisdiction Adapter boundary:** approved as specified (§3.5, §4 P3-A). Resolved.
 5. **Jasch Industries / `OwnershipSnapshot` US-equivalent:** owner confirmed both stay paused/deferred. Resolved.
-6. **Human-governed promotion:** owner reaffirmed — `SYSTEM_DRAFT` rows are never authoritative until a human promotion sets `promoted_by_user_id`/`promoted_at`. No design change; already the mechanism in §4 P3-A.
+6. **Human-governed promotion:** owner reaffirmed — `SYSTEM_DRAFT` rows are never authoritative. Mechanism corrected during Slice A implementation (§9a): promotion is a `HUMAN_AUTHORED` revision superseding the `SYSTEM_DRAFT` one, not a `promoted_by_user_id`/`promoted_at` mutation (which the tables' existing immutable-after-insertion contract does not allow).
 
 Resolved by this implementation-readiness pass (§3.2, §4 P3-D, §5 item 1):
 
@@ -452,7 +470,7 @@ No migration, model, or service code is written. No existing table is altered. N
 - [ ] `ForecastRevision.scenario: VARCHAR, nullable`; drop `uq_forecast_revision_company_number`; add the two partial unique indexes (§5 item 1) with both `sqlite_where`/`postgresql_where` clauses.
 - [ ] `ValuationRevision.scenario: VARCHAR, nullable`; same partial-index replacement, `valuation_method` included in both index column lists.
 - [ ] `FinancialMetricDefinition` (new table): `id, slug, label, statement_section, namespace, standard_unit, description, created_at` — `slug` documented as standard-neutral (§3.5).
-- [ ] `origin`/`promoted_by_user_id`/`promoted_at` columns added to `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, `InvestmentCase` **only as those tables are themselves created in their own slices (D/E/F/G)** — not all four exist yet; Slice A adds the columns to the two that already exist (`ForecastRevision`, `ValuationRevision`) and documents the convention for D/G to follow when those tables are created.
+- [ ] `origin` column (no `promoted_by_user_id`/`promoted_at` — see §9a) added to `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, `InvestmentCase` **only as those tables are themselves created in their own slices (D/E/F/G)** — not all four exist yet; Slice A adds the column to the two that already exist (`ForecastRevision`, `ValuationRevision`) and documents the convention for D/G to follow when those tables are created.
 - [ ] No column added to `Company`, `OwnershipSnapshot`, or any other frozen M1 table (§3.5, §10 items 5/7).
 
 **Compatibility tests (must pass before Slice A is considered done):**
