@@ -2,7 +2,7 @@ STATUS: PROPOSAL — ARCHITECTURE INTEGRATED PER ADDENDUM + OWNER REFINEMENTS (2
 
 # Phase 3 — Investment Intelligence Foundation: Design Proposal
 
-**Date:** 2026-10-08 (v1); integrated 2026-10-08 with `2026-10-08-phase3-architecture-review-addendum.md`'s accepted recommendations and the owner's final refinements of the same date.
+**Date:** 2026-10-08 (v1); integrated 2026-10-08 with `2026-10-08-phase3-architecture-review-addendum.md`'s accepted recommendations and the owner's final refinements of the same date; implementation-readiness pass (FiscalPeriod resolution, ForecastAssumption atomicity, SQLite NULL-uniqueness fix, §12 Slice A checklist) added the same date, pending Slice A authorization.
 
 **Scope of this document:** architecture and contracts only. No migration, model, or service code is created by this document. It defines proposed entities/contracts, ownership boundaries, data flow, revision/supersession semantics, provenance rules, implementation slices, and acceptance gates for owner review. Phase 3 execution does not start until this proposal is explicitly approved, slice by slice, the same way the Research Coverage & Fact Intelligence capability was.
 
@@ -110,7 +110,7 @@ This placement is the single most load-bearing design decision in this proposal 
 
 Per owner refinement: the generic Fact/FactDerivation mechanism is retained unchanged in shape, but reporting periods, units, standalone/consolidated basis, restatements, and corporate-action adjustments must be **reliably** supported, not just representable in principle. The smallest contract that achieves this:
 
-1. **Typed, validated reporting periods — application-layer contract, no schema change.** `ExtractedFact.period` remains the existing `String(50)` column, but every `fin.*` write path (`promote_candidate_finding`, `record_fact`, and the new `FinancialNormalizationService`) must construct it through one shared `FiscalPeriod` value object enforcing a single grammar (`FY<year>`, `FY<year>Q<1-4>`, `FY<year>H<1-2>`, `FY<year>TTM`) and rejecting anything else at write time. This makes period-based arithmetic (TTM rollups, YoY comparison) reliable without migrating the column.
+1. **Typed, validated reporting periods, resolvable to real calendar dates — application-layer contract, no schema change before Slice B.** `ExtractedFact.period` remains the existing `String(50)` column, but every `fin.*` write path (`promote_candidate_finding`, `record_fact`, and the new `FinancialNormalizationService`) must construct it through one shared `FiscalPeriod` value object with two responsibilities: (a) enforcing a single grammar (`FY<year>`, `FY<year>Q<1-4>`, `FY<year>H<1-2>`, `FY<year>TTM`) and rejecting anything else at write time; (b) **resolving** a label to an actual `(period_start_date, period_end_date)` pair via `FiscalPeriod.resolve(fiscal_year_end_month: int = 3)` — the parameter the TTM/YoY arithmetic actually needs, not just the label. **Recommendation: do not add `Company.fiscal_year_end_month` before Slice B.** Every company in the system today uses India's April–March year implicitly, so the default parameter value (`3`) is correct for 100% of current and Slice-B-acceptance companies (Chemplast Sanmar, UNO Minda) and the resolver needs no per-company lookup yet. Building the resolver as a function of an explicit (currently always-defaulted) parameter, rather than a bare unparameterized date-math helper, is what makes this backward-compatible: when a company with a different fiscal year end is eventually onboarded, exactly one change is needed — add the nullable `fiscal_year_end_month` column to `Company` (zero backfill risk; existing rows default to `3`) and change the resolver's call sites to pass `company.fiscal_year_end_month or 3` instead of the literal default. No change to the grammar, to `ExtractedFact`, or to any Slice B service logic. This is the smallest approach that is correct today and doesn't need to be revisited structurally later — only extended with one column, on its own future schedule.
 2. **Validated units — application-layer contract, no schema change.** Every `fin.*` Fact's `unit` must match its `FinancialMetricDefinition.standard_unit` (or an explicitly documented alternate-unit allowlist on that same row), checked at write time by `FinancialNormalizationService`. `FinancialMetricDefinition` already exists in this proposal (§4 P3-B) as the controlled vocabulary; this is one more validation rule against it, not a new table.
 3. **Standalone/consolidated basis — one new column (flagged, §5).** `ExtractedFact.basis: VARCHAR, nullable` (`STANDALONE`|`CONSOLIDATED`), populated only for `fin.*` fact types, `NULL` for every other Fact in the system. Promotes what the original draft of this proposal had left as prose-in-`value` to a first-class, queryable field.
 4. **Restatement vs. correction — one new column (flagged, §5).** `ExtractedFact.supersede_reason: VARCHAR, nullable` (`RESTATEMENT`|`CORRECTION`) on the existing `supersedes_fact_id` link. "The company restated FY22 revenue down 8%" is itself a research-worthy signal (an EFP-relevant event); "we corrected our own extraction" is bookkeeping hygiene. Today's single supersession mechanism cannot tell a reader which happened; this field does, with no change to the supersession mechanism itself.
@@ -241,6 +241,10 @@ This also resolves the three cycle-type question cleanly: **industry/commodity c
 - **`InvestmentHypothesis`**: `(id, company_id, title, thesis_narrative, consensus_view, variant_view, why_market_is_wrong, falsifiers, confidence [mandatory from v1], cites: list of Fact/ResearchProposition/CompanyExposure ids — cycle-side and transformation-side cited separately per P3-C when both apply, revision_number, supersedes_revision_id, origin: SYSTEM_DRAFT|HUMAN_AUTHORED, promoted_by_user_id, promoted_at, created_by_user_id, created_at, change_reason)`.
 - **`ForecastAssumption`**: `(id, investment_hypothesis_id [required], scenario [BULL|BASE|BEAR|MID_CYCLE], assumption_statement, metric_slug [optional, references FinancialMetricDefinition], assumed_value, assumed_unit, provenance: exactly one of {cycle_exposure_id, research_proposition_id, fact_id, candidate_finding_id, evidence_id}, created_by_user_id, created_at)`. One hypothesis typically produces three scenario-forked assumption sets (Bull/Base/Bear) plus, where relevant, one `MID_CYCLE` set (§4 P3-E) — each row atomic and independently citable.
 
+  **Atomicity rule (explicit, owner-confirmed):** one `ForecastAssumption` row = one driver = one provenance source. The existing discriminated-union `provenance` shape already enforces "exactly one source" at the constraint level; this rule additionally requires that **one row never carries two drivers' reasoning in its `assumption_statement`**. When one scenario's forecast depends on both a commodity-cycle driver and a company-transformation driver (Chemplast's "PVC normalization" + "capacity ramp" is the canonical case), it is represented as **two separate `ForecastAssumption` rows for that scenario** — one with `provenance.cycle_exposure_id` set, one with `provenance.research_proposition_id` set — both linked to the same `ForecastRevision` via `ForecastRevisionAssumption` (§4 P3-E). This is a direct, mechanical extension of §4 P3-C's citation-separation rule down to the assumption layer, not a new mechanism.
+
+  **Acceptance test (Slice D):** a fixture builds Chemplast Sanmar's BULL-scenario assumption set as exactly two `ForecastAssumption` rows — one citing `cycle_exposure_id` (the PVC `CompanyExposure`), one citing `research_proposition_id` (the capacity-ramp `ResearchProposition`) — and asserts: (a) each row's `provenance` has exactly one non-null field; (b) the two rows' populated provenance field differs; (c) `ForecastEngineService` can query "this forecast's cycle-driver assumptions" and "this forecast's transformation-driver assumptions" as two disjoint sets rather than needing to parse free text to tell them apart.
+
 ---
 
 ### P3-E — Scenario / Forecast Engine
@@ -293,14 +297,42 @@ All additive, all nullable where applicable, all classified `SMALL COMPATIBILITY
 
 | # | Change | Table(s) | Why | Slice |
 |---|---|---|---|---|
-| 1 | `scenario: VARCHAR, nullable`; broaden uniqueness to `(company_id, scenario, revision_number)` / `(company_id, valuation_method, scenario, revision_number)` | `ForecastRevision`, `ValuationRevision` | Lets Bull/Base/Bear/Mid-Cycle coexist without misrepresenting one as superseding another. Zero rows system-wide today (verified) — no backfill risk. | A |
+| 1 | `scenario: VARCHAR, nullable`, enforced via **two partial unique indexes, not one composite UNIQUE constraint** (corrected during implementation-readiness review — see below) | `ForecastRevision`, `ValuationRevision` | Lets Bull/Base/Bear/Mid-Cycle coexist without misrepresenting one as superseding another. Zero rows system-wide today (verified) — no backfill risk. | A |
 | 2 | `basis: VARCHAR, nullable` (`STANDALONE`\|`CONSOLIDATED`) | `ExtractedFact` | Promotes standalone/consolidated basis from free-text prose to a queryable field, scoped to `fin.*` fact types only | B |
 | 3 | `supersede_reason: VARCHAR, nullable` (`RESTATEMENT`\|`CORRECTION`) | `ExtractedFact` | Distinguishes "the company restated this number" (a research signal) from "we fixed our own extraction" (hygiene) | B |
 | 3b | `accounting_standard: VARCHAR, nullable` (`IND_AS`\|`US_GAAP`\|`IFRS`) | `ExtractedFact` | Records which standard produced a `fin.*` Fact's value, since the same canonical `FinancialMetricDefinition` slug may be filed under different standards by different companies (§3.5, cross-market requirement) | B |
 | 4 | `origin: VARCHAR, default 'HUMAN_AUTHORED'` (`SYSTEM_DRAFT`\|`HUMAN_AUTHORED`); `promoted_by_user_id: nullable FK(user.id)`; `promoted_at: nullable timestamp` | `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, `InvestmentCase` | Reserves the automation seam without authorizing automated authorship of anything authoritative; every "current" query must exclude unpromoted `SYSTEM_DRAFT` rows | D, E, F, G respectively |
 | 5 | New table `InvestmentCaseGateResult`, with `gate` and `status` as closed `CHECK`-constrained enums (not open lookup tables) | — | The nine-gate assessment representation; **the closed-enum choice is itself flagged for sign-off** as a deviation from the codebase's usual open-vocabulary convention | G |
 
-Item 1 carries forward from the base proposal's original §5 (unchanged in substance). Items 2–5 are new, per this integration.
+**Item 1, corrected: why a composite UNIQUE constraint is not sufficient.** SQL NULL is never equal to another NULL for uniqueness purposes. A plain `UniqueConstraint(company_id, scenario, revision_number)` with `scenario` nullable does **not** block two rows at `(company_id, NULL, revision_number)` from coexisting — verified empirically against SQLite 3.49.1 (this project's engine): a composite UNIQUE with a nullable column silently admitted a duplicate `(C1, NULL, 1)` row, while correctly rejecting a duplicate named-scenario row. This would have silently broken the "exactly one current forecast per company per revision, when `scenario IS NULL`" invariant that is the entire reason item 1 exists — the legacy single-stream guarantee Phase 3 must not weaken.
+
+**The fix — two partial unique indexes, following an idiom this codebase already uses** (`app/models/document.py`'s `uq_document_metadata_fingerprint_ordinary`/`_successor` pair, lines 306–319, already shipped and tested):
+
+```python
+__table_args__ = (
+    sa.Index(
+        "uq_forecast_revision_company_number_legacy",
+        "company_id", "revision_number",
+        unique=True,
+        sqlite_where=sa.text("scenario IS NULL"),
+        postgresql_where=sa.text("scenario IS NULL"),
+    ),
+    sa.Index(
+        "uq_forecast_revision_company_scenario_number",
+        "company_id", "scenario", "revision_number",
+        unique=True,
+        sqlite_where=sa.text("scenario IS NOT NULL"),
+        postgresql_where=sa.text("scenario IS NOT NULL"),
+    ),
+    # existing CheckConstraint("revision_number > 0", ...) unchanged
+)
+```
+
+replacing the single `uq_forecast_revision_company_number` constraint. `ValuationRevision` gets the same pair, with `valuation_method` carried in both index column lists. Verified empirically (same SQLite engine): with this pair, a duplicate `(C1, NULL, 1)` row is correctly rejected, a duplicate `(C1, 'BULL', 1)` row is correctly rejected, and `(C1, NULL, 1)` / `(C1, 'BULL', 1)` / `(C1, 'BEAR', 1)` correctly coexist. `sqlite_where`/`postgresql_where` are both specified because the live app targets SQLite in development and Postgres via `DATABASE_URL` in other environments (`config.py`) — matching the existing dual-dialect idiom exactly, not introducing a new one.
+
+**Rollback precaution:** both tables have zero rows system-wide today (verified), so applying this migration carries no data risk at all right now. If rolled back after real rows exist (post-Slices B–G), reverting to a single composite constraint only *loosens* the constraint — it cannot fail against data that already satisfied the stricter partial-index pair — so the rollback itself is safe without a pre-check; the risk this fix prevents is forward (silently admitting invalid duplicates), not backward.
+
+Item 1 carries forward from the base proposal's original §5 in intent (unchanged purpose), corrected in mechanism per this integration. Items 2–5 are new, per the prior integration.
 
 ---
 
@@ -376,10 +408,10 @@ historical financials (fin.raw.* Facts, standalone + consolidated)
 
 | Slice | Delivers | Depends on | Acceptance gate |
 |---|---|---|---|
-| **A** | P3-A contracts (incl. the `origin`/promotion vocabulary, coherence rule, and Market/Jurisdiction Adapter boundary); `scenario` column; `FinancialMetricDefinition` | Nothing beyond current code | Existing forecast/valuation tests pass unchanged with `scenario IS NULL`; a disposable fixture proves two scenario rows coexist without collision; **a market-agnostic compatibility test** — a fixture-only pass with `accounting_standard=US_GAAP`, `currency=USD`, `basis=CONSOLIDATED` substituted for every India-shaped value, proving no P3-B–G service or constraint branches on a hardcoded jurisdiction (no real US ingestion or company involved) |
+| **A** | P3-A contracts (incl. the `origin`/promotion vocabulary, coherence rule, and Market/Jurisdiction Adapter boundary); `scenario` column via the §5 item 1 partial-index pair; `FinancialMetricDefinition`; the `FiscalPeriod` resolver (parameterized, `Company.fiscal_year_end_month` not added) | Nothing beyond current code | Existing forecast/valuation tests pass unchanged with `scenario IS NULL`; **the SQLite NULL-uniqueness test** — two inserts at `(company_id, NULL, revision_number)` must collide, two inserts at `(company_id, 'BULL', revision_number)` must collide, and `NULL`/`'BULL'`/`'BEAR'` rows at the same `(company_id, revision_number)` must coexist; a `FiscalPeriod.resolve()` fixture proves label→calendar-date resolution for FY/Q/H/TTM labels under the default `fiscal_year_end_month=3`; **a market-agnostic compatibility test** — a fixture-only pass with `accounting_standard=US_GAAP`, `currency=USD`, `basis=CONSOLIDATED` substituted for every India-shaped value, proving no P3-B–G service or constraint branches on a hardcoded jurisdiction (no real US ingestion or company involved) |
 | **B — EFP storage layer** | `fin.raw.*`/`fin.norm.*` incl. `basis`/`supersede_reason`; forensics-flavored `PropositionStageType` rows; `CapitalAllocationSnapshot` contract (not implemented) | Slice A | **Chemplast:** standalone/consolidated revenue, EBITDA, PAT reconciled with `basis` set. **UNO Minda:** re-express the existing EBITDA derivation and Tachi-S JV trace under the new vocabulary with zero data loss |
 | **C — Cycle Intelligence** | `CycleObservation`, `CycleAssessment`, `CompanyExposure`; cycle-side/transformation-side separate-citation rule | Slice A | **Chemplast:** real PVC `CycleAssessment` with Bull/Base/Bear siblings. **UNO Minda:** a hypothesis citing an auto-ancillary cycle assessment AND the existing Tachi-S transformation `ResearchProposition` as two separate citations |
-| **D — Hypothesis & Assumption** | `InvestmentHypothesis`, `ForecastAssumption`, `origin`/promotion columns | Slices B, C | A real Chemplast hypothesis, `HUMAN_AUTHORED`, citing Slice B/C output with 3 scenario-forked assumption sets |
+| **D — Hypothesis & Assumption** | `InvestmentHypothesis`, `ForecastAssumption`, `origin`/promotion columns | Slices B, C | A real Chemplast hypothesis, `HUMAN_AUTHORED`, citing Slice B/C output with 3 scenario-forked assumption sets; **the atomicity test (§4 P3-D)** — BULL's assumption set built as two separate rows (cycle-side, transformation-side), each with exactly one provenance field populated, independently queryable |
 | **E — Forecast Engine** | `ForecastRevisionAssumption`; scenario-forking logic incl. `MID_CYCLE`; coherence rule enforced in code | Slice D | 4 coherent scenario-tagged `ForecastRevision`s for Chemplast (Bull/Base/Bear/Mid-Cycle), all sharing one `as_of_date`/hypothesis revision |
 | **F — Valuation Engine** | Scenario-aware valuation (no new table) | Slice E | 4 scenario-tagged `ValuationRevision`s, each citing its matching `ForecastRevision` |
 | **G — Investment View** | `InvestmentCase`, `InvestmentCaseKillSwitch`, link tables, `InvestmentCaseGateResult` (nine gates), `get_scenario_return_spread` | Slices B–F | Full Chemplast trace end to end: upside/downside spread queryable (Mid-Cycle excluded), all nine gates recorded with at least one PASS and one non-PASS example, at least one kill switch |
@@ -387,17 +419,56 @@ historical financials (fin.raw.* Facts, standalone + consolidated)
 
 ---
 
-## 10. Open questions for owner approval (not resolved by this document)
+## 10. Open questions — status after owner review (2026-10-08)
 
-1. Confirm the §5 item 5 representation choice (closed `CHECK`-constrained enum for the nine gates and five statuses) rather than an open lookup table — or direct that it follow the `ResearchDimension`/`PropositionStageType` convention instead.
-2. Confirm the §5 item 4 scope — `origin`/`promoted_by_user_id`/`promoted_at` on all four of `InvestmentHypothesis`/`ForecastRevision`/`ValuationRevision`/`InvestmentCase`, or a narrower subset (e.g. only `InvestmentHypothesis` and `InvestmentCase`, treating Forecast/Valuation as always mechanically derived from already-governed assumptions).
-3. Confirm `CapitalAllocationSnapshot`'s deferral trigger (§4 P3-B) — "enough real `ResearchProposition` volume on Chemplast and UNO Minda" is a judgment call, not a measured threshold; the owner may want a specific condition instead.
-4. Approve or amend the six §5 schema items individually, the same way item 1 (`scenario`) was isolated for its own sign-off in the original draft.
-5. Confirm the Market/Jurisdiction Adapter boundary (§3.5, §4 P3-A) is the right shape for future US coverage, or direct a different one before any adapter is ever built.
-6. Decide the timing of the two identified frozen-code, India-specific gaps (§3.5 item 3): `OwnershipSnapshot`'s promoter-concept fields, and `Company`'s missing fiscal-year-end field. Neither is fixed by this proposal; both are M1-touching changes outside Phase 3's current authorization and would need their own separate approval before a US company could be onboarded correctly.
+Resolved by the owner:
+
+1. **Nine gates / five statuses:** owner confirmed "a controlled vocabulary." Read literally and carried forward as the closed `CHECK`-constrained enum this proposal recommended (§4 P3-G, §5 item 5) — a bounded, named set is itself a controlled vocabulary, and the gates are a curated, fixed taxonomy rather than one expected to grow the way `ResearchDimension` does. **Flagged explicitly in case the owner intended the open-lookup-table style instead** — correctable before Slice G with no cost, since `InvestmentCaseGateResult` is not built yet.
+2. **`origin`/promotion scope:** owner confirmed all four tables — `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, `InvestmentCase` — consistently. Resolved; §5 item 4 and §9 unchanged.
+3. **`CapitalAllocationSnapshot`:** owner confirmed deferral until real reconstruction requirements justify it, as recommended. Resolved.
+4. **Market/Jurisdiction Adapter boundary:** approved as specified (§3.5, §4 P3-A). Resolved.
+5. **Jasch Industries / `OwnershipSnapshot` US-equivalent:** owner confirmed both stay paused/deferred. Resolved.
+6. **Human-governed promotion:** owner reaffirmed — `SYSTEM_DRAFT` rows are never authoritative until a human promotion sets `promoted_by_user_id`/`promoted_at`. No design change; already the mechanism in §4 P3-A.
+
+Resolved by this implementation-readiness pass (§3.2, §4 P3-D, §5 item 1):
+
+7. `Company.fiscal_year_end_month` is **not** added before Slice B — the `FiscalPeriod` resolver takes it as a defaulted parameter instead, deferring the M1 schema touch until a non-March company actually needs onboarding.
+8. `ForecastAssumption`'s one-driver-one-provenance atomicity rule is now explicit, with a named Slice D acceptance test.
+9. §5 item 1's `scenario` uniqueness is implemented as two partial unique indexes, not one composite `UNIQUE` constraint — a composite constraint would have silently failed to enforce the legacy single-stream invariant (verified empirically against this project's SQLite engine).
+
+No remaining open architectural questions beyond what §12's checklist calls out as pending at authorization time.
 
 ---
 
 ## 11. What this document does not do
 
-No migration, model, or service code is written. No existing table is altered. No North-Star non-goal (§20) is authorized. The Research Orchestrator is specified, not built. EFP's investigative execution is not built — only its storage layer is designed. Jasch Industries onboarding is not performed. **No US ingestion, SEC-specific workflow, or second market adapter is built or implied as built** — only the contract boundary that would let one exist later without reworking the core engines. Phase 3 execution does not start — this remains a proposal for owner review, now integrated with the architecture-review addendum's accepted recommendations and the owner's final refinements of 2026-10-08.
+No migration, model, or service code is written. No existing table is altered. No North-Star non-goal (§20) is authorized. The Research Orchestrator is specified, not built. EFP's investigative execution is not built — only its storage layer is designed. Jasch Industries onboarding is not performed. **No US ingestion, SEC-specific workflow, or second market adapter is built or implied as built** — only the contract boundary that would let one exist later without reworking the core engines. Phase 3 execution does not start — this remains a proposal for owner review, now integrated with the architecture-review addendum's accepted recommendations and the owner's final refinements of 2026-10-08. §12 below is Slice A's implementation-readiness checklist, for authorization — it does not itself authorize anything.
+
+---
+
+## 12. Slice A implementation-readiness checklist
+
+**Schema changes (Slice A only):**
+- [ ] `ForecastRevision.scenario: VARCHAR, nullable`; drop `uq_forecast_revision_company_number`; add the two partial unique indexes (§5 item 1) with both `sqlite_where`/`postgresql_where` clauses.
+- [ ] `ValuationRevision.scenario: VARCHAR, nullable`; same partial-index replacement, `valuation_method` included in both index column lists.
+- [ ] `FinancialMetricDefinition` (new table): `id, slug, label, statement_section, namespace, standard_unit, description, created_at` — `slug` documented as standard-neutral (§3.5).
+- [ ] `origin`/`promoted_by_user_id`/`promoted_at` columns added to `InvestmentHypothesis`, `ForecastRevision`, `ValuationRevision`, `InvestmentCase` **only as those tables are themselves created in their own slices (D/E/F/G)** — not all four exist yet; Slice A adds the columns to the two that already exist (`ForecastRevision`, `ValuationRevision`) and documents the convention for D/G to follow when those tables are created.
+- [ ] No column added to `Company`, `OwnershipSnapshot`, or any other frozen M1 table (§3.5, §10 items 5/7).
+
+**Compatibility tests (must pass before Slice A is considered done):**
+- [ ] All existing `ForecastRevision`/`ValuationRevision` tests pass unchanged with `scenario IS NULL`.
+- [ ] SQLite NULL-uniqueness test (§9): duplicate `(company_id, NULL, revision_number)` rejected; duplicate `(company_id, 'BULL', revision_number)` rejected; `NULL`/`'BULL'`/`'BEAR'` coexist at the same `(company_id, revision_number)`.
+- [ ] Same three cases re-run against Postgres (or confirmed by code review of the `postgresql_where` clause against Postgres's documented NULL/partial-index semantics, if a Postgres instance isn't available in CI) — this proposal's dual-dialect claim is otherwise unverified on one of the two dialects it names.
+- [ ] `FiscalPeriod.resolve()` fixture: FY/Q/H/TTM labels resolve to correct calendar start/end dates under `fiscal_year_end_month=3`; malformed labels are rejected at write time.
+- [ ] Market-agnostic compatibility test (§9): a fixture-only pass substituting `accounting_standard=US_GAAP`/`currency=USD`/`basis=CONSOLIDATED` touches no hardcoded jurisdiction branch in any Slice A service.
+
+**Acceptance evidence (Chemplast Sanmar primary; no new company onboarded in Slice A):**
+- [ ] A disposable fixture on Chemplast's existing company row proves two named-scenario `ForecastRevision`s and one legacy (`NULL`-scenario) row coexist without any of the three colliding incorrectly.
+- [ ] `FinancialMetricDefinition` seeded with at least the metrics Slice B will need first (revenue, EBITDA, PAT), each slug reviewed against the §3.5 standard-neutral naming rule before it is inserted.
+
+**Rollback precautions:**
+- [ ] Both `ForecastRevision`/`ValuationRevision` have zero rows system-wide as of this writing (verified) — Slice A's migration carries no data-migration risk today. Re-verify row counts are still zero immediately before running it, in case another branch has inserted rows in the interim.
+- [ ] Rollback = drop the two new partial indexes and `scenario` columns, restore the original single composite `UniqueConstraint`. Safe unconditionally if run before any other slice inserts scenario-tagged rows; safe after, too, per §5's rollback note (loosening a constraint cannot fail against data that already satisfied the stricter one).
+- [ ] `FinancialMetricDefinition` rollback = drop the table; it has no inbound FK from any other Slice A object, so this is a plain drop with no dependency ordering to worry about.
+
+**Explicitly not in Slice A:** `CycleObservation`/`CycleAssessment`/`CompanyExposure` (Slice C), `InvestmentHypothesis`/`ForecastAssumption` (Slice D), `InvestmentCaseGateResult` (Slice G), `CapitalAllocationSnapshot` (deferred indefinitely), any US ingestion, any Jasch Industries onboarding, any change to `OwnershipSnapshot` or `Company`.
