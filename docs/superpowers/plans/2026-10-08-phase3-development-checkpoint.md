@@ -7,10 +7,9 @@ each shutdown checkpoint rather than creating a new dated file -- the
 "what is actually committed," independent of any single conversation's
 memory.
 
-**Last updated:** 2026-10-12 (shutdown checkpoint after I3AS Alert-2 --
-Phase 3 A-G and I3AS Slice 1 are merged into `feature/research-
-coverage-foundation` (PRs #1/#2); I3AS Alert-2 (Investment Brain
-alerts) is complete and PR'd (#3), not yet merged)
+**Last updated:** 2026-10-12 (shutdown checkpoint -- Phase 3 A-G, I3AS
+Slice 1, and I3AS Alert-2 are all merged into `feature/research-
+coverage-foundation` via PRs #1/#2/#3)
 
 ---
 
@@ -158,8 +157,10 @@ open and un-widened by Slice G.
   `feature/research-coverage-foundation`): **merged**, 2026-10-12, same
   ordinary-merge-commit discipline as PR #1.
 - **PR #3** (`feature/i3as-slice2-investment-brain-alerts` ->
-  `feature/research-coverage-foundation`): open, carries I3AS Alert-2
-  (see below), stacked on the same base, for the same reason.
+  `feature/research-coverage-foundation`): **merged**, 2026-10-12, same
+  ordinary-merge-commit discipline as PRs #1/#2 (`2e66bf2`). All three
+  PRs now share one common base/merge target; no history rewritten in
+  the stack.
 - `feature/research-coverage-foundation` -> `master` **remains
   unmerged, with no PR of its own** -- explicitly not done, pending
   separate owner approval, unchanged from every prior checkpoint.
@@ -268,15 +269,14 @@ per owner decision); existing Trade/Telegram alerts are untouched.
 
 ## Resume instructions for the next session
 
-**Phase 3 (Slices A-G), I3AS Slice 1, and I3AS Alert-2 are all complete.**
-Slices/PRs #1 and #2 are merged; PR #3 (Alert-2) is open, not yet
-merged. There is no pending implementation work to resume from any of
-them. If a future session is asked to "continue Phase 3" or "continue
-I3AS," read this checkpoint first and confirm there is genuinely new
-scope before writing any code.
+**Phase 3 (Slices A-G), I3AS Slice 1, and I3AS Alert-2 are all complete
+and merged** (PRs #1/#2/#3, all into `feature/research-coverage-
+foundation`). There is no pending implementation work to resume from
+any of them. If a future session is asked to "continue Phase 3" or
+"continue I3AS," read this checkpoint first and confirm there is
+genuinely new scope before writing any code.
 
 **Outstanding, owner-level only:**
-- Merging PR #3 into `feature/research-coverage-foundation`.
 - Merging `feature/research-coverage-foundation` into `master` (no PR
   yet, unchanged standing position).
 - Deciding whether to proceed to I3AS Alert-3 (the design proposal's
