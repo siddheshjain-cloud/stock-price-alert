@@ -7,9 +7,13 @@ each shutdown checkpoint rather than creating a new dated file -- the
 "what is actually committed," independent of any single conversation's
 memory.
 
-**Last updated:** 2026-10-12 (shutdown checkpoint -- Phase 3 A-G, I3AS
-Slice 1, and I3AS Alert-2 are all merged into `feature/research-
-coverage-foundation` via PRs #1/#2/#3)
+**Last updated:** 2026-10-12 (milestone checkpoint -- `feature/research-
+coverage-foundation` (Research Coverage Slices 1-4, Phase 3 A-G, I3AS
+Slice 1, I3AS Alert-2) is now merged into `master` via PR #4; master is
+current. Per owner direction, this engagement now operates under a
+quality-gated autonomous protocol -- see "Quality-Gated Autonomous
+Development Protocol" below -- so this checkpoint is updated after
+completed milestones, not after every routine operation.)
 
 ---
 
@@ -161,13 +165,46 @@ open and un-widened by Slice G.
   ordinary-merge-commit discipline as PRs #1/#2 (`2e66bf2`). All three
   PRs now share one common base/merge target; no history rewritten in
   the stack.
-- `feature/research-coverage-foundation` -> `master` **remains
-  unmerged, with no PR of its own** -- explicitly not done, pending
-  separate owner approval, unchanged from every prior checkpoint.
+- **PR #4** (`feature/research-coverage-foundation` -> `master`):
+  **merged**, 2026-10-12, on explicit owner instruction, same ordinary-
+  merge-commit discipline (`456946f`, 89 commits). Verified
+  independently: pre-existing `master` tip (`9d08640`) remains an
+  ancestor (no history rewritten), and every key feature commit across
+  all three prior PRs is now also an ancestor of `master`. **`master`
+  is current.**
 - `gh` CLI authenticated this session via owner browser action (device
   flow); portable zip install used after the MSI installer hung on a
   UAC prompt it could not get non-interactively -- killed, no admin
   rights used or required.
+
+## Quality-Gated Autonomous Development Protocol (owner-directed, 2026-10-12)
+
+Supersedes this engagement's prior per-PR approval cadence into
+`feature/research-coverage-foundation` (merges into `master` remain
+excluded -- see below, unchanged). For previously-approved scopes:
+
+- Implement, run targeted tests, complete a full regression pass,
+  commit, push, and regular-merge (never squash/rebase) PRs into
+  `feature/research-coverage-foundation` autonomously once all checks
+  pass -- do not wait for owner approval at each routine PR gate.
+- Full regression is the integration-acceptance bar; targeted tests are
+  for development feedback only, not a substitute for it.
+- Test parallelism may be considered, but only after confirming fixture
+  isolation is genuinely independent -- not by default.
+- While a long regression run is in flight, preparing independent
+  next-step work is fine; merging or claiming completion before that
+  run's result is known is not.
+- Update this checkpoint after completed milestones, not after every
+  routine operation -- this section itself is the first entry logged
+  under that lighter cadence.
+
+**Unchanged, still absolute:** no live-database changes, no production
+migrations or deployments, no destructive operations, no history
+rewriting, and no merge into `master` without the owner's own explicit,
+separate instruction each time -- the 2026-10-12 `master` merge above
+was exactly that explicit instruction, not a standing grant. The
+Incident-to-Safeguard Doctrine continues to apply unchanged to any
+future incident.
 
 ## I3AS Slice 1 (complete, 2026-10-12): legacy Trade/Telegram alert integration
 
@@ -269,19 +306,27 @@ per owner decision); existing Trade/Telegram alerts are untouched.
 
 ## Resume instructions for the next session
 
-**Phase 3 (Slices A-G), I3AS Slice 1, and I3AS Alert-2 are all complete
-and merged** (PRs #1/#2/#3, all into `feature/research-coverage-
-foundation`). There is no pending implementation work to resume from
-any of them. If a future session is asked to "continue Phase 3" or
-"continue I3AS," read this checkpoint first and confirm there is
+**Everything through I3AS Alert-2 is complete and merged all the way
+to `master`** (PRs #1-#4). There is no pending implementation work to
+resume from any of it. If a future session is asked to "continue Phase
+3" or "continue I3AS," read this checkpoint first and confirm there is
 genuinely new scope before writing any code.
 
+**Current priority (owner-directed, 2026-10-12): I3AS Alert-3 and
+real-company validation**, under the already-approved I3AS architecture
+-- proceed under the Quality-Gated Autonomous Development Protocol
+above (routine PR-into-`feature/research-coverage-foundation` gates do
+not need per-step approval; full regression remains the acceptance
+bar; no compromise on test coverage, provenance, or acceptance
+standards to meet a schedule). Alert-3 (design proposal §8, lowest
+priority at the time it was scoped, now promoted): broader Research
+Brain event sources -- `GovernanceFlag`/`CycleAssessment`/
+`InvestmentHypothesis` -- following the exact same reuse-Alert-1-
+infrastructure, fail-safe-isolation, admin-only-targeting pattern
+Alert-2 already proved twice.
+
 **Outstanding, owner-level only:**
-- Merging `feature/research-coverage-foundation` into `master` (no PR
-  yet, unchanged standing position).
-- Deciding whether to proceed to I3AS Alert-3 (the design proposal's
-  §8 lowest-priority slice: broader Research Brain event sources --
-  `GovernanceFlag`/`CycleAssessment`/`InvestmentHypothesis`) -- not yet
-  started, not yet requested.
+- Any further `master` merge, each requiring its own separate, explicit
+  instruction (unchanged policy, restated above).
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
