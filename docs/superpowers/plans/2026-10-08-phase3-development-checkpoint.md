@@ -24,24 +24,21 @@ Research Orchestrator, explicitly out of scope, remains unbuilt)
 - **HEAD:** `82a092b` -- "feat(phase3-slice-g): add Investment Case
   (nine-gate assessment) and InvestmentCaseService"
 - **Working tree:** clean
-- **GitHub:** pushed. `origin/feature/phase3-slice-a-contracts` --
-  the exact branch backing PR #1 -- was fast-forwarded from `30bb2a6`
-  (Slice A only) to `82a092b` (through Slice G); no force-push, no
-  history rewrite, no new branch created (deliberately not duplicating
-  the existing PR's head branch under the working branch's own stale
-  name). **PR #1** (`feature/phase3-slice-a-contracts` ->
-  `feature/research-coverage-foundation`) now shows all seven Phase 3
-  commits (A through G) and remains **open, unmerged** -- merging it
-  (and the separate, still-outstanding `feature/research-coverage-
-  foundation` -> `master` integration, which has no PR of its own yet)
-  is an owner-level decision, consistent with this project's own
-  human-governed-promotion discipline, and was deliberately not done
-  automatically. The PR's title/body still read "Slice A contracts ...
-  no Slices B-G" -- stale text, since updating it requires a GitHub API
-  write token this session did not have (only `git push` over the
-  existing credential-manager-backed HTTPS remote worked); the owner
-  should refresh the PR description from this checkpoint before merging,
-  or the next session can do it once write access is available.
+- **GitHub:** fully integrated through PR #1, owner-approved and
+  executed 2026-10-12. `gh` CLI authenticated (device-flow browser
+  auth, owner action; portable zip install after the MSI installer
+  hung on a UAC prompt it could not get in a non-interactive session --
+  killed, no admin rights used or required). PR #1's title/description
+  were updated to reflect the full A-G stack, then merged into
+  `feature/research-coverage-foundation` via an ordinary merge commit
+  (`9ff53f2`) -- **not** squash, **not** rebase, so all seven individual
+  Phase 3 commits remain intact and individually reachable, per the
+  owner's explicit "preserve existing commit history" instruction.
+  Verified independently via plain `git log`/`git merge-base`, not just
+  the GitHub UI. The PR branch (`feature/phase3-slice-a-contracts`) was
+  **not** deleted. `feature/research-coverage-foundation` -> `master`
+  remains unmerged and has no PR of its own yet -- **explicitly not
+  done**, per the owner's own instruction, pending separate approval.
 - **Live database** (`instance/trading_app.db`): Alembic revision
   `20261007_05` -- **five migrations behind this branch's head
   (`20261008_05`)**. The live database has never been migrated during

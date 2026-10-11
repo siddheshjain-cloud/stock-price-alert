@@ -1,4 +1,6 @@
-STATUS: PROPOSAL — NOT YET APPROVED FOR IMPLEMENTATION
+STATUS: APPROVED FOR IMPLEMENTATION (2026-10-12, owner architecture
+review — all six open questions resolved, §9) — EXECUTE SLICE BY SLICE
+PER §8, STARTING WITH ALERT-1
 
 # Integrated Investment Intelligence Alert System — Design Proposal
 
@@ -427,89 +429,66 @@ question (c)); any Redis/WebSocket infrastructure.
 
 ---
 
-## 9. Open questions for owner decision
+## 9. Owner decisions (RESOLVED, 2026-10-12 — architecture approved before implementation)
 
-**Resolved (2026-10-12):**
-- *v1 event-source scope / sequencing* — legacy Trade alert integration
-  is approved as the **first** implementation slice (Alert-1, §8),
-  reversing this proposal's original order, subject to the
-  regression-first and fail-safe gates now written into Alert-1's
-  acceptance criteria. Investment Brain integration (kill switch, gate
-  `FAIL`, view-changing supersession) follows as Alert-2.
-- *WhatsApp* — confirmed by the owner as a future option, not a parallel
-  pathway that exists today (§2a). Telegram is SPA's one confirmed live
-  alert channel.
-- *Sensybull interoperability* — confirmed as a real future integration
-  target (a fork of its API exists locally, read directly — §2a), to be
-  preserved as an option without any new dependency or infrastructure
-  today. Folded into `AlertEvent`'s shape (idempotency key, `details`
-  JSON column) and into the channel-scope recommendation below.
+All six open questions are now resolved. This section records the
+owner's exact decisions; §§5/8 above have been updated to match.
 
-**Still open:**
-
-1. **`AlertEvent` provenance shape.** This proposal recommends a plain
-   `source_table`/`source_id` string pair, unique together with
-   `event_type`, plus an optional `details: JSON` column (§5.1) — the
-   same named-by-convention choice already made for
-   `ForecastAssumption.metric_slug`, now additionally grounded in
-   Sensybull's own real `FilingEvent.edgar_id` (natural-key uniqueness)
-   and `EventType.attributes` (JSON, not column sprawl) precedent (§2a).
-   The alternative — a growing discriminated-union of nullable foreign
-   keys, the idiom used everywhere else in Phase 3 for a *closed*, small
-   provenance set (3-5 options) — does not scale to an open-ended,
-   incrementally-registered set of event sources without an
-   ever-growing column list on one table. A third alternative, one
-   small link table per integrated source type (mirroring
-   `InvestmentCaseForecast`/`InvestmentCaseValuation`), is more
-   type-safe than either but means a new migration every time a new
-   source is integrated — arguably against this mechanism's whole
-   "register incrementally" purpose. **Recommendation: the string-pair
-   + JSON-details approach.**
-2. **Recipient targeting for v1.** This proposal recommends "every
-   `User` with `is_admin=True`" (§5.3), the smallest viable scope and an
-   existing pattern (`send_kite_login_alert`). A per-user subscription
-   table (by company, by event type, by severity) is a natural future
-   enhancement, not built now — deferred the same way Phase 3 deferred
-   `CapitalAllocationSnapshot` until real volume justified it.
-3. **Delivery timing.** This proposal recommends fully synchronous,
-   inline delivery attempts (§5.3) — simplest, a direct durability
-   upgrade over today's fire-and-forget call, and the only option
-   consistent with "no new infrastructure today" (§2a) — a queue/worker
-   is itself new infrastructure. A deferred/queued delivery mechanism
-   with retry/backoff is a plausible future enhancement once real
-   delivery-failure volume exists to justify it, and once a Redis-backed
-   bridge (if a real Sensybull integration is ever separately approved)
-   would need one anyway.
-4. **Relationship to the Research Orchestrator (§6 of the Phase 3
-   proposal).** The Orchestrator's signal shape
-   (`source_event`/`candidate_targets`/`reason`) is structurally
-   similar to this proposal's `AlertEvent`, but its *purpose* is
-   different: internal "this may now be stale, please re-review"
-   surfacing for existing research objects, never human-facing
-   notification. **This proposal recommends treating the Alert System
-   as structurally separate from, and smaller than, the Orchestrator**
-   — reusing only the naming convention, not the Orchestrator's
-   revalidation semantics — so that approving this proposal does not
-   implicitly authorize or require building the Orchestrator, which
-   remains "not implemented under any circumstance without separate
-   approval" per the Phase 3 checkpoint. Flagged explicitly in case the
-   owner intended the two to be the same mechanism.
-5. **Channel scope.** Telegram-only for v1 (the only channel with a
-   live, working implementation today) vs. also defining (but not
-   wiring) additional channel names now. This proposal recommends
-   Telegram-only, with the `channel` enum's reserved-but-unimplemented
-   names (§5.2) — now explicitly including `WHATSAPP` (owner-confirmed
-   future option) and `WEBHOOK` (the shape a future Sensybull-style
-   bridge would most plausibly take, §2a) — as the seam for later, the
-   same technique Phase 3's `origin` column used to reserve room for a
-   future Orchestrator without building it.
-
-**Still unresolved, carried from the owner's own review, not yet
-answered:**
-- Where "position sizing" actually lives (§2a) — no stored field was
-  found on `Trade` or in the frontend's `Trade` type. This proposal
-  does not assume such a field exists until the owner confirms where it
-  is, or confirms it should be dropped from Alert-1's scope.
+1. **`AlertEvent` provenance shape — RESOLVED.** The smallest practical
+   identity/provenance contract: `source_table`, `source_id`,
+   `event_type`, optional structured `details: JSON` (§5.1) — the
+   string-pair-plus-JSON approach this proposal recommended, grounded in
+   both `ForecastAssumption.metric_slug`'s named-by-convention precedent
+   and Sensybull's real `FilingEvent.edgar_id`/`EventType.attributes`
+   shape (§2a). **Refinement required by the owner's own wording**
+   ("unique constraints must reflect actual trigger semantics, including
+   repeated legitimate events from a source record where applicable")
+   and now load-bearing for Slice 1: a single generic
+   `TRADE_STATUS_CHANGED` event type would make
+   `(source_table, source_id, event_type)` wrongly reject a trade's
+   *second* legitimate transition (e.g. Target hit, after Entry already
+   fired) — same `source_id`, same event type, different real
+   occurrence. **Fix:** one specific `event_type` per transition
+   (`TRADE_ENTRY_HIT` / `TRADE_STOPLOSS_HIT` / `TRADE_TARGET_HIT`), each
+   of which a single `Trade` can only ever fire once in its lifecycle
+   (`ACTIVE` → `ENTRY` → terminal `STOPLOSS`/`TARGET`, per
+   `Trade.check`'s own state machine) — so the natural key stays both
+   unique *and* correct, rejecting true duplicates while never blocking
+   a legitimately distinct transition.
+2. **Recipient targeting — RESOLVED.** New I3AS research-intelligence
+   alerts (Alert-2 onward: kill switch, gate `FAIL`, `InvestmentCase`
+   supersession) are admin-only in v1 (`is_admin=True`, §5.3). Existing
+   user-configured Trade/Telegram alerts are **not** redirected or
+   restricted by this proposal — each `Trade`'s own `user_id`/
+   `telegram_chat_id` destination is preserved exactly (§8, Alert-1).
+   Subscriber targeting/subscriptions remain deferred.
+3. **Delivery timing and reliability — RESOLVED.** Reuse existing
+   delivery infrastructure (`TelegramService.send_message`); no new
+   queue, Redis installation, or worker platform is authorized for
+   I3AS. Simple inline delivery is acceptable for Slice 1 *only* where
+   it cannot block the live price-trigger/Telegram pathway (§8's
+   fail-safe gate). Bounded operations, exception isolation, the
+   idempotency key above, and accurate `delivery_status` together
+   ensure failed/pending deliveries are identifiable and recoverable
+   without silently losing events or sending duplicate messages.
+4. **Research Orchestrator — RESOLVED.** I3AS is independent of it.
+   The Orchestrator remains deferred and unauthorized under any
+   circumstance without separate approval, unchanged from the Phase 3
+   checkpoint's own standing position.
+5. **Channels — RESOLVED.** Telegram only, implemented now. `WHATSAPP`
+   and `WEBHOOK` remain reserved-but-unimplemented enum names (§5.2) —
+   future possibilities, not built or configured now. Sensybull
+   interoperability is preserved through the event contract's shape
+   alone (§2a, §9.1) — its infrastructure is not copied and its live
+   systems are not connected.
+6. **Position sizing — RESOLVED (as a non-finding, not a build item).**
+   The actual implementation remains unverified (§2a: no stored field
+   was found on `Trade` or in the frontend's `Trade` type). I3AS does
+   not introduce a position-sizing engine and does not assume the field
+   exists. Existing entry/stop-loss/target/risk-reward/notes/tag
+   behavior is preserved exactly as-is (§8, Alert-1's acceptance
+   gates). The finding itself is recorded here for separate, later
+   product review — out of scope for I3AS.
 
 ---
 
