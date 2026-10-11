@@ -7,13 +7,12 @@ each shutdown checkpoint rather than creating a new dated file -- the
 "what is actually committed," independent of any single conversation's
 memory.
 
-**Last updated:** 2026-10-12 (milestone checkpoint -- `feature/research-
-coverage-foundation` (Research Coverage Slices 1-4, Phase 3 A-G, I3AS
-Slice 1, I3AS Alert-2) is now merged into `master` via PR #4; master is
-current. Per owner direction, this engagement now operates under a
-quality-gated autonomous protocol -- see "Quality-Gated Autonomous
-Development Protocol" below -- so this checkpoint is updated after
-completed milestones, not after every routine operation.)
+**Last updated:** 2026-10-12 (milestone checkpoint -- I3AS Alert-3
+complete, merged into `feature/research-coverage-foundation` (PR #5),
+real-company validated. `master` itself is current as of PR #4
+(Research Coverage Slices 1-4, Phase 3 A-G, I3AS Slice 1/Alert-2);
+Alert-3 is one PR ahead of `master`, pending its own separate merge
+decision, per the Quality-Gated Autonomous Development Protocol below.)
 
 ---
 
@@ -172,6 +171,14 @@ open and un-widened by Slice G.
   ancestor (no history rewritten), and every key feature commit across
   all three prior PRs is now also an ancestor of `master`. **`master`
   is current.**
+- **PR #5** (`feature/i3as-alert3-governance-cycle-hypothesis` ->
+  `feature/research-coverage-foundation`): **merged**, 2026-10-12
+  (`4ba89ab`), autonomously under the Quality-Gated Autonomous
+  Development Protocol below -- full regression green (1,502 passed)
+  before merge, no per-step owner approval needed for this routine
+  gate. `feature/research-coverage-foundation` is now one PR ahead of
+  `master` (PR #4's merge point); merging Alert-3 into `master` is a
+  separate decision, not yet made.
 - `gh` CLI authenticated this session via owner browser action (device
   flow); portable zip install used after the MSI installer hung on a
   UAC prompt it could not get non-interactively -- killed, no admin
@@ -304,29 +311,61 @@ per owner decision); existing Trade/Telegram alerts are untouched.
 1,499 passed, 0 failed. No live-database work was needed or performed
 -- this slice added no schema.
 
+## I3AS Alert-3 (complete, 2026-10-12): broader Research Brain event sources
+
+Per the owner's approved design proposal, Alert-3 -- `GovernanceFlag`
+(creation-time severity HIGH/CRITICAL only; LOW/MEDIUM/INFO emit
+nothing), `CycleAssessment` supersession (genesis emits nothing;
+`company_id` is `None` on this event type since `CycleAssessment` is
+World-layer and company-independent by design, not a bug), and
+`InvestmentHypothesis` supersession (genesis emits nothing) -- was
+implemented, tested, and committed (`c8c3a09`; PR #5 above), reusing
+Alert-1/Alert-2's infrastructure completely unchanged. Same fail-safe-
+isolation shape proven twice already, now proven a third time. 3 new
+tests extend the existing acceptance suites. Full regression suite:
+1,502 passed, 0 failed.
+
+**Real-company validation (owner-directed), performed and recorded
+honestly:** ran against an isolated copy of the live database, backed
+up read-only and migrated to head -- never the live file itself, per
+the Incident-to-Safeguard Doctrine's own discipline -- using **UNO
+Minda Limited's real company identity** (`9cbdabe1-...`), a real linked
+`Document` (`UNO_REG30_CREDIT_RATING_14_09_2026`), and the real
+Tachi-S JV `ResearchProposition` already present in the live corpus
+(23 real `ExtractedFact` rows and 49 real linked documents exist for
+this company; Chemplast Sanmar has 24 real linked documents but zero
+`ExtractedFact`/`GovernanceFlag`/`ResearchProposition` rows -- none of
+Phase 3's real-data pilots were ever persisted to the live file, as
+recorded at every prior checkpoint). Both supersession-based sources
+fired exactly once, correctly typed, correctly attributed to the real
+company, with an **honest, non-fabricated `FAILED` delivery outcome**
+reflecting the real admin account's genuine no-Telegram-connected
+state -- not a bug, a correct report of real production account state.
+**No real HIGH/CRITICAL governance event exists in either real
+company's corpus to validate the `GovernanceFlag` source against** --
+recorded here as a standing limitation rather than fabricated; that one
+source remains fixture-validated only. The isolated copy was deleted
+after the run; the live database's table count (45) and
+`alembic_version` (`20261007_05`) were independently re-verified
+unchanged both before and after.
+
 ## Resume instructions for the next session
 
-**Everything through I3AS Alert-2 is complete and merged all the way
-to `master`** (PRs #1-#4). There is no pending implementation work to
+**Everything through I3AS Alert-3 is complete.** `master` is current
+through PR #4 (Research Coverage Slices 1-4, Phase 3 A-G, I3AS Slice
+1/Alert-2); Alert-3 (PR #5) is merged into `feature/research-coverage-
+foundation` but not yet into `master` -- that merge is a separate
+decision, not yet made. There is no pending implementation work to
 resume from any of it. If a future session is asked to "continue Phase
 3" or "continue I3AS," read this checkpoint first and confirm there is
 genuinely new scope before writing any code.
 
-**Current priority (owner-directed, 2026-10-12): I3AS Alert-3 and
-real-company validation**, under the already-approved I3AS architecture
--- proceed under the Quality-Gated Autonomous Development Protocol
-above (routine PR-into-`feature/research-coverage-foundation` gates do
-not need per-step approval; full regression remains the acceptance
-bar; no compromise on test coverage, provenance, or acceptance
-standards to meet a schedule). Alert-3 (design proposal §8, lowest
-priority at the time it was scoped, now promoted): broader Research
-Brain event sources -- `GovernanceFlag`/`CycleAssessment`/
-`InvestmentHypothesis` -- following the exact same reuse-Alert-1-
-infrastructure, fail-safe-isolation, admin-only-targeting pattern
-Alert-2 already proved twice.
-
 **Outstanding, owner-level only:**
-- Any further `master` merge, each requiring its own separate, explicit
-  instruction (unchanged policy, restated above).
+- Merging `feature/research-coverage-foundation` into `master` again
+  (to pick up Alert-3), each `master` merge requiring its own separate,
+  explicit instruction (unchanged policy).
+- Deciding on I3AS's next scope, if any -- the design proposal's named
+  slices (Alert-1/2/3) are now all complete; nothing further is named
+  in it.
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
