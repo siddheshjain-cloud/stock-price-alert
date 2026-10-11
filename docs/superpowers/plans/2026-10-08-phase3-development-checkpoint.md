@@ -7,11 +7,10 @@ each shutdown checkpoint rather than creating a new dated file -- the
 "what is actually committed," independent of any single conversation's
 memory.
 
-**Last updated:** 2026-10-12 (shutdown checkpoint after I3AS Slice 1 --
-Phase 3 A-G remain complete and now merged; I3AS Slice 1, the legacy
-Trade/Telegram alert integration, is also complete, including a
-same-day live-database incident, full recovery, and a root-cause
-safeguard -- see "I3AS Slice 1" section below)
+**Last updated:** 2026-10-12 (shutdown checkpoint after I3AS Alert-2 --
+Phase 3 A-G and I3AS Slice 1 are merged into `feature/research-
+coverage-foundation` (PRs #1/#2); I3AS Alert-2 (Investment Brain
+alerts) is complete and PR'd (#3), not yet merged)
 
 ---
 
@@ -156,10 +155,11 @@ open and un-widened by Slice G.
   `git log`/`git merge-base`, not just the GitHub UI. The PR branch was
   not deleted.
 - **PR #2** (`feature/i3as-slice1-trade-alert-integration` ->
-  `feature/research-coverage-foundation`): open, carries I3AS Slice 1
-  (see below), stacked on the same base PR #1 used, for the same
-  reason -- `feature/research-coverage-foundation` -> `master` is still
-  intentionally unmerged.
+  `feature/research-coverage-foundation`): **merged**, 2026-10-12, same
+  ordinary-merge-commit discipline as PR #1.
+- **PR #3** (`feature/i3as-slice2-investment-brain-alerts` ->
+  `feature/research-coverage-foundation`): open, carries I3AS Alert-2
+  (see below), stacked on the same base, for the same reason.
 - `feature/research-coverage-foundation` -> `master` **remains
   unmerged, with no PR of its own** -- explicitly not done, pending
   separate owner approval, unchanged from every prior checkpoint.
@@ -213,21 +213,75 @@ opt-in -- updated in all six real call sites, with dedicated tests
 proving the guard fires for the exact incident shape and never fires
 for tests. See commit `7db9295`'s message for the complete record.
 
+## The Incident-to-Safeguard Doctrine (owner-named, 2026-10-12)
+
+Formalizing the standing discipline the 2026-10-12 incident was already
+handled under, so every future incident in this engagement is handled
+the same way, not reinvented each time:
+
+1. **Stop** -- halt the specific action class that caused the problem
+   immediately on discovery; do not keep operating in the mode that
+   caused it while investigating.
+2. **Investigate read-only** -- establish exact scope and impact
+   (inventory, row counts, dependency checks) without any write, on a
+   verified backup or copy, never the live artifact itself.
+3. **Rehearse** -- prove the proposed fix on a disposable copy first,
+   including whatever downstream compatibility the real fix would need
+   (here: a full `flask db upgrade`/`downgrade` cycle, not just a
+   visual table-count match).
+4. **Owner approves the exact operations** -- present the precise
+   commands/diff, not a summary, before anything touches the real
+   artifact.
+5. **Execute, then independently re-verify** -- run the approved
+   operations, then confirm the result against the pre-incident
+   baseline from a fresh read, not by trusting the operation's own
+   reported success.
+6. **Root-cause, not patch** -- fix the actual mechanism that allowed
+   the incident (here: `create_app()`'s missing opt-in guard), not just
+   the symptom, with a test that would have caught the original
+   incident shape and proves the fix doesn't break legitimate use.
+7. **Record it in-line** -- the incident and its resolution live in the
+   same commit/checkpoint as the work it happened during, not a
+   separate quarantined document, so the history reads as what
+   actually happened.
+
+## I3AS Alert-2 (complete, 2026-10-12): Investment Brain alerts
+
+Per the owner's approved design proposal, Alert-2 -- kill-switch
+triggers, gate-`FAIL` results, and material `InvestmentCase`
+view-changing supersessions -- was implemented, tested, and committed
+(`093823a`; PR #3 above), reusing Alert-1's `AlertEvent`/
+`AlertDelivery`/`AlertService` infrastructure completely unchanged --
+no schema change, no new migration. `InvestmentCaseService.
+trigger_kill_switch`/`record_gate_result`/`create_investment_case` each
+call `AlertService.record_event` once after their own already-
+committed write, wrapped so an `AlertService` failure (proven via a
+hard-raising monkeypatch in tests, not just `AlertService`'s own
+already-non-raising internal failure modes) can never affect the
+authoritative Investment Brain write -- the same fail-safe-isolation
+shape Alert-1 proved, now proven one level up the call stack.
+Recipients are always `AlertService.admin_recipient_ids()` (admin-only,
+per owner decision); existing Trade/Telegram alerts are untouched.
+6 new tests extend the existing Slice G suite. Full regression suite:
+1,499 passed, 0 failed. No live-database work was needed or performed
+-- this slice added no schema.
+
 ## Resume instructions for the next session
 
-**Phase 3 (Slices A-G) and I3AS Slice 1 are both complete and merged/
-PR'd.** There is no pending implementation work to resume from either.
-If a future session is asked to "continue Phase 3" or "continue I3AS,"
-read this checkpoint first and confirm there is genuinely new scope
-before writing any code.
+**Phase 3 (Slices A-G), I3AS Slice 1, and I3AS Alert-2 are all complete.**
+Slices/PRs #1 and #2 are merged; PR #3 (Alert-2) is open, not yet
+merged. There is no pending implementation work to resume from any of
+them. If a future session is asked to "continue Phase 3" or "continue
+I3AS," read this checkpoint first and confirm there is genuinely new
+scope before writing any code.
 
 **Outstanding, owner-level only:**
-- Merging PR #2 into `feature/research-coverage-foundation`.
+- Merging PR #3 into `feature/research-coverage-foundation`.
 - Merging `feature/research-coverage-foundation` into `master` (no PR
   yet, unchanged standing position).
-- Deciding whether to proceed to I3AS Alert-2 (Investment Brain
-  integration: kill switch, gate `FAIL`, `InvestmentCase` view-changing
-  supersession) -- the design proposal's §8 sequencing, not yet
-  started.
+- Deciding whether to proceed to I3AS Alert-3 (the design proposal's
+  §8 lowest-priority slice: broader Research Brain event sources --
+  `GovernanceFlag`/`CycleAssessment`/`InvestmentHypothesis`) -- not yet
+  started, not yet requested.
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
