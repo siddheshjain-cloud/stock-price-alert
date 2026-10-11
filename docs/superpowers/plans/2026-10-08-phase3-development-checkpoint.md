@@ -7,6 +7,18 @@ each shutdown checkpoint rather than creating a new dated file -- the
 "what is actually committed," independent of any single conversation's
 memory.
 
+**Before reading further, consult the [SPA Codebase & Architecture
+Registry](2026-10-12-spa-codebase-architecture-registry.md)** -- the
+primary navigation reference for the repo map, module/service index,
+API contract status, and known gaps. This checkpoint remains the
+authoritative slice-by-slice ledger ("what is actually shipped and
+tested"); the registry is the structural map around it.
+
+**Wealth Desk UI/UX:** see the [Wealth Desk Architecture Proposal](2026-10-12-wealth-desk-architecture-proposal.md)
+-- three navigation approaches, a recommendation, wireframes, and
+implementation milestones, reserved for owner approval before any
+frontend implementation begins.
+
 **Last updated:** 2026-10-12 (milestone checkpoint -- I3AS Alert-3
 complete, merged into `feature/research-coverage-foundation` (PR #5),
 real-company validated. `master` itself is current as of PR #4
