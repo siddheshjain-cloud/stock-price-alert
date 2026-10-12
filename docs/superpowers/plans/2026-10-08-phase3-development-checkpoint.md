@@ -675,6 +675,33 @@ actual browser (not possible from this environment). If a future
 session is asked to "continue Wealth Desk," read this section and the
 pushed branch's own commit before writing more UI code.
 
+## Wealth Desk UI, slice 2: admin alerts feed (complete, 2026-10-12)
+
+Per the owner's explicit instruction to build the alerts endpoint
+first, then wire Daily Brief to it. Backend:
+`GET /api/admin/alerts` (new `AlertService.list_recent_events`,
+admin-only, newest-first across every event source, `limit`
+query param bounded 1-200). 6 new tests; full regression 1518
+passed, 0 failed. Committed `636e0a6`, PR #9, merged into
+`feature/research-coverage-foundation` as `f55f55f`. Not merged into
+`master`.
+
+Frontend: Daily Brief now reads the real feed instead of the
+placeholder banner. Gates on the current user's own `is_admin` before
+fetching, since the endpoint is admin-only -- a non-admin viewer sees
+an honest "admin-only" notice instead of an unexpected 403. Each
+alert links through to its company's Workspace when it has one.
+Committed `e8d6868` on `feature/wealth-desk-ui`, pushed. Not merged
+anywhere.
+
+Verified end-to-end against a real backend instance (isolated dev DB
+copy, never live) as a real admin user and a real non-admin user:
+correct ordering, correct 403 handling, and genuine heterogeneous
+events (a Trade alert and a real Monitoring-sourced alert left over
+from the earlier Task Scheduler demo) interleaving correctly by
+recency. Same browser/visual-QA limitation as slice 1 -- not possible
+in this headless environment.
+
 **Owner's stated priority order for the three next items above**
 (2026-10-12, given at the stop-and-save checkpoint; revisitable at
 resume, not a fixed commitment): **(1) provisional Wealth Desk UI**
