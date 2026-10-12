@@ -406,32 +406,73 @@ Committed as `a251984`, opened as PR #6, merged into
 `feature/research-coverage-foundation` as `b2c0667` (regular merge
 commit, no squash/rebase) -- a routine gate under the Quality-Gated
 Autonomous Development Protocol, not requiring per-step owner
-approval. Not merged into `master`.
+approval.
+
+## Master Integration: Alert-3 + Wealth Desk read API (complete, 2026-10-12)
+
+Per the owner's explicit "SPA -- Owner-Approved Master Integration"
+instruction, `feature/research-coverage-foundation` was merged into
+`master`. Before merging: fetched both branches and inspected the one
+commit unique to `master` (`456946f`, the PR #4 merge-commit object
+itself) -- confirmed its content parent (`2e66bf2`) was already an
+ancestor of the feature branch tip, meaning master held no divergent
+content the feature branch lacked. A local dry-run merge
+(`git merge --no-commit --no-ff`) produced **zero conflicts** and a
+diff of exactly 17 files / 643 insertions / 1 deletion, matching the
+combined content of PR #5 (Alert-3) + PR #6 (Wealth Desk read API)
+with no surprises. Full regression suite re-run against the merged
+tree: **1,504 passed, 0 failed**.
+
+Opened as **PR #7** (`feature/research-coverage-foundation` ->
+`master`), verified `CLEAN`/`MERGEABLE` with the identical diff stat
+GitHub-side, merged as a **regular merge commit** (no squash/rebase)
+as commit **`f8da0f4`**. Local `master` fast-forwarded to `f8da0f4`;
+independently re-verified HEAD and confirmed every individual commit
+(`c8c3a09`, `4ba89ab`, `a251984`, `b2c0667`) is preserved intact in the
+history, not squashed. No live database migration, write, or runtime
+configuration change was made; no production deployment occurred.
+
+**`master` is now current through I3AS Alert-3 and the Wealth Desk
+`investment_case` read API.**
 
 ## Resume instructions for the next session
 
-**Everything through the Wealth Desk `investment_case` read API is
-complete.** `master` is current through PR #4 (Research Coverage
-Slices 1-4, Phase 3 A-G, I3AS Slice 1/Alert-2); Alert-3 (PR #5) and the
-Wealth Desk `investment_case` read API (PR #6) are both merged into
-`feature/research-coverage-foundation` but not yet into `master` --
-that merge is a separate decision, not yet made. There is no pending
-implementation work to resume from any of it. If a future session is
-asked to "continue Phase 3," "continue I3AS," or "continue Wealth
-Desk," read this checkpoint first and confirm there is genuinely new
-scope before writing any code.
+**Everything through the master integration above is complete.**
+There is no pending implementation work to resume from any of it. If a
+future session is asked to "continue Phase 3," "continue I3AS," or
+"continue Wealth Desk," read this checkpoint first and confirm there
+is genuinely new scope before writing any code.
+
+**Next queued work (owner-directed, in order):**
+1. "SPA -- Real-Company Investment Brain Acceptance": full
+   real-data acceptance pass (Chemplast Sanmar primary, UNO Minda
+   secondary) on an isolated, migrated database copy only -- inventory
+   real evidence, build a source-backed ResearchRevision/
+   InvestmentHypothesis where evidence permits, identify and escalate
+   required financial/cycle assumptions rather than fabricate them,
+   and only then build/validate an actual InvestmentCase end-to-end
+   (gates, kill switches, scenario spread, consumer API, alerts/
+   provenance) if and where inputs are genuinely justified. Report
+   software-pass vs. real-data-pass status separately; update this
+   checkpoint with the true acceptance status.
+2. "SPA -- Priority Directive | 12-25 October 2026": provisional
+   Private Wealth Desk UI (Daily Brief + Investment Coverage Grid +
+   Company Workspace, on the existing Next.js frontend, wired to real
+   research/InvestmentCase APIs, no mock conclusions) and Continuous
+   Research Monitoring V1 (audit existing ingestion/scheduling first,
+   smallest safe monitoring workflow, dedup/evidence lineage/run logs/
+   failure handling/approval boundaries, no automatic recommendations
+   from unvalidated evidence). Hard scope freeze through 2026-10-25:
+   no Phase 3.5, Matrix Intelligence, Portfolio/Wealth Intelligence, or
+   unrelated modules; no production deploy/live DB migration/
+   destructive changes without separate authorization.
 
 **Outstanding, owner-level only:**
-- Merging `feature/research-coverage-foundation` into `master` again
-  (to pick up Alert-3 and the Wealth Desk read API), each `master`
-  merge requiring its own separate, explicit instruction (unchanged
-  policy).
 - Deciding on I3AS's next scope, if any -- the design proposal's named
   slices (Alert-1/2/3) are now all complete; nothing further is named
   in it.
-- Wealth Desk UI/UX implementation -- reserved for the owner's
-  approval and the owner has indicated they will finalize the UI
-  directly per their own requirements; no frontend code has been
-  written.
+- Wealth Desk final UI/UX direction -- the owner has indicated they
+  will finalize the UI directly per their own requirements; the
+  provisional UI above is explicitly "provisional," not final design.
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
