@@ -216,16 +216,19 @@ and tested" at any point in time.
 
 ## Maintenance log
 
-- **2026-10-12 (final disaster recovery completion):** Re-encrypted
-  the credentials archive with a new, never-printed passphrase
-  (the original had been exposed in chat); old archive deleted.
-  Google Drive write access still blocked (read-only credential) --
-  the exact re-consent command is now documented for the owner to
-  run themselves. Off-PC transfer (Drive or manual USB/SSD) not yet
-  executed -- both paths need the owner. DR-01 office-PC restore
-  guide finalized. Backup unchanged in location, now 30.03MB/15
-  files, re-verified (`sha256sum -c`: all `OK`). Status remains
-  PARTIAL.
+- **2026-10-12 (disaster recovery VERIFIED):** Owner completed the
+  Drive OAuth consent themselves; the resulting write-capable token
+  was verified with a real write-then-delete test before trusting
+  it. Uploaded the full backup (17 files) to Google Drive under
+  `SPA_Disaster_Recovery/DisasterRecovery_20261012_150645/`, with
+  every file's MD5 checked against Drive's own reported MD5 after
+  upload -- zero mismatches. Status upgraded from PARTIAL to
+  VERIFIED; all three legs (local backup, encrypted credentials,
+  off-machine copy) independently confirmed.
+- **2026-10-12 (final disaster recovery completion, same day,
+  earlier pass):** Re-encrypted the credentials archive with a new,
+  never-printed passphrase (the original had been exposed in chat);
+  old archive deleted. DR-01 office-PC restore guide finalized.
 - **2026-10-12 (overnight):** Full inventory performed. Baseline
   commits recorded above.
 - **2026-10-12 (stop-and-save checkpoint):** Baseline SHAs bumped

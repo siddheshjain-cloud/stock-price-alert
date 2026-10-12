@@ -932,27 +932,48 @@ work, no live-DB migration, no deployment.
    Sheets/Drive connectivity on a new PC without re-verifying it
    independently.
 
-**Backup location (unchanged):** `C:\SPA\DisasterRecovery_20261012_150645\`,
-now 30.03MB, 15 files, all SHA-256 checksummed and self-verified.
+**Backup location (local):** `C:\SPA\DisasterRecovery_20261012_150645\`,
+30.03MB, 17 files (15 content files + 2 checksum manifests), all
+SHA-256 checksummed and self-verified.
 
-**Overall status: PARTIAL**, per the owner's own instruction --
-local backup, encryption, and restore rehearsal are all genuinely
-VERIFIED; the off-machine copy specifically remains not yet done,
-blocked only on an action that requires the owner (either completing
-Drive OAuth consent, or physically moving the backup to other
-media).
+## Off-PC upload completed and verified (2026-10-12, same day)
+
+The owner completed the Drive OAuth consent themselves (interactive
+browser flow, `authorize_drive_oauth.py`), producing a write-capable
+token (`C:\SPA\private\spa-drive-write-oauth-token.json`, scope
+`https://www.googleapis.com/auth/drive`). Verified with a real
+write-then-delete test file before trusting it with the real upload.
+
+Uploaded the complete backup (all 17 files, full folder structure
+preserved) to Google Drive under **`SPA_Disaster_Recovery/DisasterRecovery_20261012_150645/`**
+(folder link: `https://drive.google.com/drive/folders/1td2wZvV87frbomAj0LwZJqMXwRXYqtBA`).
+**Every file's MD5 was computed locally and compared against the
+MD5 Drive itself reports for the uploaded copy -- all 17 matched,
+zero mismatches.** This is a genuine integrity check of the uploaded
+bytes, not just an "upload succeeded" status code.
+
+**Overall status: VERIFIED.** All three legs are now independently
+confirmed: (1) the local backup exists, is complete, and was
+restore-rehearsed; (2) credentials are encrypted with a passphrase
+that was never exposed; (3) an off-machine copy now exists in Drive,
+with per-file integrity verified against the local originals. The
+live database was re-confirmed untouched (`alembic_version`
+`20261007_05`, same file, same timestamp) throughout this entire
+backup-and-upload process.
 
 ## Resume instructions
 
-Everything above is complete except the off-PC transfer, which
-needs the owner. If resuming on **this PC**: read this checkpoint,
-confirm `git status` is clean on all three repo working directories
-(it was at closure), and either help the owner complete the Drive
-OAuth consent / manual transfer, or move on to priority (3) --
-real-company Investment Brain acceptance. If resuming on **another
-PC** (true disaster recovery): the backup must first have reached
-that PC by one of the two paths above; once it has, follow
-`DR-01_OFFICE_PC_RESTORE_GUIDE.md` inside it.
+Disaster recovery is complete. If resuming on **this PC**: read this
+checkpoint, confirm `git status` is clean on all three repo working
+directories (it was at closure), and move on to priority (3) --
+real-company Investment Brain acceptance, or any new instruction. If
+resuming on **another PC** (true disaster recovery): download
+`SPA_Disaster_Recovery/DisasterRecovery_20261012_150645/` from Drive,
+then follow `DR-01_OFFICE_PC_RESTORE_GUIDE.md` inside it. Decrypt
+credentials with the passphrase the owner holds (
+`C:\SPA\DR_Secrets_DO_NOT_COMMIT\spa_credentials_passphrase_20261012.txt`
+on this PC -- **move this into a password manager**, it is not
+itself a permanent secure store).
 
 **Outstanding, owner-level only:**
 - Deciding on I3AS's next scope, if any -- the design proposal's named
@@ -965,14 +986,8 @@ that PC by one of the two paths above; once it has, follow
   approval for consequential judgments" milestone -- see the
   architecture clarification above. Not scoped yet; a direction
   marker only.
-- **Completing Drive OAuth consent, or manually transferring the
-  backup off this PC** -- the one remaining disaster-recovery gap;
-  exact commands for both paths are in
-  `BACKUP_MANIFEST_AND_RESTORE_GUIDE.md`.
-- Saving the new credentials passphrase
-  (`C:\SPA\DR_Secrets_DO_NOT_COMMIT\spa_credentials_passphrase_20261012.txt`)
-  into a password manager and deleting the file -- it currently
-  exists only as a plaintext file on this PC, access-restricted but
-  not itself a permanent secure store.
+- Saving the credentials passphrase into a password manager and
+  deleting the plaintext file -- the one remaining loose end from
+  the backup itself.
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
