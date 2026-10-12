@@ -702,14 +702,83 @@ from the earlier Task Scheduler demo) interleaving correctly by
 recency. Same browser/visual-QA limitation as slice 1 -- not possible
 in this headless environment.
 
+## Priority 2: Google Sheets manifest connectivity -- root-caused and fixed (complete, 2026-10-12)
+
+Per "SPA -- Next Priority." Two distinct, now-fixed problems, not
+one -- found by direct diagnosis (TLS probes, `curl` against
+individually-resolved IPs, and `faulthandler.dump_traceback_later`
+catching a real run mid-hang), not guessed at:
+
+1. **No timeout configured anywhere.** Neither
+   `sheets_reader.build_sheets_service()` nor
+   `drive_evidence.build_drive_service()` set any socket timeout on
+   their HTTP transport. This PC's real network reaches Google's
+   anycast pool for these APIs and is mostly healthy, but occasionally
+   a connection completes a TCP+TLS handshake against a node that then
+   never returns an HTTP response -- confirmed live: a faulthandler
+   dump caught a real run blocked indefinitely inside `httplib2`'s
+   socket read, mid-TLS-`recv`. With no timeout anywhere, one bad pick
+   hung the whole process forever. **Not** a credentials, DNS, or
+   proxy problem -- `netsh winhttp show proxy` and WinINET settings
+   both confirmed no system proxy; the OAuth tokens and
+   `SPA_MANIFEST_SHEET_ID` were already correct and already present
+   on this PC from earlier historical-backfill work. Fix: both
+   builders now wrap their credentials in
+   `google_auth_httplib2.AuthorizedHttp(credentials,
+   http=httplib2.Http(timeout=15))` -- a bad pick now fails in 15s
+   instead of hanging.
+2. **A previously-masked per-row cost, exposed only once (1) stopped
+   masking it as "hung forever."** `bridge_spa_manifest.run()`'s
+   metadata-only Drive lookup (the non-`--verify-hash` path) rebuilt a
+   brand-new authenticated Drive client -- fresh credential load, fresh
+   TCP/TLS handshake -- for every single manifest row, measured at
+   ~1.5-2.4s each. Across the ~160-260 real rows one scan touches,
+   that alone adds minutes. Fix: build that client once, lazily, and
+   reuse it across every row -- the same hoisting
+   `build_sheets_service()` already did correctly elsewhere in the
+   same function.
+
+**Verified with the real manifest and real credentials, never the
+live database:**
+- One genuine Sheets API read (Universe + Documents tabs): ~2.7s
+  each, 93 and 3082 real rows.
+- Two full `MonitoringService` scans back to back against an
+  isolated dev database copy: both `SUCCESS`, 258 real manifest rows
+  scanned each time, 0 errors, identical idempotent results (0 newly
+  registered, 258 `ALREADY_REGISTERED`). Document row count unchanged
+  (1251) across both runs -- no duplicates created. Each full scan
+  completed in ~113-135s, bounded and predictable, down from an
+  unbounded hang.
+- Full backend regression suite: 1518 passed, 0 failed.
+
+**Upstream discovery coverage vs. manifest ingestion, kept
+distinct as instructed:** this fix verifies **manifest ingestion**
+only -- that SPA's own worker-discovered, already-`STORED` rows can
+be read and registered reliably. It says nothing about, and cannot
+verify, that external SPA ingestion worker's own **upstream
+discovery coverage** (whether it has actually found everything that
+exists on the exchanges for these companies) -- that is a separate
+system, outside this repo, untouched and unverified by this work.
+
+**Remaining operational limitation, reported honestly:** ~2 minutes
+for a 3-company scan is bounded and reliable but not fast; a larger
+pilot universe would scale roughly linearly unless Drive metadata
+lookups are batched -- a larger change correctly out of scope for
+"without redesigning ingestion."
+
+Committed `043a563`, PR #10, merged into
+`feature/research-coverage-foundation` as `061b3b3`. Not merged into
+`master`. SPARS search-first landing-page redesign left pending
+owner visual approval, as instructed -- not touched.
+
 **Owner's stated priority order for the three next items above**
 (2026-10-12, given at the stop-and-save checkpoint; revisitable at
 resume, not a fixed commitment): **(1) provisional Wealth Desk UI**
--- gives a usable interface; **(2) resolve real Google Sheets
-ingestion** -- makes Continuous Monitoring V1 actually operational;
+-- gives a usable interface, **complete** (slices 1-2 above);
+**(2) resolve real Google Sheets ingestion** -- makes Continuous
+Monitoring V1 actually operational, **complete** (above);
 **(3) complete real-company Investment Brain acceptance** -- validates
-the depth and reliability of SPA's research conclusions. Start with
-(1) unless the owner says otherwise at resume.
+the depth and reliability of SPA's research conclusions. **Next up.**
 
 **Outstanding, owner-level only:**
 - Deciding on I3AS's next scope, if any -- the design proposal's named
