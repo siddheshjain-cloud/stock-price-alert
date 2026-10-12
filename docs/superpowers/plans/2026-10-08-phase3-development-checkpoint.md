@@ -361,23 +361,77 @@ after the run; the live database's table count (45) and
 `alembic_version` (`20261007_05`) were independently re-verified
 unchanged both before and after.
 
+## Wealth Desk: investment_case read API (complete, 2026-10-12)
+
+Per the Overnight Autonomous Development mandate's instruction to
+implement safe, reusable, read-only backend improvements while the
+Wealth Desk UI proposal awaits owner review (see the architecture
+proposal doc), the current `InvestmentCase` (view, revision metadata,
+gate results, kill switches, scenario return spread) is now exposed as
+a new `investment_case` section on the existing `research_bp`
+company-detail aggregate. No new read pathway was introduced -- this
+reuses the established `EntitlementService` /
+`ResearchAccessPolicy.PREMIUM_SECTIONS` / `ResearchPresenter` /
+marshmallow-schema stack exactly as every other premium section does.
+Premium/admin only; free tier sees it as a locked section like every
+other premium section. Implemented in `research_query_service.py`
+(`_investment_case_dict`), new schemas in `schemas/research.py`, and a
+small `InvestmentCaseService.list_kill_switches` read addition.
+
+Both frozen-contract test files that hardcode the full premium-section
+key/shape sets had to be extended properly rather than weakened:
+`tests/security/test_research_data_isolation.py` (new shapes, new
+`PROTECTED_FIELD_NAMES` entries, real sentinel-seeded fixture data
+added to the shared `research_security_matrix` fixture so the new
+section has real content to assert against) and
+`tests/research/test_research_access_policy.py` (added
+`"investment_case"` to its own independent `PREMIUM_SECTIONS` frozen
+set). 2 new tests added directly
+(`test_research_query_service.py`, `test_research_consumer_reads.py`).
+Full regression suite: 1,504 passed, 0 failed.
+
+**Real-company validation (owner-directed), performed and recorded
+honestly:** ran against the same isolated, migrated copy of the live
+database used for prior validations -- never the live file. Both real
+companies (Chemplast Sanmar, UNO Minda) correctly return
+`investment_case: None`, with no error and no fabrication, because no
+real `ResearchRevision`/`ForecastRevision`/`ValuationRevision` exists
+for any company in the live corpus (0 rows system-wide, confirmed) --
+`InvestmentCase` hard-requires citing exactly those revision types, so
+none can exist yet either. This is a continuation of the standing gap
+already recorded at every prior checkpoint, not a new finding; the API
+reports that true state honestly rather than manufacturing a case.
+
+Committed as `a251984`, opened as PR #6, merged into
+`feature/research-coverage-foundation` as `b2c0667` (regular merge
+commit, no squash/rebase) -- a routine gate under the Quality-Gated
+Autonomous Development Protocol, not requiring per-step owner
+approval. Not merged into `master`.
+
 ## Resume instructions for the next session
 
-**Everything through I3AS Alert-3 is complete.** `master` is current
-through PR #4 (Research Coverage Slices 1-4, Phase 3 A-G, I3AS Slice
-1/Alert-2); Alert-3 (PR #5) is merged into `feature/research-coverage-
-foundation` but not yet into `master` -- that merge is a separate
-decision, not yet made. There is no pending implementation work to
-resume from any of it. If a future session is asked to "continue Phase
-3" or "continue I3AS," read this checkpoint first and confirm there is
-genuinely new scope before writing any code.
+**Everything through the Wealth Desk `investment_case` read API is
+complete.** `master` is current through PR #4 (Research Coverage
+Slices 1-4, Phase 3 A-G, I3AS Slice 1/Alert-2); Alert-3 (PR #5) and the
+Wealth Desk `investment_case` read API (PR #6) are both merged into
+`feature/research-coverage-foundation` but not yet into `master` --
+that merge is a separate decision, not yet made. There is no pending
+implementation work to resume from any of it. If a future session is
+asked to "continue Phase 3," "continue I3AS," or "continue Wealth
+Desk," read this checkpoint first and confirm there is genuinely new
+scope before writing any code.
 
 **Outstanding, owner-level only:**
 - Merging `feature/research-coverage-foundation` into `master` again
-  (to pick up Alert-3), each `master` merge requiring its own separate,
-  explicit instruction (unchanged policy).
+  (to pick up Alert-3 and the Wealth Desk read API), each `master`
+  merge requiring its own separate, explicit instruction (unchanged
+  policy).
 - Deciding on I3AS's next scope, if any -- the design proposal's named
   slices (Alert-1/2/3) are now all complete; nothing further is named
   in it.
+- Wealth Desk UI/UX implementation -- reserved for the owner's
+  approval and the owner has indicated they will finalize the UI
+  directly per their own requirements; no frontend code has been
+  written.
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
