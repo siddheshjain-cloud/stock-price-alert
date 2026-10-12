@@ -618,6 +618,63 @@ section above. If a future session is asked to "continue Monitoring,"
 read this checkpoint first and confirm there is genuinely new scope
 before writing any code.
 
+## Wealth Desk UI, provisional slice 1 (complete, 2026-10-12)
+
+Per "SPA -- Resume Development." Before writing any code: verified the
+latest committed state across all three repo clones, and fast-forwarded
+the frontend clone (`C:\Users\Home\Documents\GitHub\stock-price-alert`,
+which had fallen 6 commits behind) to match the docs clone -- a clean,
+safe fast-forward, no local work at risk.
+
+Built the full agreed structure (Daily Brief + Investment Coverage
+Grid + Company Workspace) on a fresh branch
+`feature/wealth-desk-ui`, wired to the real backend (`GET
+/research/companies`, `GET /research/companies/:id>`) -- no mock
+data. Existing Trade/Telegram pages and nav untouched; only the dead
+"Dashboard" (`#`) link was repointed to the new Daily Brief, and one
+new "Investment Coverage" nav entry added.
+
+Verified `tsc --noEmit`, `eslint`, and `next build` all clean (zero
+new warnings beyond pre-existing ones in unrelated files). Ran a real
+end-to-end smoke test against a live backend instance pointed at the
+isolated dev database copy (never live) as both a genuine PREMIUM and
+a genuine FREE test user -- this caught and fixed one real bug before
+it shipped: `governance.status` can be `null` while the `governance`
+object itself is still present (independent of whether any flags
+exist), which the first empty-state check didn't distinguish from
+"no governance section at all." **No real browser/visual QA was
+possible in this headless environment** -- reported honestly rather
+than claimed.
+
+**One decision point surfaced, not blocked on:** the agreed Daily
+Brief design is alert-first, but no HTTP route exists yet for I3AS's
+`AlertEvent` feed (confirmed by reading `app/routes/*.py` directly --
+unchanged from the Codebase Registry's standing "known gap"). Rather
+than inventing alert data, Daily Brief currently shows the real
+research-universe count/list with an explicit, honest banner saying
+the live feed isn't connected yet. Wiring a real feed would need a
+small, additive, read-only backend endpoint (same shape as the
+`investment_case` extension) -- not built in this slice; flagged here
+for the owner's call on priority (2) ("resolve real Google Sheets
+ingestion") vs. this.
+
+Committed as `5e5ed21` on `feature/wealth-desk-ui`, pushed to the
+`stock-price-alert` repo. **Not merged anywhere** -- no merge
+authorization was given for the frontend repo in this task, and the
+owner has separately indicated they will finalize UI direction
+themselves; this stays a reviewable branch until told otherwise.
+
+## Resume instructions, Wealth Desk UI
+
+Slice 1 (Daily Brief, Coverage Grid, Company Workspace shell) is
+complete and pushed. Not yet done: disclosures/history views (the
+`/research/companies/:id/disclosures` and `/history` endpoints exist
+but are not yet consumed by any page), the small alerts-read backend
+endpoint the owner may or may not want next, and any visual QA in an
+actual browser (not possible from this environment). If a future
+session is asked to "continue Wealth Desk," read this section and the
+pushed branch's own commit before writing more UI code.
+
 **Owner's stated priority order for the three next items above**
 (2026-10-12, given at the stop-and-save checkpoint; revisitable at
 resume, not a fixed commitment): **(1) provisional Wealth Desk UI**
