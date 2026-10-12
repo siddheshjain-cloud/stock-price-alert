@@ -9,6 +9,7 @@ import {
   IconSettings,
   IconUsers,
   IconBell,
+  IconBriefcase,
 } from "@tabler/icons-react"
 import Link from "next/link"
 import { TrendingUp } from "lucide-react"
@@ -29,9 +30,14 @@ import {
 const data = {
   navMain: [
     {
-      title: "Dashboard",
-      url: "#",
+      title: "Daily Brief",
+      url: "/research",
       icon: IconDashboard,
+    },
+    {
+      title: "Investment Coverage",
+      url: "/research/coverage",
+      icon: IconBriefcase,
     },
     {
       title: "Trade Alerts",
