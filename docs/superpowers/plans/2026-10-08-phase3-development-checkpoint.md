@@ -881,18 +881,78 @@ missing.
 
 ## Resume instructions, after housekeeping & backup
 
-Everything above is complete; nothing is in progress. If resuming on
-**this PC**: read this checkpoint, confirm `git status` is clean on
-all three repo working directories (it was at closure), and pick up
-the owner's priority (3) -- real-company Investment Brain acceptance
--- or any new instruction. If resuming on **another PC** (true
-disaster recovery): follow
-`C:\SPA\DisasterRecovery_20261012_150645\BACKUP_MANIFEST_AND_RESTORE_GUIDE.md`
-on whatever media the owner copied that folder to (it has not yet
-left this PC -- see the BLOCKED off-machine copy above), decrypt
-credentials with the passphrase the owner holds, and verify `git
-fsck`/`create_app()`/`pytest --collect-only` exactly as this session
-already rehearsed.
+## Final Disaster Recovery Completion (complete except off-PC transfer, 2026-10-12)
+
+Per "SPA -- Final Disaster Recovery Completion." No new feature
+work, no live-DB migration, no deployment.
+
+1. **Credential security, fixed.** The original encrypted archive's
+   passphrase had been exposed in the chat transcript. Generated a
+   new passphrase with Python's `secrets.token_urlsafe(48)`, written
+   *only* to a dedicated file
+   (`C:\SPA\DR_Secrets_DO_NOT_COMMIT\spa_credentials_passphrase_20261012.txt`,
+   access restricted to the owner's own Windows account via
+   `icacls`) -- never printed, logged, or committed anywhere.
+   Re-encrypted `secrets_encrypted/spa_credentials_20261012.tar.gz.gpg`
+   with it, round-trip verified (all 5 credential files SHA-256
+   match their originals), then deleted the old,
+   passphrase-compromised archive. Checksums manifest regenerated
+   and self-verified (`sha256sum -c`: all 15 files `OK`).
+2. **Google Drive 403, root-caused, not yet resolved -- needs the
+   owner's own browser.** The existing `authorize_drive_oauth.py`
+   script (already present in `cloudrun_fixed_v7_5`, requests the
+   full `.../auth/drive` scope) runs a local interactive OAuth
+   consent flow that only the owner can complete. The command is
+   recorded in `BACKUP_MANIFEST_AND_RESTORE_GUIDE.md` for the owner
+   to run themselves -- deliberately the plain Python script, not
+   `Authorize-DriveOAuth.ps1` (which also pushes the result into
+   Google Cloud Secret Manager and grants the production Cloud Run
+   service account access to it -- out of scope for a backup task
+   and not run).
+3. **Off-PC backup: still not executed -- Drive write access
+   remains unavailable pending (2).** Precise manual USB/SSD/
+   office-PC transfer instructions (exact `robocopy` command,
+   separating the passphrase file from the backup physically, and
+   post-transfer `sha256sum -c` verification) are written into
+   `BACKUP_MANIFEST_AND_RESTORE_GUIDE.md`. Neither path (Drive or
+   manual) has actually been executed yet -- both require an action
+   only the owner can perform.
+4. **DR-01 office-PC restore guide finalized**:
+   `C:\SPA\DisasterRecovery_20261012_150645\DR-01_OFFICE_PC_RESTORE_GUIDE.md`
+   covers prerequisite tools (Git, Python 3.12.x, Node 22.x/pnpm via
+   Corepack, GPG, Claude Code, Cursor), restoring all three repos
+   from their bundles, rebuilding the Python venv and frontend
+   `node_modules` from scratch, restoring the database to an
+   **isolated** copy only (explicitly never the live file, with the
+   exact wrong command called out as "the mistake that caused the
+   original incident"), decrypting credentials, and the same
+   verification commands this backup's own rehearsal already used.
+   Explicitly out of scope and called out as such: connecting to
+   real production, redeploying the Cloud Run worker, or trusting
+   Sheets/Drive connectivity on a new PC without re-verifying it
+   independently.
+
+**Backup location (unchanged):** `C:\SPA\DisasterRecovery_20261012_150645\`,
+now 30.03MB, 15 files, all SHA-256 checksummed and self-verified.
+
+**Overall status: PARTIAL**, per the owner's own instruction --
+local backup, encryption, and restore rehearsal are all genuinely
+VERIFIED; the off-machine copy specifically remains not yet done,
+blocked only on an action that requires the owner (either completing
+Drive OAuth consent, or physically moving the backup to other
+media).
+
+## Resume instructions
+
+Everything above is complete except the off-PC transfer, which
+needs the owner. If resuming on **this PC**: read this checkpoint,
+confirm `git status` is clean on all three repo working directories
+(it was at closure), and either help the owner complete the Drive
+OAuth consent / manual transfer, or move on to priority (3) --
+real-company Investment Brain acceptance. If resuming on **another
+PC** (true disaster recovery): the backup must first have reached
+that PC by one of the two paths above; once it has, follow
+`DR-01_OFFICE_PC_RESTORE_GUIDE.md` inside it.
 
 **Outstanding, owner-level only:**
 - Deciding on I3AS's next scope, if any -- the design proposal's named
@@ -905,9 +965,14 @@ already rehearsed.
   approval for consequential judgments" milestone -- see the
   architecture clarification above. Not scoped yet; a direction
   marker only.
-- **Copying the disaster recovery backup off this PC** -- Google
-  Drive is blocked (read-only credential only); needs either a
-  manual copy by the owner or a fresh interactive OAuth consent to
-  mint a write-capable Drive token.
+- **Completing Drive OAuth consent, or manually transferring the
+  backup off this PC** -- the one remaining disaster-recovery gap;
+  exact commands for both paths are in
+  `BACKUP_MANIFEST_AND_RESTORE_GUIDE.md`.
+- Saving the new credentials passphrase
+  (`C:\SPA\DR_Secrets_DO_NOT_COMMIT\spa_credentials_passphrase_20261012.txt`)
+  into a password manager and deleting the file -- it currently
+  exists only as a plaintext file on this PC, access-restricted but
+  not itself a permanent secure store.
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
