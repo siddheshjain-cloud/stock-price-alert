@@ -780,6 +780,120 @@ Monitoring V1 actually operational, **complete** (above);
 **(3) complete real-company Investment Brain acceptance** -- validates
 the depth and reliability of SPA's research conclusions. **Next up.**
 
+## Repository Housekeeping & Disaster Recovery Backup (complete, 2026-10-12)
+
+Per "SPA -- Repository Housekeeping, Recovery Backup & Closure." No
+new feature work; no live-database change; no production deploy.
+
+**Pre-cleanup safety snapshot** taken and accepted before any
+cleanup action (git bundles of all three local clones, a read-only-
+safe live-DB backup, an archive of the current production worker).
+See `C:\SPA\DisasterRecovery_20261012_150645\PRE_CLEANUP_SNAPSHOT_MANIFEST.md`.
+
+**Authorized cleanup executed exactly as scoped, nothing beyond it:**
+- Deleted `.next` (frontend build cache) and all 24 backend
+  `__pycache__` folders -- only after confirming no python/node/
+  pytest process was running. Both regenerated cleanly afterward
+  (`next build` succeeded; `pytest --collect-only` found all 1,518
+  tests; `create_app()` started with 46 routes, identical to before).
+- Deleted the 3 disposable session test-DB copies
+  (`migration_dev_copy.db`, `acceptance_copy.db`,
+  `rehearsal_copy.db`) and 5 regression log files -- only after
+  extracting and preserving their final pass/fail summary lines
+  (`preserved_test_results/regression_results_summary.txt`) and
+  confirming none is referenced by any recovery procedure.
+- **Not** deleted: `trading_app_incident_backup.db` (the live-DB
+  incident's own recovery record) -- copied, not moved, into a new
+  durable, clearly labelled `incident_archive/`, with the original
+  scratchpad copy left untouched and a SHA-256 match confirmed
+  between original and copy.
+- **Not** deleted: all 12 historical/superseded Cloud Run worker
+  folders -- copied into one verified archive
+  (`spa_worker/historical_cloudrun_folders.zip`; zip integrity and
+  every folder's exact file count independently verified against
+  the untouched originals), originals left in place exactly as
+  found.
+- **Not touched at all** (correctly out of scope): `node_modules`,
+  the historical worker folders/loose zips themselves, `dev-tools/`,
+  the loose `.py`/`.xlsx` files at `C:\SPA` root, any Git branch or
+  clone, the live database, and all credentials. No Git remote
+  changed; no history rewritten.
+
+**Exit-code-255 survey failure, recorded as instructed:** an earlier
+background directory-size survey (Git-Bash `du` against
+`node_modules`) was deliberately killed for taking too long on
+Windows -- its exit code 255 reflects that termination, not a
+measurement or data error. Every size figure actually used in the
+cleanup proposal and this backup was obtained afterward via an
+independent, successful PowerShell measurement. Separately and
+explicitly flagged as genuinely unverified (not blocking anything
+authorized): whether the loose top-level zips at `C:\SPA` root are
+byte-identical to their same-named folders, and whether the loose
+`.py`/`.xlsx` files there are still imported by `cloudrun_fixed_v7_5`
+-- neither question needed answering since neither item was touched.
+
+**Full encrypted disaster recovery package, built and verified:**
+- `repos/`: verified `git bundle --all` of all three local clones.
+- `database/`: a fresh read-only-safe live-DB backup.
+- `spa_worker/`: the current production worker + the historical
+  archive above.
+- `secrets_encrypted/spa_credentials_20261012.tar.gz.gpg`: all 5
+  Google OAuth credential files (2 Sheets + 2 Drive pairs plus the
+  Drive client registration), AES-256 encrypted via `gpg
+  --symmetric`. **Never committed to Git.** Round-trip decrypted and
+  SHA-256-verified byte-identical to the live files before the
+  plaintext staging copy was deleted. The passphrase was reported to
+  the owner directly in the session transcript only -- it is not
+  written anywhere in this backup or in any repo.
+- `checksums/SHA256SUMS_final.txt`: SHA-256 of all 14 files in the
+  backup.
+- **Isolated restore rehearsal, genuinely performed, not assumed:**
+  cloned the backend bundle into a fresh directory -- `create_app()`
+  started with 46 routes, identical to the live working copy;
+  extracted the historical-worker archive -- all 12 folders' file
+  counts matched their untouched originals exactly; restored the
+  database backup into an isolated copy -- queried real data (69
+  companies, 1 user) and confirmed `alembic_version` matches the
+  live file. One genuine, *expected* finding surfaced by this
+  rehearsal: the restored DB has no `monitoring_run` table, because
+  the live database has never had that migration applied -- an
+  accurate reflection of reality, not a backup defect. Full detail
+  in `restore_rehearsal/RESTORE_REHEARSAL_RESULTS.md`.
+
+**Independent/off-machine storage: BLOCKED, tested with a real
+write attempt, not assumed.** A genuine `files().create()` call
+against the owner's designated Google Drive destination returned a
+real `403 Insufficient Permission` -- the only Drive credential
+present on this machine is scoped `drive.readonly`; no write-capable
+token exists, and minting one needs the owner's own interactive
+browser consent (not performed autonomously). **This backup
+currently exists in exactly one place: this PC's local disk.**
+Recommended owner action: manually copy at least
+`secrets_encrypted/`, `repos/`, and `database/` to a second
+location at their convenience.
+
+**Overall disaster-recovery status: PARTIAL**, per the owner's own
+instruction to report PARTIAL rather than VERIFIED when any
+essential storage destination is unavailable -- every other
+component (snapshot, cleanup, encryption, checksums, restore
+rehearsal) is genuinely verified; only the off-machine copy is
+missing.
+
+## Resume instructions, after housekeeping & backup
+
+Everything above is complete; nothing is in progress. If resuming on
+**this PC**: read this checkpoint, confirm `git status` is clean on
+all three repo working directories (it was at closure), and pick up
+the owner's priority (3) -- real-company Investment Brain acceptance
+-- or any new instruction. If resuming on **another PC** (true
+disaster recovery): follow
+`C:\SPA\DisasterRecovery_20261012_150645\BACKUP_MANIFEST_AND_RESTORE_GUIDE.md`
+on whatever media the owner copied that folder to (it has not yet
+left this PC -- see the BLOCKED off-machine copy above), decrypt
+credentials with the passphrase the owner holds, and verify `git
+fsck`/`create_app()`/`pytest --collect-only` exactly as this session
+already rehearsed.
+
 **Outstanding, owner-level only:**
 - Deciding on I3AS's next scope, if any -- the design proposal's named
   slices (Alert-1/2/3) are now all complete; nothing further is named
@@ -791,8 +905,9 @@ the depth and reliability of SPA's research conclusions. **Next up.**
   approval for consequential judgments" milestone -- see the
   architecture clarification above. Not scoped yet; a direction
   marker only.
-- Verifying real Google Sheets API connectivity from a host other than
-  this dev sandbox, before relying on Monitoring V1 for anything beyond
-  the bounded demonstration already completed here.
+- **Copying the disaster recovery backup off this PC** -- Google
+  Drive is blocked (read-only credential only); needs either a
+  manual copy by the owner or a fresh interactive OAuth consent to
+  mint a write-capable Drive token.
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.

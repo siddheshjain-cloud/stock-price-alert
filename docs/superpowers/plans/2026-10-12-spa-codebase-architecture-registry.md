@@ -26,9 +26,9 @@ rather than trusting field-level detail here to stay current forever.
 
 | Repo | Path | Branch | Verified commit |
 |---|---|---|---|
-| Backend (`backendtest`) | `C:\github\backendtest` | `feature/research-coverage-foundation` (working branch; `master` is the integration target, not yet merged to) | `f711d3d` (working branch, PR #8); `master` at `f8da0f4` (PR #7) |
-| Design docs (`stock-price-alert`, docs-only clone) | `C:\GitHub\stock-price-alert` | `feature/investment-operating-system-m1` | `59cae82` |
-| Frontend (`stock-price-alert`, Next.js app) | `C:\Users\Home\Documents\GitHub\stock-price-alert` | `feature/investment-operating-system-m1` | `0ac78c1` -- **stale, unverified this session**: this local checkout was not pulled while the docs clone above advanced to `59cae82`; re-sync before trusting it, same remote/branch as the docs clone (two local checkouts of one repo, not two repos; see "Repository map" below) |
+| Backend (`backendtest`) | `C:\github\backendtest` | `feature/research-coverage-foundation` (working branch; `master` is the integration target, not yet merged to) | `061b3b3` (working branch, PR #10); `master` at `f8da0f4` (PR #7) |
+| Design docs (`stock-price-alert`, docs-only clone) | `C:\GitHub\stock-price-alert` | `feature/investment-operating-system-m1` | `90b8c1f` |
+| Frontend (`stock-price-alert`, Next.js app) | `C:\Users\Home\Documents\GitHub\stock-price-alert` | `feature/wealth-desk-ui` (checked out); `feature/investment-operating-system-m1` re-synced to `90b8c1f` in the same pass | `e8d6868` (`feature/wealth-desk-ui`), `90b8c1f` (`feature/investment-operating-system-m1`) -- both current as of this backup, same remote/branch history as the docs clone (two local checkouts of one repo, not two repos; see "Repository map" below) |
 
 ---
 
@@ -172,10 +172,12 @@ and tested" at any point in time.
 ## Known gaps (as of this baseline)
 
 - `investment_case` is now readable via the existing `research_bp`
-  company-detail endpoint (premium/admin only) -- the "no HTTP route
-  for any Phase 3/I3AS object" gap recorded at the first baseline no
-  longer applies to this one object. No other Phase 3/I3AS object has
-  a route yet.
+  company-detail endpoint (premium/admin only), and the admin-only
+  I3AS alert feed is now readable via `GET /api/admin/alerts`
+  (`admin_alerts_bp`, PR #9) -- the "no HTTP route for any Phase
+  3/I3AS object" gap recorded at the first baseline no longer applies
+  to either of these two objects. No other Phase 3/I3AS object has a
+  route yet.
 - No portfolio/holdings data model (`Holding`/`Transaction`) exists —
   Master Roadmap V2 Tier 0.3, never built. Any "portfolio" UI language
   should say "Watchlist"/"Coverage" until this changes.
@@ -186,21 +188,31 @@ and tested" at any point in time.
   proposal, I3AS Alert-3) was deliberately not built — only
   creation-time severity is alert-worthy today.
 - `dev-tools/` (frontend repo) is unaudited — see "Repository map."
-- **Continuous Monitoring V1's real Google Sheets connectivity is
-  unverified.** The live manifest read hangs past a bounded 60s
-  execution limit from this dev sandbox even with the right dependency
-  and real credentials present; a bare TCP connection to Google's host
-  succeeds immediately, so this looks like an API-call-specific
-  egress/proxy issue, not a total network block. Needs verification
-  from a host with confirmed working Sheets API access before relying
-  on this pilot beyond the bounded dev demonstration already done.
+- **RESOLVED 2026-10-12:** Continuous Monitoring V1's real Google
+  Sheets/Drive connectivity. Root cause was two bugs, not an
+  environment limitation: no transport timeout configured anywhere
+  (an occasional bad anycast IP pick hung forever), and a per-row
+  Drive-client rebuild cost masked by that hang. Both fixed (PR #10,
+  `061b3b3`); verified with two real, idempotent scans against an
+  isolated DB copy (258 real rows each, 0 errors). Still true:
+  verifies manifest *ingestion* only, not SPA's upstream *discovery*
+  coverage — two separate systems.
 - **Real-company Investment Brain acceptance is inventoried but not
   built.** UNO Minda is the only one of the three pilot companies
   (Chemplast Sanmar, UNO Minda, AXISCADES) with a genuine evidence base
   (23 `ExtractedFact` rows + 1 `ResearchProposition`) a source-backed
   `ResearchRevision`/`InvestmentHypothesis`/`InvestmentCase` could cite
-  without fabrication. None has been built yet — the owner redirected
-  to Continuous Monitoring V1 before this track resumed.
+  without fabrication. None has been built yet — still queued as the
+  owner's priority (3), next in line.
+- **Disaster recovery backup exists in exactly one place.** A full,
+  verified, encrypted backup was created 2026-10-12 at
+  `C:\SPA\DisasterRecovery_20261012_150645\` -- but the owner's
+  designated off-machine copy (Google Drive) is blocked: the only
+  Drive credential on this machine is read-only (confirmed via a
+  real write attempt, a genuine 403). The backup has not left this
+  PC's local disk. See the Phase 3 Development Checkpoint's
+  "Repository Housekeeping & Disaster Recovery Backup" section for
+  full detail.
 
 ## Maintenance log
 
@@ -214,3 +226,16 @@ and tested" at any point in time.
   (not re-synced this session). See the Phase 3 Development Checkpoint
   for full narrative detail — this registry only tracks structure/
   baseline/gaps, per its own maintenance rules.
+- **2026-10-12 (housekeeping & disaster recovery backup):** Baseline
+  SHAs bumped again -- backend working branch now `061b3b3` (PR #10,
+  Sheets/Drive connectivity fix), `master` unchanged at `f8da0f4`;
+  docs clone `90b8c1f`; frontend clone's `feature/wealth-desk-ui` at
+  `e8d6868` (its `feature/investment-operating-system-m1` ref
+  re-synced to `90b8c1f` during this pass). Owner-approved selective
+  cleanup executed (`.next`, backend `__pycache__`, 3 disposable
+  session test-DB copies, 5 regression logs deleted; nothing else
+  touched -- see checkpoint for the full authorized/not-authorized
+  list). Full encrypted disaster-recovery backup created and
+  restore-rehearsed; off-machine copy blocked (read-only Drive
+  credential only) -- status PARTIAL, not VERIFIED, per owner
+  instruction.
