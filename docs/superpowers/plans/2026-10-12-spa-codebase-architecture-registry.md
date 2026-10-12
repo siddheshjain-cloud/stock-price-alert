@@ -26,9 +26,9 @@ rather than trusting field-level detail here to stay current forever.
 
 | Repo | Path | Branch | Verified commit |
 |---|---|---|---|
-| Backend (`backendtest`) | `C:\github\backendtest` | `feature/phase3-slice-c-cycle-intelligence` (working branch; `master` is the integration target) | `c8c3a09` (working branch); `master` at `456946f` |
-| Design docs (`stock-price-alert`, docs-only clone) | `C:\GitHub\stock-price-alert` | `feature/investment-operating-system-m1` | `0ac78c1` |
-| Frontend (`stock-price-alert`, Next.js app) | `C:\Users\Home\Documents\GitHub\stock-price-alert` | `feature/investment-operating-system-m1` | `0ac78c1` (same remote/branch as the docs clone — two local checkouts of one repo, not two repos; see "Repository map" below) |
+| Backend (`backendtest`) | `C:\github\backendtest` | `feature/research-coverage-foundation` (working branch; `master` is the integration target, not yet merged to) | `f711d3d` (working branch, PR #8); `master` at `f8da0f4` (PR #7) |
+| Design docs (`stock-price-alert`, docs-only clone) | `C:\GitHub\stock-price-alert` | `feature/investment-operating-system-m1` | `59cae82` |
+| Frontend (`stock-price-alert`, Next.js app) | `C:\Users\Home\Documents\GitHub\stock-price-alert` | `feature/investment-operating-system-m1` | `0ac78c1` -- **stale, unverified this session**: this local checkout was not pulled while the docs clone above advanced to `59cae82`; re-sync before trusting it, same remote/branch as the docs clone (two local checkouts of one repo, not two repos; see "Repository map" below) |
 
 ---
 
@@ -171,8 +171,11 @@ and tested" at any point in time.
 
 ## Known gaps (as of this baseline)
 
-- No HTTP route exists for any Phase 3 or I3AS object. This blocks any
-  frontend work on those capabilities until a read API exists.
+- `investment_case` is now readable via the existing `research_bp`
+  company-detail endpoint (premium/admin only) -- the "no HTTP route
+  for any Phase 3/I3AS object" gap recorded at the first baseline no
+  longer applies to this one object. No other Phase 3/I3AS object has
+  a route yet.
 - No portfolio/holdings data model (`Holding`/`Transaction`) exists —
   Master Roadmap V2 Tier 0.3, never built. Any "portfolio" UI language
   should say "Watchlist"/"Coverage" until this changes.
@@ -183,8 +186,31 @@ and tested" at any point in time.
   proposal, I3AS Alert-3) was deliberately not built — only
   creation-time severity is alert-worthy today.
 - `dev-tools/` (frontend repo) is unaudited — see "Repository map."
+- **Continuous Monitoring V1's real Google Sheets connectivity is
+  unverified.** The live manifest read hangs past a bounded 60s
+  execution limit from this dev sandbox even with the right dependency
+  and real credentials present; a bare TCP connection to Google's host
+  succeeds immediately, so this looks like an API-call-specific
+  egress/proxy issue, not a total network block. Needs verification
+  from a host with confirmed working Sheets API access before relying
+  on this pilot beyond the bounded dev demonstration already done.
+- **Real-company Investment Brain acceptance is inventoried but not
+  built.** UNO Minda is the only one of the three pilot companies
+  (Chemplast Sanmar, UNO Minda, AXISCADES) with a genuine evidence base
+  (23 `ExtractedFact` rows + 1 `ResearchProposition`) a source-backed
+  `ResearchRevision`/`InvestmentHypothesis`/`InvestmentCase` could cite
+  without fabrication. None has been built yet — the owner redirected
+  to Continuous Monitoring V1 before this track resumed.
 
 ## Maintenance log
 
-- **2026-10-12:** Full inventory performed (this entry). Baseline
+- **2026-10-12 (overnight):** Full inventory performed. Baseline
   commits recorded above.
+- **2026-10-12 (stop-and-save checkpoint):** Baseline SHAs bumped
+  (backend `master` PR #7 `f8da0f4`, working branch PR #8 `f711d3d`;
+  docs `59cae82`) after the Wealth Desk `investment_case` read API,
+  I3AS Alert-3, and Continuous Monitoring V1 all merged into
+  `feature/research-coverage-foundation`. Frontend clone flagged stale
+  (not re-synced this session). See the Phase 3 Development Checkpoint
+  for full narrative detail — this registry only tracks structure/
+  baseline/gaps, per its own maintenance rules.
