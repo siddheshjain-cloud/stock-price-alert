@@ -4,43 +4,134 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Radio } from 'lucide-react';
 import { useResearchStore } from '@/store/researchStore';
+import { useAlertsStore } from '@/store/alertsStore';
+import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
+const SEVERITY_VARIANT: Record<string, 'default' | 'destructive' | 'secondary' | 'outline'> = {
+  INFO: 'outline',
+  WATCH: 'secondary',
+  CRITICAL: 'destructive',
+};
+
+function fmtWhen(value: string) {
+  try {
+    return new Date(value).toLocaleString('en-IN', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch {
+    return value;
+  }
+}
+
 /**
- * Provisional Daily Brief. The agreed design is alert-first (new filings,
- * material research changes surfaced here first) -- but no HTTP route
- * exists yet for I3AS's AlertEvent feed (confirmed by reading the backend
- * routes directly; see the Codebase Registry's "known gaps"). Building a
- * live feed here would mean inventing data. Instead this honestly says so,
- * and surfaces the one thing that is genuinely real and already available:
- * the current size of the research universe, with a path into it.
+ * Daily Brief: alert-first, per the agreed design. The feed below reads
+ * from GET /admin/alerts -- a small, additive, read-only backend endpoint
+ * added specifically for this page (reuses AlertService exactly as every
+ * other I3AS alert producer does; no new write path, no interpretation).
+ * It is admin-only on the backend, so a non-admin viewer is told that
+ * honestly rather than shown a confusing 403.
  */
 export function DailyBrief() {
   const { companyList, isLoadingList, fetchCompanies } = useResearchStore();
+  const { recentEvents, isLoading: isLoadingAlerts, fetchRecentEvents } = useAlertsStore();
+  const { user } = useAuthStore();
+  const isAdmin = !!user?.is_admin;
 
   React.useEffect(() => {
     fetchCompanies({ per_page: 5 });
   }, [fetchCompanies]);
 
+  React.useEffect(() => {
+    if (isAdmin) {
+      fetchRecentEvents(20);
+    }
+  }, [isAdmin, fetchRecentEvents]);
+
   return (
     <div className="space-y-6">
-      <Card className="border-dashed">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Radio className="size-4 text-muted-foreground" />
-            <CardTitle className="text-base">Live alert feed not yet connected</CardTitle>
-          </div>
-          <CardDescription>
-            This Daily Brief is designed to lead with new filings and material research
-            changes as they happen. That live feed is not wired up yet -- it needs a small
-            backend read endpoint that does not exist today. Until then, this page shows the
-            research universe as it currently stands rather than inventing activity that
-            did not happen.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      {!isAdmin ? (
+        <Card className="border-dashed">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Radio className="size-4 text-muted-foreground" />
+              <CardTitle className="text-base">Alert feed is admin-only</CardTitle>
+            </div>
+            <CardDescription>
+              The live alert feed (new filings, kill switches, governance flags, and more) is
+              currently only shown to admin accounts. This page instead shows the research
+              universe as it stands.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Radio className="size-4" />
+              <CardTitle className="text-base">Recent alerts</CardTitle>
+            </div>
+            <CardDescription>
+              Every alert-worthy occurrence SPA has recorded recently, newest first.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingAlerts && !recentEvents ? (
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : !recentEvents || recentEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No alerts have been recorded yet.
+              </p>
+            ) : (
+              <ul className="divide-y">
+                {recentEvents.map((event) => {
+                  const row = (
+                    <div className="flex items-start justify-between gap-4 py-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={SEVERITY_VARIANT[event.severity] ?? 'outline'}>
+                            {event.severity}
+                          </Badge>
+                          <span className="text-sm font-medium">
+                            {event.event_type.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">{event.summary}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {fmtWhen(event.occurred_at)}
+                      </span>
+                    </div>
+                  );
+                  return (
+                    <li key={event.id}>
+                      {event.company_id ? (
+                        <Link
+                          href={`/research/${event.company_id}`}
+                          className="block hover:bg-muted/50 rounded-md px-2 -mx-2"
+                        >
+                          {row}
+                        </Link>
+                      ) : (
+                        row
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
