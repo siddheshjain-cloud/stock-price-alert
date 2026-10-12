@@ -467,6 +467,157 @@ is genuinely new scope before writing any code.
    unrelated modules; no production deploy/live DB migration/
    destructive changes without separate authorization.
 
+## Real-Company Investment Brain Acceptance: inventory (complete, 2026-10-12)
+
+Per "SPA -- Real-Company Investment Brain Acceptance," ran a read-only
+evidence inventory against an isolated, migrated copy of the live
+database (never the live file) for Chemplast Sanmar (primary),
+UNO Minda (secondary), and AXISCADES (added when the owner expanded
+the monitoring-acceptance universe to three companies). Findings:
+
+- **Chemplast Sanmar**: 24 real linked documents, **0** `ExtractedFact`,
+  **0** `ResearchProposition`. Nothing has ever been extracted from its
+  own documents -- not viable for an `InvestmentCase` build right now
+  without new extraction work (separate scope).
+- **UNO Minda**: 49 real linked documents, **23** `ExtractedFact` rows
+  (22 current, all evidence-linked -- real 5-year financial trend,
+  quarterly P&L, credit ratings, capex/JV announcements, governance/
+  audit-trail disclosures) + **1** evidence-linked `ResearchProposition`
+  (the Tachi-S JV thesis). The only one of the three with a genuine
+  evidence base a `ResearchRevision`/`InvestmentHypothesis` could cite
+  without fabrication.
+- **AXISCADES**: 42 real linked documents, **0** `ExtractedFact`,
+  **0** `ResearchProposition`. Same gap as Chemplast.
+- System-wide: **0** `ResearchRevision`/`ForecastRevision`/
+  `ValuationRevision`/`InvestmentHypothesis`/`GovernanceFlag`/
+  `CompanyDisclosure`/`CycleAssessment`/`InvestmentCase` rows exist
+  anywhere in the live corpus. The Investment Brain layer has never
+  been fed real data -- confirms, with current real numbers, the
+  standing gap already recorded at every prior checkpoint.
+
+Per the owner's follow-up decision, all three companies were admitted
+to the Continuous Monitoring V1 universe on this same inventory (their
+source coverage and baseline are now verified, even though two of the
+three have a sparse baseline) -- monitoring does not wait on any
+company's `InvestmentCase` being complete. Building a real, source-
+backed `InvestmentCase` remains a separate, slower, owner-escalation-
+gated track, currently viable only for UNO Minda; that build has not
+been started (the owner redirected to Continuous Monitoring V1 before
+it began) and is not resumed automatically -- re-confirm scope first.
+
+## Continuous Research Monitoring V1 (complete, 2026-10-12)
+
+Per "SPA -- Continuous Monitoring V1 Approved." Before building
+anything, audited the existing M1 ingestion/extraction pipeline
+end-to-end and reported findings before changing any design (owner
+instruction). Four stages, one real gap:
+
+1. **Upstream filing discovery** -- happens entirely outside this repo
+   (a separate SPA ingestion worker populates a Google Sheets
+   manifest). Not part of this codebase; untouched.
+2. **Manifest polling** (manifest -> M1 Document Library) --
+   `scripts/bridge_spa_manifest.py` already does this correctly, but
+   has always been manual/on-demand. **This is the one real gap**,
+   and the only one Monitoring V1 closes.
+3. **Document registration** -- `DocumentLibraryService.create_document`
+   already works correctly; no gap.
+4. **Extraction** (document -> `ExtractedFact`/Research Brain) --
+   **not a gap**. Confirmed deliberate, by two independent pieces of
+   hard evidence: `DocumentValidationService` explicitly rejects any
+   `STORED -> ANALYSED` transition ("Milestone 1 cannot transition
+   documents to ANALYSED"), and `ResearchCoverageService`'s own
+   docstring states linking a finding "is always deliberate and
+   reviewer-initiated -- there is no automated matching." Nothing
+   anywhere in the app currently even exposes an HTTP route to trigger
+   extraction either way. Automating this was correctly identified as
+   out of scope and was **not** built.
+
+**Architecture clarification the owner gave in response to this
+finding, recorded verbatim for future sessions:** human-only
+extraction is a **current M1 boundary, not SPA's permanent
+objective**. The eventual direction is **automated evidence
+extraction and classification, with provenance, validation, and
+human approval for consequential investment judgments** -- i.e. a
+future milestone should automate the mechanical extraction step while
+keeping a human approval gate specifically on investment-consequential
+conclusions, not remove human judgment altogether. No such milestone
+is scoped or authorized yet; this is a direction marker for whoever
+scopes it next, not a standing task.
+
+**What was built** (scope held to exactly manifest polling +
+registration + dedup + run logs + admin notification, per the owner's
+explicit approval -- no extraction automation, no research-approval
+rule changes):
+- `MonitoringRun` (new, minimal, additive table + migration): one
+  audit row per scan. Deliberately mutable (`RUNNING` -> one terminal
+  update) -- the same shape `Trade` already uses; `BaseModel` itself
+  has no blanket immutability listener, so no new exception was
+  needed. Scoped to the three-company pilot universe above.
+- `MonitoringService`: wraps the existing, unchanged, idempotent
+  bridge via an injectable `run_fn` seam (tests never need live
+  Google credentials). Records status/counts/errors/company scope;
+  assesses manifest freshness from each row's own real Document Date
+  (reports `UNKNOWN` when unverifiable, **never** defaults to
+  `FRESH` -- "never equate a successful scan with complete exchange
+  coverage" is enforced in code, not just documented). Reuses
+  `AlertService` with three new, stably-deduplicated event types
+  (`MONITORING_RUN_DOCUMENTS_DETECTED`, `MONITORING_RUN_FAILED`,
+  `MONITORING_MANIFEST_STALE`). A clean, no-change, non-stale run
+  raises no alert at all -- the `MonitoringRun` row itself is that
+  case's audit trail (avoids Telegram noise, per owner requirement).
+- `scripts/run_monitoring_scan.py`: single-pass CLI, no internal
+  loop/cadence -- the scheduling mechanism (Windows Task Scheduler for
+  this bounded pilot) stays fully external and portable. Keeps the
+  fail-closed `create_app()` database guard unchanged (requires an
+  explicit `DATABASE_URL`; never `allow_default_database`).
+- A small, additive, backward-compatible enrichment to the existing
+  bridge's own `run()`: every outcome dict now also carries the row's
+  real manifest Document Date, avoiding a second Sheets read.
+
+8 new tests. Full regression suite: **1512 passed, 0 failed**.
+Committed as `ca1d1ae`, opened as PR #8, merged into
+`feature/research-coverage-foundation` as `f711d3d` (regular merge
+commit). Not merged into `master`.
+
+**Scheduled-run demonstration, reported honestly:** two genuine
+Windows Task Scheduler executions against an isolated dev database
+copy (never live) each correctly recorded a `FAILED` `MonitoringRun`
+(a real missing-dependency error, since caught and fixed) and
+correctly alerted admins -- proving the full audit/alert pipeline
+end-to-end under the real OS scheduler engine, not a raw subprocess.
+**True live-manifest connectivity (an actual document detected
+end-to-end) could not be verified from this sandboxed dev
+environment**: after installing the missing dependency and confirming
+real credentials are present, the real Google Sheets API call still
+hangs past a bounded 60-second Task Scheduler execution-time-limit,
+despite a bare TCP connection to Google's own host succeeding
+immediately. This is recorded as an **unresolved environment/egress
+limitation**, not papered over -- **owner decision needed**: verify
+real connectivity from a host with confirmed Sheets API egress (e.g.
+the actual production/worker host) before relying on this pilot for
+anything beyond the bounded dev demonstration already completed.
+Two `MonitoringRun` rows from killed/timed-out attempts were left in
+`RUNNING` state in the isolated dev copy only (never live) -- a real,
+minor, known gap: nothing yet reconciles a run killed externally back
+to a terminal state. Not fixed in this slice (out of approved scope);
+flagged here for whoever picks up Monitoring V2.
+
+## Resume instructions for the next session
+
+**Everything through Continuous Monitoring V1 is complete.** `master`
+is current through PR #7 (Alert-3 + the Wealth Desk `investment_case`
+read API). `feature/research-coverage-foundation` additionally holds
+Continuous Monitoring V1 (PR #8) on top of that -- not yet merged into
+`master`; that merge is a separate decision, not yet made. The
+Wealth Desk UI (Daily Brief + Investment Coverage Grid + Company
+Workspace, provisional) and the real `InvestmentCase` build for UNO
+Minda remain the next executable items -- see "SPA -- Priority
+Directive | 12-25 October 2026" and the Real-Company Acceptance
+section above. If a future session is asked to "continue Monitoring,"
+"continue Wealth Desk," or "continue Investment Brain acceptance,"
+read this checkpoint first and confirm there is genuinely new scope
+before writing any code.
+
 **Outstanding, owner-level only:**
 - Deciding on I3AS's next scope, if any -- the design proposal's named
   slices (Alert-1/2/3) are now all complete; nothing further is named
@@ -474,5 +625,12 @@ is genuinely new scope before writing any code.
 - Wealth Desk final UI/UX direction -- the owner has indicated they
   will finalize the UI directly per their own requirements; the
   provisional UI above is explicitly "provisional," not final design.
+- Whether/when to scope a future "automated extraction + human
+  approval for consequential judgments" milestone -- see the
+  architecture clarification above. Not scoped yet; a direction
+  marker only.
+- Verifying real Google Sheets API connectivity from a host other than
+  this dev sandbox, before relying on Monitoring V1 for anything beyond
+  the bounded demonstration already completed here.
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
