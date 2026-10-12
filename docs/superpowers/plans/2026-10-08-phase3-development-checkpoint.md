@@ -618,6 +618,15 @@ section above. If a future session is asked to "continue Monitoring,"
 read this checkpoint first and confirm there is genuinely new scope
 before writing any code.
 
+**Owner's stated priority order for the three next items above**
+(2026-10-12, given at the stop-and-save checkpoint; revisitable at
+resume, not a fixed commitment): **(1) provisional Wealth Desk UI**
+-- gives a usable interface; **(2) resolve real Google Sheets
+ingestion** -- makes Continuous Monitoring V1 actually operational;
+**(3) complete real-company Investment Brain acceptance** -- validates
+the depth and reliability of SPA's research conclusions. Start with
+(1) unless the owner says otherwise at resume.
+
 **Outstanding, owner-level only:**
 - Deciding on I3AS's next scope, if any -- the design proposal's named
   slices (Alert-1/2/3) are now all complete; nothing further is named
