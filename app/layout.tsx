@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stock Price Alert",
-  description: "Stock Price Alerts delivered via WhatsApp. Set Entry, Stop Loss and Target levels and get notified via WhatsApp.",
+  title: "SPARS",
+  description: "Search the SPARS research universe.",
 };
 
 export default function RootLayout({
