@@ -13,7 +13,7 @@ interface ResearchState {
   detailError: string | null;
 
   fetchCompanies: (params?: CompanyListParams) => Promise<void>;
-  fetchCompanyDetail: (companyId: string) => Promise<void>;
+  fetchCompanyDetail: (companyId: string, options?: { silent?: boolean }) => Promise<void>;
 }
 
 export const useResearchStore = create<ResearchState>((set, get) => ({
@@ -38,10 +38,14 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
     }
   },
 
-  fetchCompanyDetail: async (companyId: string) => {
+  fetchCompanyDetail: async (companyId: string, options) => {
+    const silent = options?.silent ?? false;
     try {
       set({ isLoadingDetail: true, detailError: null });
-      const detail = await researchApi.getCompanyDetail(companyId);
+      const detail = await researchApi.getCompanyDetail(
+        companyId,
+        silent ? { suppressErrorToast: true } : undefined
+      );
       set((state) => ({
         companyDetails: { ...state.companyDetails, [companyId]: detail },
         isLoadingDetail: false,
@@ -50,7 +54,9 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
       const message =
         error?.response?.data?.error || 'Failed to load company research';
       set({ isLoadingDetail: false, detailError: message });
-      toast.error(message);
+      if (!silent) {
+        toast.error(message);
+      }
     }
   },
 }));

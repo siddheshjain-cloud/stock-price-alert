@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios';
 import axiosInstance from '@/lib/axios';
 import { CompanyDetail, CompanyListPage, CompanyListParams } from '@/types/research';
 
@@ -20,9 +21,13 @@ export const researchApi = {
    * explicit schema (FREE/PREMIUM/ADMIN) chosen server-side from the
    * caller's own entitlement -- never a flag the client can influence.
    */
-  getCompanyDetail: async (companyId: string): Promise<CompanyDetail> => {
+  getCompanyDetail: async (
+    companyId: string,
+    config?: AxiosRequestConfig
+  ): Promise<CompanyDetail> => {
     const response = await axiosInstance.get<CompanyDetail>(
-      `/research/companies/${companyId}`
+      `/research/companies/${companyId}`,
+      config
     );
     return response.data;
   },

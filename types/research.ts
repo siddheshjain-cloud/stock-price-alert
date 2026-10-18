@@ -3,7 +3,7 @@
 // in the backendtest repo). A field only ever appears here if the backend
 // schema actually dumps it -- no field is invented or assumed.
 
-export type ResearchTierLabel = 'FREE' | 'PREMIUM' | 'ADMIN';
+export type ResearchTierLabel = 'PUBLIC' | 'FREE' | 'PREMIUM' | 'ADMIN';
 
 export interface LockedSection {
   section: string;

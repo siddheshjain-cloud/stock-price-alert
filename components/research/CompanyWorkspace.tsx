@@ -23,34 +23,14 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/research/EmptyState';
 import { CompanyDetail, LockedSection } from '@/types/research';
+import { fmtPct, fmtNum, fmtDate } from '@/lib/research-format';
+
+// Statically inlined by Next.js at build time -- a real production build
+// can never evaluate to true. Mirrors the same check on the Verdict Page.
+const IS_REVIEW_ENVIRONMENT = process.env.NODE_ENV !== 'production';
 
 function lockedFor(locked: LockedSection[], section: string) {
   return locked.find((item) => item.section === section) ?? null;
-}
-
-function fmtPct(value: string | null | undefined) {
-  if (value === null || value === undefined) return '—';
-  return `${Number(value).toFixed(2)}%`;
-}
-
-function fmtNum(value: string | null | undefined, unit?: string | null) {
-  if (value === null || value === undefined) return '—';
-  const num = Number(value);
-  const formatted = Number.isFinite(num) ? num.toLocaleString('en-IN') : value;
-  return unit ? `${formatted} ${unit}` : formatted;
-}
-
-function fmtDate(value: string | null | undefined) {
-  if (!value) return '—';
-  try {
-    return new Date(value).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch {
-    return value;
-  }
 }
 
 const GATE_STATUS_VARIANT: Record<string, 'default' | 'destructive' | 'secondary' | 'outline'> = {
@@ -100,7 +80,14 @@ function CompanyWorkspaceContent({ detail }: { detail: CompanyDetail }) {
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl">{company.name}</CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle className="text-2xl">{company.name}</CardTitle>
+                {IS_REVIEW_ENVIRONMENT && (
+                  <Badge variant="destructive" className="whitespace-nowrap">
+                    TEST DATA
+                  </Badge>
+                )}
+              </div>
               <CardDescription>
                 {company.symbol} · {company.exchange}
                 {business_group ? ` · ${business_group.name}` : ''}

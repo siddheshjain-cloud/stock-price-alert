@@ -2,6 +2,13 @@ import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'ax
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
 
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    /** Skip this instance's generic status-code error toast for one request -- the caller is handling that error state itself (e.g. an expected 404). */
+    suppressErrorToast?: boolean;
+  }
+}
+
 // Create axios instance
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -80,7 +87,7 @@ axiosInstance.interceptors.response.use(
     }
 
     // Handle other error status codes
-    if (error.response?.status) {
+    if (!originalRequest?.suppressErrorToast && error.response?.status) {
       const status = error.response.status;
       const message = (error.response.data as { error?: string })?.error || error.message;
 

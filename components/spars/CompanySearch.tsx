@@ -1,13 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { AxiosError } from 'axios';
 
 import { researchApi } from '@/lib/api/research';
-import { useAuthContext } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
 import type { CompanyListSummary } from '@/types/research';
 
@@ -16,7 +14,6 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 export function CompanySearch() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuthContext();
   const [query, setQuery] = React.useState('');
   const [results, setResults] = React.useState<CompanyListSummary[]>([]);
   const [isSearching, setIsSearching] = React.useState(false);
@@ -41,7 +38,7 @@ export function CompanySearch() {
   }, []);
 
   React.useEffect(() => {
-    if (!isAuthenticated || trimmedQuery.length < MIN_QUERY_LENGTH) {
+    if (trimmedQuery.length < MIN_QUERY_LENGTH) {
       setResults([]);
       setIsSearching(false);
       setSearchError(null);
@@ -80,12 +77,12 @@ export function CompanySearch() {
       controller.abort();
       window.clearTimeout(handle);
     };
-  }, [isAuthenticated, trimmedQuery]);
+  }, [trimmedQuery]);
 
   const openCompany = React.useCallback(
     (companyId: string) => {
       setIsOpen(false);
-      router.push(`/research/${companyId}`);
+      router.push(`/company/${companyId}`);
     },
     [router]
   );
@@ -100,7 +97,7 @@ export function CompanySearch() {
       return;
     }
 
-    if (!isAuthenticated || results.length === 0) return;
+    if (results.length === 0) return;
 
     if (event.key === 'ArrowDown') {
       event.preventDefault();
@@ -158,26 +155,7 @@ export function CompanySearch() {
           role="listbox"
           className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border bg-popover text-popover-foreground shadow-xl"
         >
-          {isAuthLoading ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-              Checking your session…
-            </p>
-          ) : !isAuthenticated ? (
-            <div className="space-y-3 px-4 py-5 text-center">
-              <p className="text-sm text-muted-foreground">
-                Sign in to search the SPARS research universe.
-              </p>
-              <Link
-                href="/auth/signin"
-                className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                onClick={() => {
-                  sessionStorage.setItem('redirectAfterLogin', '/');
-                }}
-              >
-                Sign In
-              </Link>
-            </div>
-          ) : trimmedQuery.length < MIN_QUERY_LENGTH ? (
+          {trimmedQuery.length < MIN_QUERY_LENGTH ? (
             <p className="px-4 py-6 text-center text-sm text-muted-foreground">
               Type at least {MIN_QUERY_LENGTH} characters to search.
             </p>

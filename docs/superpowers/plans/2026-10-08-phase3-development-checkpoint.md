@@ -19,11 +19,15 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-10-12 (milestone checkpoint -- I3AS Alert-3
-complete, merged into `feature/research-coverage-foundation` (PR #5),
-real-company validated. `master` itself is current as of PR #4
-(Research Coverage Slices 1-4, Phase 3 A-G, I3AS Slice 1/Alert-2);
-Alert-3 is one PR ahead of `master`, pending its own separate merge
+**Last updated:** 2026-10-19 (Nifty 50 open-research public-access gaps
+implemented on `backendtest`, PR #11 into `feature/research-coverage-
+foundation`, **open, not yet merged** -- see that section below for why
+this one PR is not following the usual autonomous-merge cadence. Prior
+milestone checkpoint, 2026-10-12: I3AS Alert-3 complete, merged into
+`feature/research-coverage-foundation` (PR #5), real-company validated.
+`master` itself is current as of PR #7 (Alert-3 + the Wealth Desk
+`investment_case` read API); Continuous Monitoring V1 (PR #8) is one PR
+ahead of `master` on the feature branch, pending its own separate merge
 decision, per the Quality-Gated Autonomous Development Protocol below.)
 
 ---
@@ -601,6 +605,78 @@ Two `MonitoringRun` rows from killed/timed-out attempts were left in
 minor, known gap: nothing yet reconciles a run killed externally back
 to a terminal state. Not fixed in this slice (out of approved scope);
 flagged here for whoever picks up Monitoring V2.
+
+## Nifty 50 Open Research: public access gaps (PR open, not yet merged, 2026-10-19)
+
+Per the owner's approved, corrected "Nifty 50 open research" access proposal
+(audited against this checkpoint and the Registry after an earlier draft
+mistakenly used the stale `feature/investment-operating-system-m1` branch),
+the three genuinely missing code-side capabilities were implemented on
+`backendtest`, extending the existing tiered-access stack exactly --
+`ResearchTier.PUBLIC`, `optional_consumer`, `EntitlementService.
+resolve_optional`, `Company.public_research_status`
+(`NOT_PUBLIC`/`PUBLISHED`), `ResearchAccessPolicy.PUBLIC_SECTIONS` (empty by
+design -- no section is public until a separate, later, explicit decision),
+and a fourth explicit `CompanyPublicSchema` in `ResearchPresenter`'s
+existing Admin/Premium/Free selection. `PUBLIC` cannot be persisted as a
+real `UserEntitlement.tier` -- that column's own `enum_type` only accepts
+`FREE`/`PREMIUM`; `PUBLIC` only ever arises from `resolve_optional(None)`.
+A `PUBLIC`-tier request for an unpublished company 404s, never 403, so an
+anonymous caller is never told unpublished research exists for a company.
+No new router, no second access-control mechanism -- same `research_bp`,
+same `EntitlementService`/`ResearchAccessPolicy`/`ResearchPresenter` stack.
+
+Full regression: **1543 passed, 0 failed** (11:55), after one false-negative
+run (1126 spurious errors) traced to two pytest processes colliding on this
+repo's shared `--basetemp=../.spa-pytest-temp` config when run concurrently
+from two sessions against the same working tree -- not a code defect; a
+coordination mistake this session made and then corrected by giving the
+implementing agent exclusive access to the working tree.
+
+Committed as `34b148f` on new branch `feature/public-research-access`
+(off `feature/research-coverage-foundation`'s tip `061b3b3`). Opened as
+**PR #11**, state **OPEN, not merged** -- per this session's own harness
+guardrail (blocks an agent from merging any PR without a human reviewing
+the diff first, overriding this project's usual Quality-Gated Autonomous
+Development Protocol for routine gates), the merge decision is left to the
+owner. No live-database read or write occurred at any point; the migration
+(`dce47b38cde9_add_company_public_research_status`) was tested only
+against isolated temp SQLite files.
+
+**Still not built** (explicitly out of this task's scope, named in the
+proposal's §4/§5): the Nifty 50 constituents/index-membership model, and
+any real publishable research content -- system-wide, the live database
+still has zero `ResearchRevision`/`ForecastRevision`/`ValuationRevision`/
+`InvestmentCase` rows for any company, Nifty 50 or otherwise (unchanged
+from the Real-Company Investment Brain Acceptance inventory above). Merging
+PR #11 makes the access layer ready; it does not by itself make any real
+company's research public, because none exists yet to publish.
+
+**Merge decision (owner, 2026-10-19):** PR #11 reviewed and approved for
+merge into `feature/research-coverage-foundation` **only** -- merge commit
+`48424ea` (`48424eab671a000686e47ca46c356429d98740e4`). Explicitly withheld
+in the same instruction, unchanged standing position: no merge to `master`,
+no deploy, no live-database migration, and **no company may be marked
+`PUBLISHED` yet** -- the code path exists; the owner has not authorized
+using it on any real company.
+
+**Pre-launch requirements (owner-recorded, 2026-10-19) -- none satisfied
+yet, all block actually setting any company to `PUBLISHED`:**
+1. **Nifty 50 constituent eligibility enforcement** -- publication must be
+   gated on real index membership (the still-unbuilt `IndexConstituent`
+   model, proposal §4), not left to an admin's unchecked discretion to
+   publish any company.
+2. **Explicit review of public response fields and market-data licensing**
+   -- someone must review the `CompanyPublicSchema`/`PUBLIC_SECTIONS`
+   field list against what SPARS is actually licensed to republish
+   (exchange/market-data terms, any third-party-sourced fields) before any
+   section is added to `PUBLIC_SECTIONS` or any company is published.
+3. **Administrator identity and timestamp audit for publication changes**
+   -- no audit trail exists yet for who set `public_research_status` and
+   when; `set_public_research_status` records the status change itself
+   but not (yet) an attributed, queryable history of each change. Needs a
+   deliberate design (likely the same `AlertService`/audit-log shape this
+   codebase already uses elsewhere), not an ad-hoc field.
 
 ## Resume instructions for the next session
 
