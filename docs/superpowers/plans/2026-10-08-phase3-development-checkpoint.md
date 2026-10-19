@@ -25,8 +25,10 @@ and pushed to `feature/spars-smart-search-ui`; not merged to `master`.
 Backend PR #11 (Nifty 50 open-research public-access gaps) merged into
 `feature/research-coverage-foundation` at `48424ea` earlier this session.
 Both repositories confirmed clean at session close; local dev servers
-stopped. Next session: evaluate Plasmic Studio against an isolated
-Verdict Page prototype -- see "Resume instructions" below. Prior
+stopped. Plasmic Studio was evaluated for mouse-based visual editing and
+declined by the owner before any install/implementation -- continuing
+with the existing hand-coded approach (see "Resume instructions" below).
+Prior
 milestone checkpoint, 2026-10-12: I3AS Alert-3 complete, merged into
 `feature/research-coverage-foundation` (PR #5), real-company validated.
 `master` itself is current as of PR #7 (Alert-3 + the Wealth Desk
@@ -749,14 +751,19 @@ isolated backend :5055, the latter against the disposable
 
 ## Resume instructions for the next session
 
-**Immediate next task (owner-directed, 2026-10-19): evaluate Plasmic
-Studio for mouse-based visual editing, against an isolated SPARS Verdict
-Page prototype.** Not started. Read this checkpoint and the Verdict Page
-design-review artifacts from this session first; the real
-`components/spars/VerdictPage.tsx` (now on `feature/spars-smart-search-ui`,
-commit `0354b26`) is the thing to prototype against. Everything below
-this paragraph is earlier-session context, kept for continuity, not the
-next action.
+**Plasmic Studio evaluated and declined (owner-directed, 2026-10-19).**
+Assessment: Plasmic's canvas (mouse-based drag/resize/typography editing)
+only applies to presentational code registered as "code components" --
+it doesn't speak to live data fetching or auth-tier branching, so a
+faithful trial would have required a frozen-fixture fork of the Verdict
+Page sections, a new npm dependency (`@plasmicapp/loader-nextjs`), and a
+Plasmic cloud project. Owner declined before any package install or file
+creation -- continuing with the existing hand-coded approach instead. No
+Plasmic-related files, dependencies, or routes exist anywhere in the
+repo. Do not re-propose this without a new owner request.
+
+Everything below this paragraph is earlier-session context, kept for
+continuity, not the next action.
 
 **Everything through Continuous Monitoring V1 is complete.** `master`
 is current through PR #7 (Alert-3 + the Wealth Desk `investment_case`
