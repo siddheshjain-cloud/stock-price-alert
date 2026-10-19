@@ -19,10 +19,14 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-10-19 (Nifty 50 open-research public-access gaps
-implemented on `backendtest`, PR #11 into `feature/research-coverage-
-foundation`, **open, not yet merged** -- see that section below for why
-this one PR is not following the usual autonomous-merge cadence. Prior
+**Last updated:** 2026-10-19, end of session (SPARS frontend -- Smart
+Search + Verdict Page + auth-aware nav -- complete, committed `0354b26`
+and pushed to `feature/spars-smart-search-ui`; not merged to `master`.
+Backend PR #11 (Nifty 50 open-research public-access gaps) merged into
+`feature/research-coverage-foundation` at `48424ea` earlier this session.
+Both repositories confirmed clean at session close; local dev servers
+stopped. Next session: evaluate Plasmic Studio against an isolated
+Verdict Page prototype -- see "Resume instructions" below. Prior
 milestone checkpoint, 2026-10-12: I3AS Alert-3 complete, merged into
 `feature/research-coverage-foundation` (PR #5), real-company validated.
 `master` itself is current as of PR #7 (Alert-3 + the Wealth Desk
@@ -678,7 +682,81 @@ yet, all block actually setting any company to `PUBLISHED`:**
    deliberate design (likely the same `AlertService`/audit-log shape this
    codebase already uses elsewhere), not an ad-hoc field.
 
+## SPARS Frontend: Smart Search + Verdict Page (complete, committed + pushed, 2026-10-19)
+
+Per the owner's iterative design-review series this session (UI/UX
+direction review -> Nifty 50 open-research correction -> backend
+access-gap implementation (PR #11 above) -> homepage/header/Verdict Page
+frontend implementation -> visual review -> final acceptance), the
+frontend side of the Nifty 50 open-research initiative is implemented and
+shipped to the feature branch:
+
+- Smart Search (`components/spars/CompanySearch.tsx`) no longer gates
+  results behind sign-in -- hits the backend's new anonymous-capable
+  `research_bp` endpoints directly and routes into a new public page.
+- New public Verdict Page (`app/company/[companyId]/page.tsx`,
+  `components/spars/VerdictPage.tsx`): one scrolling page, sticky compact
+  summary bar, plain-language sections (The Case / Why we believe this /
+  The Numbers / Stewardship / Entry zone). `PUBLIC`-tier viewers see real
+  content or an honest "not yet available" state -- never a locked/
+  premium collage. Signed-in FREE/PREMIUM/ADMIN viewers keep the Wealth
+  Desk's existing tiered lock behavior unchanged.
+- Shared `components/spars/SparsHeader.tsx`: homepage logo hidden
+  (internal pages keep it), "Explore Research" plain link (tablet
+  breakpoint up, both auth states), "My Desk" strictly gated on a
+  *resolved* authenticated session (never shown to anonymous, never
+  flickers during the auth-loading state), "Account" a dropdown reusing
+  the existing logout mechanism (Settings / Sign Out) -- not a new auth
+  path. My Desk and the adjacent Sign In/Account control verified
+  pixel-identical at 40px height/radius across 320/390/768/1280px.
+- Mobile layout bug found and fixed during visual review: neither Verdict
+  Page `<Table>` was wrapped in its own scroll container, and the sticky
+  bar's `-mx-4/-mx-6` trick assumed a parent padding that didn't exist --
+  both caused real page-level horizontal overflow at 390px (confirmed via
+  `scrollWidth`/`clientWidth`, not just visually). Fixed; re-verified
+  zero overflow.
+- A build-time-gated "TEST DATA" badge (`process.env.NODE_ENV !==
+  'production'`, statically unreachable in a production build) marks
+  demonstration/seeded research on both the new Verdict Page and,
+  identically, the existing Wealth Desk workspace (`CompanyWorkspace.tsx`)
+  -- no other change to that page's functionality, auth, entitlements, or
+  layout.
+- `lib/research-format.ts` factors out the three formatter helpers
+  `CompanyWorkspace` already had; `researchApi.getCompanyDetail`/
+  `researchStore.fetchCompanyDetail` gained an optional, backward-
+  compatible `silent` path so the routine "not published yet" 404 doesn't
+  surface a raw backend error slug as a toast; `types/research.ts` gained
+  the `'PUBLIC'` tier value.
+
+All of it verified against an isolated, disposable local database
+(`backendtest`'s own `ResearchSeedService` IKIO fixture) -- never the
+live `instance/trading_app.db`, and no company has ever been marked
+`PUBLISHED` anywhere, real or isolated.
+
+**Committed as `0354b26` on `feature/spars-smart-search-ui`, pushed to
+origin.** Not merged into `master`; no PR opened yet (left for the
+owner). The three pre-launch requirements above (constituent enforcement,
+licensing review, publication audit trail) still block ever actually
+setting a real company to `PUBLISHED` -- unchanged, still none satisfied.
+
+**End-of-session state (2026-10-19):** both repositories confirmed
+clean -- frontend `stock-price-alert` at `0354b26` (==
+`origin/feature/spars-smart-search-ui`), backend `backendtest` at
+`48424ea` on `feature/research-coverage-foundation` (== origin), no
+uncommitted changes in either. Local dev servers (frontend :3000,
+isolated backend :5055, the latter against the disposable
+`isolated_dev.db`, never the live file) stopped at session close.
+
 ## Resume instructions for the next session
+
+**Immediate next task (owner-directed, 2026-10-19): evaluate Plasmic
+Studio for mouse-based visual editing, against an isolated SPARS Verdict
+Page prototype.** Not started. Read this checkpoint and the Verdict Page
+design-review artifacts from this session first; the real
+`components/spars/VerdictPage.tsx` (now on `feature/spars-smart-search-ui`,
+commit `0354b26`) is the thing to prototype against. Everything below
+this paragraph is earlier-session context, kept for continuity, not the
+next action.
 
 **Everything through Continuous Monitoring V1 is complete.** `master`
 is current through PR #7 (Alert-3 + the Wealth Desk `investment_case`
