@@ -1111,6 +1111,167 @@ more at once than adding another UNO-Minda-shaped case would. Blockers
 that already exists, just not yet promoted to structured rows) that
 don't depend on blocker 1 and could be picked up independently.
 
+## UNO Minda: closing genuine gaps toward an investment-grade case (2026-10-25)
+
+Per the owner's instruction to complete UNO Minda as the first
+genuinely investment-grade case, three of the prior section's
+blockers were closed with real, cited evidence -- and one was
+deliberately *not* closed, with the reasoning recorded rather than
+papered over. All work below is on the isolated copy only; nothing
+has touched the live database.
+
+**Market-price dependency: data gap closed, judgment gap left open and
+explained.** Fetched UNO Minda's real share price and market cap from
+Tickertape (Rs 1,057.00 / Rs 63,983.37 Cr, as of 23 Oct 2026), cross-
+checked against Zerodha (~Rs 60,750 Cr, same week). Both sources cited
+by URL and date. The isolated copy's `Ticker.last_price`/`last_updated`
+were updated to this real value -- the Wealth Desk header now shows a
+real CMP instead of "No live quote available."
+
+**Deliberately did not** feed this real market cap into the existing
+PE valuation's own `current_market_cap` field, and **deliberately did
+not** compute a new `expected_return_pct`. Reason: that valuation's
+28x multiple is the original analyst's own self-labeled "ILLUSTRATIVE
+PLACEHOLDER, NOT A RESEARCHED NUMBER." Populating `current_market_cap`
+would make the platform auto-compute an expected-return percentage by
+dividing a real number into an admittedly-fabricated one -- producing a
+figure that *looks* like a real conclusion but isn't one. A new,
+superseding `ValuationRevision` (revision 2) was created instead,
+carrying the real market data in its `valuation_notes` as disclosed
+text, with the reasoning above spelled out verbatim, so a future
+analyst has the real number available without the platform silently
+laundering it into a confident-looking return.
+
+**The same reasoning blocks "meaningful scenario valuations."** A real
+BULL/BEAR build requires new financial-modeling judgment (depreciation/
+interest/tax-rate assumptions to turn an EBITDA-margin sensitivity into
+a real PAT figure; real upside/downside catalysts, not just the
+disclosed historical margin band) that isn't already sitting in the
+evidence as a mechanical derivation -- and notably, the existing BASE
+case's FY27E assumption (11.5% EBITDA margin) already sits at the *top*
+of the disclosed 10.6-11.5% historical band, so there isn't even room
+for a "BULL" case built from that band alone. This is exactly the kind
+of investment-consequential judgment this engagement's own architecture
+reserves for human review (see the automated-extraction-plus-human-
+approval clarification, recorded earlier in this document) -- not
+fabricated here, reported as a genuine blocker instead.
+
+**Evidence-backed records populated (mechanical promotion of already-
+written, already-approved evidence -- no new research, no new
+judgment):**
+- `OwnershipSnapshot`: 68.36% promoter holding, as of 2026-08-04, from
+  the real post-amalgamation shareholding fact already in the corpus
+  (extracted_fact `015bc3d4...`). No pledge figure was disclosed in the
+  source, so none was entered.
+- `GovernanceFlag`: the real, auditor-corroborated audit-trail control
+  weakness (FY2026 Annual Report, Consolidated Note 45 / Standalone
+  Note 46 p.474 / Auditor's Report p.355), already the GOVERNANCE
+  gate's own rationale and extracted_fact `fd02097a...` -- promoted
+  into its proper structured table verbatim.
+- Three `InvestmentCaseKillSwitch` rows, one per condition already
+  named in the research revision's own `thesis_invalidation` text
+  (capacity-program slippage, EBITDA margin break, a rating-agency
+  downgrade) -- none triggered.
+
+All three verified end-to-end via the real API response and visually in
+the browser (screenshots taken; Overview, Governance & Ownership, and
+Financials tabs all render the new real data correctly, 0 console
+errors).
+
+**Nine-gate assessment: still 3/9, left alone.** The remaining six
+gates (TRANSFORMATION, EXECUTION, MARKET_CAP_OPPORTUNITY, OPTIONALITY,
+VARIANT_PERCEPTION, KILL_SWITCHES-as-a-gate) were not assessed here, for
+the same reason as the scenario valuations: each requires new analyst
+judgment this session chose not to fabricate.
+
+## Real-vs-demo labeling: migration built, tested, NOT applied to live
+
+The "TEST DATA" badge finding from the prior validation was fixed
+properly rather than left as a UI patch. New `Company.is_demo_data`
+column (`app/models/company.py`), migration `20261020_05` (revises
+`20261020_04`, the current real head), `backendtest` commit pending
+(not yet made -- see below). Non-nullable with `server_default=false`,
+so every existing row is "real" by default with no backfill step
+required for the migration itself to apply cleanly.
+
+- Frontend badge logic (`CompanyWorkspace.tsx`, `VerdictPage.tsx`)
+  changed from a pure `NODE_ENV` check to `company.is_demo_data` --
+  removes the `IS_REVIEW_ENVIRONMENT` constant entirely from both
+  files. `ResearchCompany` type, `CompanySchema`, and `_company_dict`
+  all updated to carry the new field through the API.
+- `ResearchSeedService._get_or_create_company` now sets
+  `is_demo_data = True` on its own fixture at creation time, so future
+  seeding self-identifies correctly going forward.
+- **The real `IKIO Technologies Limited` row already in the live
+  corpus predates this fix and will still read `is_demo_data = False`
+  (the server-default) after the migration applies** -- its
+  `why_selected` text ("the first real-company reference identity...
+  used as the frozen M1 reference case") is itself the evidence that
+  this specific row is the seed fixture, not an independent real
+  analysis. A one-time, one-row backfill (`is_demo_data = True` for
+  that company only) is a reasonable companion to applying the
+  migration, but was not done here -- it's a judgment call about a
+  real production row, left for the owner alongside the migration
+  approval itself, not bundled in as if it were part of the schema
+  change.
+
+**Rehearsed on an isolated copy, both directions:** `flask db upgrade`
+correctly added the column (all existing rows defaulted to `0`/False,
+`PRAGMA integrity_check: ok`); `flask db downgrade 20261020_04` cleanly
+removed it (same integrity check, row count unchanged). Applied for
+real to the UNO Minda validation copy and verified end-to-end: the
+badge now correctly disappears for UNO Minda (real) and would show for
+a company explicitly marked demo.
+
+**Two frozen-contract tests were updated, not routed around** (same
+discipline this engagement has followed throughout -- a frozen-contract
+test failing on a real shape change means update the contract, not the
+test's enforcement): `tests/research/test_company_models.py`'s exact-
+column-set assertion and `tests/security/test_research_data_isolation.py`'s
+`COMPANY_KEYS` frozen shape. Focused suite (company models, IKIO seed,
+research query service, consumer reads, presenter, data-isolation
+security, admin facts -- 162 tests) passes clean. Full regression suite:
+**1585 passed, 0 failed** (264 pre-existing, unrelated deprecation
+warnings), 12m14s.
+
+**Code committed and pushed; the migration itself has NOT been applied
+to live** -- held for explicit approval per this task's own instruction
+("seek approval
+before live migrations or production changes").
+
+## Missing public-research migration: root cause found (read-only)
+
+The prior checkpoint entry flagged that the live database's `company`
+table has no `public_research_status` column despite PR #11 being
+recorded as merged. Root cause, found via `git fetch origin` (read-only
+-- downloads refs/objects only, never touches the working tree or any
+local branch) plus `git merge-base`:
+
+**This local clone's `feature/research-coverage-foundation` branch was
+simply stale** -- PR #11 (`48424ea`) is genuinely merged on GitHub; this
+machine's local copy of that branch had never been fetched since before
+it landed. `git fetch` alone (no checkout, no merge) resolved the local
+staleness and revealed the real, more precise issue:
+
+**`feature/autonomous-research-pipeline` branched from `061b3b3`
+(`feature/research-coverage-foundation`'s tip immediately after PR #10,
+*before* PR #11 merged) and never incorporated PR #11's migration
+afterward.** Confirmed directly: `git merge-base --is-ancestor 48424ea
+feature/autonomous-research-pipeline` returns false. Since the live
+database's actual migration history was driven entirely by
+`feature/autonomous-research-pipeline`'s own lineage, PR #11's schema
+change was simply never in the chain that got applied to the live file
+-- a branch-timing divergence, not a lost or broken migration.
+
+**Remediation is straightforward but not done here:** merging
+`origin/feature/research-coverage-foundation` into
+`feature/autonomous-research-pipeline` (or cherry-picking just the
+`dce47b38cde9` migration) would bring the public-access schema into the
+branch that actually drives the live file -- but that merge, and
+especially applying its migration to live, needs its own explicit
+approval, same as every other live-affecting change in this engagement.
+Not actioned; flagged for the owner's decision.
+
 ## Resume instructions for the next session
 
 **The SPARS Research Brain end-to-end validation (immediately above) is
