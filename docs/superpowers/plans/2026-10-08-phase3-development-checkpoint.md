@@ -987,6 +987,33 @@ authorization question above. Neither requires urgent action -- disk
 growth is bounded going forward even unexecuted, and the pipeline
 itself was not touched.
 
+**Owner decisions recorded (2026-10-24/25, later same engagement):**
+- **Authorization: the pipeline is approved to continue running "under
+  the approved operational boundaries"** -- the owner's own phrase,
+  taken as explicit, standing authorization for `SPARS_PipelineCycle`/
+  `SPARS_Backup`/`SPARS_HealthCheck` to keep operating as already
+  built (idempotent extraction, isolated-copy-rehearsed migrations,
+  verified backups, conservative never-auto-promote staging, real
+  writes to the live database as part of normal operation). This
+  resolves risk 1 above as **authorized going forward**; it is not
+  framed as, and should not be read as, retroactive sign-off on the
+  specific migrations already applied before this authorization existed
+  -- that history is unchanged, only the forward posture is settled.
+  Any *new* schema migration or a genuinely destructive action still
+  needs its own separate approval, same as every other live-database
+  change in this engagement.
+- **No pruning for now.** The owner explicitly declined to run
+  `prune_adhoc_backups.py --execute` at this time -- "preserve all
+  current backups." All 14 `pre-*-backup` files stay. The tool remains
+  built, tested, and available for whenever (if ever) the owner decides
+  otherwise; nothing about this decision is time-bound or needs
+  revisiting on its own.
+- **`backendtest` commit `9d2114b` pushed** to `origin/feature/
+  autonomous-research-pipeline` (previously local-only; this was in
+  fact the *first* push of this branch to GitHub at all -- its full
+  history, including the pipeline-introducing commit `1ca6f08`, is now
+  backed up remotely for the first time as a side effect).
+
 ## Resume instructions for the next session
 
 **Everything through the 2026-10-24 Wealth Desk visual acceptance test
@@ -1044,6 +1071,40 @@ ingestion** -- makes Continuous Monitoring V1 actually operational;
 **(3) complete real-company Investment Brain acceptance** -- validates
 the depth and reliability of SPA's research conclusions. Start with
 (1) unless the owner says otherwise at resume.
+
+**Update (2026-10-25): all three items above now appear resolved --
+discovered via read-only inspection of a cached `backendtest` backup
+copy while scoping "the next milestone," not previously recorded here.**
+- **(1) Wealth Desk UI:** done, see above (`b037ab9`).
+- **(2) Real Google Sheets/Drive ingestion:** superseded by the
+  autonomous extraction pipeline (`feature/autonomous-research-
+  pipeline`, not the originally-planned Monitoring V1 bridge script).
+  `check_pipeline_health.py`'s own OAuth checks and 8 of 9 logged
+  `PipelineCycleRun`s have succeeded against real Drive/Sheets access
+  since 2026-10-19 -- real ingestion is demonstrably working, just via
+  a different mechanism than (2) originally named. (The original
+  wording specifically wanted this verified "from a host other than
+  this dev sandbox" -- that specific framing is not satisfied, since
+  it's the same machine; practically, though, real ingestion is
+  working.)
+- **(3) Real-company Investment Brain acceptance:** **a real
+  `InvestmentCase` for UNO Minda Limited already exists** --
+  `origin=HUMAN_AUTHORED`, `view=HOLD`, `as_of_date=2026-10-19`,
+  created the same day as the autonomous-pipeline commit, citing a
+  real `ResearchRevision` (thesis: mid-teens revenue CAGR FY22-FY26,
+  ~11.5% EBITDA margin, Rs 1,415 Cr capacity expansion, AA+/A1+ ICRA
+  rating reaffirmed 2026-09-14, Minda Onkyo JV consolidation) and real
+  `ForecastRevision`/`ValuationRevision` rows. `expected_return_pct` is
+  honestly `None` ("no real current market price is available... to
+  compare the implied equity value against") -- not fabricated.
+  `extracted_fact` has grown to 70 real rows (UNO Minda 54, IKIO
+  Technologies Limited 16) as of the 2026-10-23 backup inspected.
+  **This item is done, not previously recorded in this checkpoint.**
+
+**This means the owner's three-item list from 2026-10-12 is fully
+resolved, just undocumented here until now -- there is no obvious
+"next" item left on it.** The next milestone is an open question for
+the owner, not something to infer unilaterally from this list.
 
 **Outstanding, owner-level only:**
 - Deciding on I3AS's next scope, if any -- the design proposal's named
