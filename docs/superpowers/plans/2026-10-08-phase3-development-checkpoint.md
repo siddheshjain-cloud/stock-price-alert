@@ -19,15 +19,22 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-10-19, end of session (SPARS frontend -- Smart
-Search + Verdict Page + auth-aware nav -- complete, committed `0354b26`
-and pushed to `feature/spars-smart-search-ui`; not merged to `master`.
-Backend PR #11 (Nifty 50 open-research public-access gaps) merged into
-`feature/research-coverage-foundation` at `48424ea` earlier this session.
-Both repositories confirmed clean at session close; local dev servers
-stopped. Plasmic Studio was evaluated for mouse-based visual editing and
-declined by the owner before any install/implementation -- continuing
-with the existing hand-coded approach (see "Resume instructions" below).
+**Last updated:** 2026-10-24, end of session (Wealth Desk visual
+redesign -- status-color system, score tiles, merged Overview/
+Investment Case, forecast/valuation charts -- visually acceptance-
+tested, two bugs found and fixed (mobile Financials table truncation;
+valuation chart outlier scale), committed `b037ab9` and pushed to
+`feature/spars-smart-search-ui`; not merged to `master`. Separately, a
+read-only safety audit found an **unauthorized-per-standing-policy**
+autonomous extraction pipeline actively writing to the live database on
+a schedule, on the sibling `backendtest` repository's
+`feature/autonomous-research-pipeline` branch -- see "Live-database
+safety audit" below; this is the most important open item in this
+checkpoint. Local dev servers (frontend, isolated backend) left
+running at session close for continued review. Plasmic Studio was
+evaluated for mouse-based visual editing and declined by the owner
+before any install/implementation -- continuing with the existing
+hand-coded approach.
 Prior
 milestone checkpoint, 2026-10-12: I3AS Alert-3 complete, merged into
 `feature/research-coverage-foundation` (PR #5), real-company validated.
@@ -749,7 +756,176 @@ uncommitted changes in either. Local dev servers (frontend :3000,
 isolated backend :5055, the latter against the disposable
 `isolated_dev.db`, never the live file) stopped at session close.
 
+## Wealth Desk visual redesign: acceptance-tested, two bugs fixed (complete, committed + pushed, 2026-10-24)
+
+Per the owner's "SPARS Wealth Desk Visual Acceptance Test" and follow-up
+"Two Final Corrections" instructions, the already-uncommitted
+`CompanyWorkspace.tsx` visual redesign from the prior session (shared
+PASS/WATCH/FAIL status-color system, score tiles, merged Overview +
+Investment Case tab, forecast/valuation bar charts, `AssumptionNote`
+callouts) was visually acceptance-tested end to end, two real bugs were
+found, fixed, and re-verified, and the result was committed.
+
+**Test method:** an isolated, disposable backend (fresh scratch SQLite
+file, never `instance/trading_app.db`) seeded via the existing,
+unmodified `ResearchSeedService` IKIO fixture plus a full
+`InvestmentCase` (nine gate results, two kill switches, BULL/BASE/BEAR
+scenario spread, zero/negative/missing/extreme-outlier valuation
+methods) built entirely through existing service methods, the same
+disposable-fixture pattern Phase 3 Slice G's own tests use. Frontend and
+backend dev servers driven headlessly via Chrome DevTools Protocol,
+using only Node 22's built-in `fetch`/`WebSocket` against the
+already-installed system Chrome -- no packages installed.
+
+**Bug 1 -- mobile Financials table silently truncated data:** the shared
+`Table` primitive's `overflow-x-auto` wrapper never engaged because the
+`<table>` had no minimum width, so narrow viewports compressed columns
+instead of scrolling (the EPS header shrank to "P"; values like 4.9/6
+clipped to 5/1), with zero page-level overflow to signal anything was
+wrong. Fixed by wrapping the forecast table in its own `overflow-x-auto`
+div with `min-w-[640px]`. Verified at 320/390/768/desktop widths,
+light/dark: the internal container now shows a real `scrollWidth >
+clientWidth`, scrolling it to the end renders every header and value
+(including decimals) intact, and page-level horizontal overflow
+measured 0 in every capture.
+
+**Bug 2 -- valuation chart had no outlier handling:** the fixture's own
+pre-existing placeholder PE valuation (9,99,999 Cr implied value against
+a ~900-1,400 Cr range for other methods) stretched the chart's axis so
+far that every other bar became an invisible sliver -- a real
+"misleading chart scale" risk for any company whose data includes a
+stale or extreme figure. Fixed with a documented, deterministic rule
+(`OUTLIER_MEDIAN_MULTIPLE = 5`: a method's implied value is flagged when
+its magnitude is at least 5x the group's median magnitude; sign-
+agnostic, so zero/negative values are never flagged purely for being
+zero or negative; fewer than two real values means no group median, so
+nothing is flagged). A flagged method is excluded only from the chart's
+own axis scale -- its full, unaltered value is still shown in the
+per-method detail list below, badged `OUTLIER -- EXCLUDED FROM CHART
+SCALE` with a note that this is a statistical scale flag, not a
+correctness judgment. The market-cap reference line is preserved and
+now carries an explanatory caption. The rule's logic was verified
+against nine cases (ordinary, extreme-amid-ordinary, zero, negative-
+ordinary, negative-extreme, missing-value, single-value, all-missing,
+all-zero) and separately against real isolated-fixture data covering
+every case.
+
+**Verified:** `tsc --noEmit`, `eslint`, and `next build` all clean; zero
+console errors and zero page-level horizontal overflow across 15 headless
+captures (both pages, both themes, four widths). The public Verdict
+Page, homepage, and authentication were re-confirmed unchanged, including
+a genuinely logged-out anonymous pass (an earlier pass had been
+accidentally still-authenticated due to the test harness reusing Chrome
+cookies/localStorage across captures -- caught and fixed before trusting
+the result). No backend, API, or database changes.
+
+**Committed as `b037ab9` on `feature/spars-smart-search-ui`, pushed to
+origin.** Not merged into `master`; no PR opened (left for the owner).
+
+## Live-database safety audit: unauthorized autonomous pipeline found (2026-10-24, read-only, pipeline not interrupted)
+
+Per the owner's instruction to audit the `pre-*-migration-backup`
+snapshots flagged during the visual acceptance test, a read-only
+investigation (file timestamps, `git log`, `schtasks /query`, log
+tails -- the live `instance/trading_app.db` itself was never opened, not
+even read-only) found this is materially more significant than stray
+backup files.
+
+**Finding:** an autonomous document-extraction pipeline has been writing
+to the live database on a recurring schedule since 2026-10-19, and is
+still active. Three Windows Scheduled Tasks on the `backendtest` host
+(`SPARS_PipelineCycle` every 6h, `SPARS_Backup` daily 02:00,
+`SPARS_HealthCheck` daily 08:00) were registered by commit `1ca6f08`
+("feat(pipeline): add autonomous extraction pipeline, scheduling, and
+backups", 2026-10-19 23:30, `feature/autonomous-research-pipeline`,
+same author as this engagement). `SPARS_PipelineCycle`'s own batch file
+sets `DATABASE_URL` to the live file explicitly and invokes
+`run_extraction_pipeline.py` against it; its log shows 9 completed
+cycles (8 success, 1 transient DNS/OAuth-network failure that
+self-recovered next cycle, no corruption), each scanning ~20-25
+documents. The commit message itself states the new table's migration
+was "rehearsed on an isolated copy before live" and that the pipeline
+was "validated end-to-end against the live database" for two real
+companies -- i.e. this is a direct, self-disclosed admission of live
+writes, not an inference.
+
+**This conflicts with this checkpoint's own standing constraint**
+("Never modify or migrate the live database without a separate,
+explicit authorization") **and no record of that separate authorization
+was found in either repository.** The owner has since confirmed
+(2026-10-24): autonomous extraction was a planned direction, but
+explicit authorization specifically for *live-database migrations* was
+never established -- this audit's finding stands as accurate.
+
+**Material risks identified, in priority order:**
+1. **No established authorization for live-database writes** -- the
+   core finding above; every other risk compounds this one.
+2. **No rollback plan.** Real migrations (an `extracted_fact.scope`
+   column + backfill, identity-attribution fixes, the new
+   `pipeline_cycle_run` table, LLM-usage tracking) have already been
+   applied sequentially to the live file; a clean single-step revert no
+   longer exists. Only forward-fix or restoring a backup (with data loss
+   back to that point) are realistically available, and this gets harder
+   the longer the pipeline keeps running.
+3. **Unbounded disk growth.** The properly-engineered `scheduled-backup`
+   family (via `scripts/backup_live_database.py`: online backup API +
+   integrity check + row-count verification) is correctly bounded by its
+   own `--keep 14` retention. The separate, ad-hoc `pre-*-backup` family
+   -- one taken by hand before each live-affecting change, matching no
+   script anywhere in the repository -- has **no retention policy at
+   all**: already 14 files / 260 MB (of 391 MB total in `instance/`) from
+   roughly two days of work, and will grow without bound for as long as
+   that habit continues.
+4. **No failure escalation.** `check_pipeline_health.py` checks OAuth
+   token validity, pipeline recency, and backup recency, but only
+   appends to a local log file -- it does not reuse the project's own
+   `AlertService` (as Monitoring V1 already does for exactly this kind
+   of failure). A silently stalled or broken pipeline would not surface
+   to anyone without someone manually reading the log.
+
+**Mitigating factors, for balance:** the pipeline's own design is
+otherwise careful -- idempotent extraction, isolated-copy rehearsal
+before each live migration, verified backups, and (per its own commit
+message) conservative "never auto-promote" staging that keeps a human
+in the loop for anything investment-consequential. The one real failure
+observed was a transient network issue, not data corruption. Task
+Scheduler's "Interactive only" logon mode means it has in practice fired
+far less often than its 6-hourly schedule implies (9 logged cycles over
+~5 days, not ~20), which has limited exposure so far but also means its
+actual cadence is less predictable than "every 6 hours."
+
+**Recommended corrections (not yet actioned -- owner decision needed):**
+1. Record the owner's authorization decision for this pipeline's live-
+   database access explicitly, here or in `backendtest`'s own
+   checkpoint trail, so it stops being an undocumented gap either way.
+2. Bring the `pre-*-backup` family under the same retention discipline
+   as `scheduled-backup` (reuse `backup_live_database.py` for pre-change
+   backups too, or add an equivalent prune rule) before disk usage grows
+   further.
+3. Wire `check_pipeline_health.py`'s failure cases into `AlertService`
+   so a stalled or broken pipeline reaches an admin, not just a log file.
+4. Decide and record a rollback story now, while the live delta from
+   `20261007_05` is still small, rather than after more migrations
+   accumulate.
+
+**Per explicit instruction, the pipeline was not interrupted and the
+live database was not modified or opened by this audit** -- findings
+only; no corrective action taken.
+
 ## Resume instructions for the next session
+
+**Everything through the 2026-10-24 Wealth Desk visual acceptance test
+is complete** -- see the two sections immediately above. `b037ab9` is
+pushed to `feature/spars-smart-search-ui`; not merged, no PR opened.
+
+**The single most important open item is the live-database safety audit
+above.** The owner has confirmed the authorization gap it found is real
+(autonomous extraction was planned, but explicit authorization for live
+migrations specifically was never established). None of the four
+recommended corrections there have been actioned yet -- a future session
+should re-read that section in full before doing anything with
+`backendtest`'s `feature/autonomous-research-pipeline` branch or its
+scheduled tasks, and should not assume silence means it was resolved.
 
 **Plasmic Studio evaluated and declined (owner-directed, 2026-10-19).**
 Assessment: Plasmic's canvas (mouse-based drag/resize/typography editing)
