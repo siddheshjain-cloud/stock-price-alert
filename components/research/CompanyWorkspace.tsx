@@ -440,6 +440,9 @@ function OverviewTab({
               <CardDescription>As of {fmtDate(ic.as_of_date)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Near-term (nearest forward fiscal year)
+              </div>
               <div className="flex flex-wrap gap-6">
                 <div>
                   <div className="text-xs text-muted-foreground">Expected return</div>
@@ -462,7 +465,7 @@ function OverviewTab({
                   </>
                 )}
               </div>
-              {ic.expected_return_basis && !ic.expected_return_pct && (
+              {ic.expected_return_basis && (
                 <AssumptionNote>{ic.expected_return_basis}</AssumptionNote>
               )}
               {ic.scenario_return_spread && (
@@ -476,6 +479,49 @@ function OverviewTab({
                     </div>
                   ))}
                 </div>
+              )}
+
+              {ic.long_term_scenario_spread && (
+                <>
+                  <Separator />
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Long-term (FY2030E, annualized)
+                  </div>
+                  <AssumptionNote>
+                    Each scenario&apos;s justified multiple is held CONSTANT from the near-term
+                    valuation out to FY2030E -- not a prediction that market multiples stay static
+                    that far out, but a disclosed simplification isolating the return contribution
+                    of earnings growth alone. Annualized (CAGR) over the real elapsed time to
+                    FY2030&apos;s fiscal year-end -- unlike the near-term figure above, which is
+                    well under a year out and deliberately left un-annualized.
+                  </AssumptionNote>
+                  <div className="grid gap-2 sm:grid-cols-3 pt-1">
+                    {Object.entries(ic.long_term_scenario_spread.scenarios).map(([scenario, entry]) => (
+                      <div key={scenario} className="rounded-lg border p-3">
+                        <div className="text-xs font-medium text-muted-foreground">
+                          {scenario} CAGR
+                        </div>
+                        <div
+                          className={cn(
+                            'text-sm font-semibold',
+                            entry && entry.cagr_pct && Number(entry.cagr_pct) >= 0
+                              ? 'text-emerald-600'
+                              : entry && entry.cagr_pct
+                                ? 'text-red-600'
+                                : undefined
+                          )}
+                        >
+                          {entry ? fmtPct(entry.cagr_pct) : 'Not computable yet'}
+                        </div>
+                        {entry && (
+                          <div className="text-[11px] text-muted-foreground">
+                            {entry.horizon_years} yrs to FY{entry.fiscal_year}E
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

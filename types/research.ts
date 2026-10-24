@@ -179,6 +179,19 @@ export interface ScenarioReturnSpread {
   downside_pct: string | null;
 }
 
+export interface LongTermScenarioEntry {
+  fiscal_year: number | null;
+  implied_future_equity_value: string | null;
+  current_market_cap: string | null;
+  justified_multiple_held_constant: string | null;
+  cagr_pct: string | null;
+  horizon_years: string | null;
+}
+
+export interface LongTermScenarioSpread {
+  scenarios: Record<string, LongTermScenarioEntry | null>;
+}
+
 export interface InvestmentCase {
   view: string;
   revision_number: number;
@@ -190,6 +203,7 @@ export interface InvestmentCase {
   gate_results: InvestmentCaseGateResult[];
   kill_switches: InvestmentCaseKillSwitch[];
   scenario_return_spread: ScenarioReturnSpread | null;
+  long_term_scenario_spread: LongTermScenarioSpread | null;
 }
 
 // The full company-detail response. Every premium-only field is optional
