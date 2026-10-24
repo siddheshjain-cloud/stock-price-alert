@@ -965,7 +965,17 @@ function ManagementTab({
   if (lock) {
     return <EmptyState title="Management" locked requiredTier={lock.required_tier} />;
   }
-  if (!detail.management) {
+  // Same "present but nothing actually recorded" treatment GovernanceTab
+  // already gives its own status/flags pair -- an UNASSESSED quality with
+  // no summary/rationale/evidence is functionally no record, not content,
+  // and previously rendered as a near-blank card instead of this EmptyState.
+  if (
+    !detail.management ||
+    (detail.management.quality === 'UNASSESSED' &&
+      !detail.management.summary &&
+      !detail.management.rationale &&
+      !detail.management.evidence)
+  ) {
     return <EmptyState title="Management" />;
   }
   const m = detail.management;

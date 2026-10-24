@@ -88,9 +88,16 @@ function VerdictPageContent({ detail }: { detail: CompanyDetail }) {
   const isPublicViewer = access.tier === 'PUBLIC';
   const locked = access.locked_sections;
 
+  // An UNASSESSED quality with no summary is functionally no record, not
+  // content -- same treatment the governance clause below already gives
+  // a present-but-empty governance object.
+  const hasManagementContent =
+    !!detail.management &&
+    (detail.management.quality !== 'UNASSESSED' || !!detail.management.summary);
+
   const stewardshipHasData =
     !!detail.ownership ||
-    !!detail.management ||
+    hasManagementContent ||
     (!!detail.governance &&
       (detail.governance.status !== null || detail.governance.flags.length > 0));
 
@@ -192,6 +199,7 @@ function VerdictPageContent({ detail }: { detail: CompanyDetail }) {
             governance={detail.governance}
             ownership={detail.ownership}
             management={detail.management}
+            hasManagementContent={hasManagementContent}
           />
         </Section>
 
@@ -503,14 +511,16 @@ function Stewardship({
   governance,
   ownership,
   management,
+  hasManagementContent,
 }: {
   governance: CompanyDetail['governance'];
   ownership: CompanyDetail['ownership'];
   management: CompanyDetail['management'];
+  hasManagementContent: boolean;
 }) {
   return (
     <div className="space-y-4">
-      {management && (
+      {hasManagementContent && management && (
         <div>
           <div className="mb-1 flex items-center justify-between">
             <h4 className="text-sm font-semibold">Management quality</h4>
