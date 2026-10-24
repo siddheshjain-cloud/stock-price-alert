@@ -1272,16 +1272,105 @@ especially applying its migration to live, needs its own explicit
 approval, same as every other live-affecting change in this engagement.
 Not actioned; flagged for the owner's decision.
 
+## UNO Minda: investment-grade case completed (2026-10-25)
+
+Per the owner's explicit instruction that UNO Minda's remaining work was
+"investment research, not data plumbing," the six previously-unassessed
+gates and real scenario valuations/expected returns were completed --
+on the isolated copy only, nothing applied to live. Script:
+`backendtest` `scripts/one_time/20261025_uno_minda_complete_investment_
+case.py`, commit `e3793ba`, pushed.
+
+**Real peer valuation data, fetched and cited (2026-10-25):** UNO
+Minda's price (Rs 1,057.00) independently confirmed by two sources
+(Tickertape and Screener.in, both Oct 23, 2026 close). Market cap Rs
+61,038 Cr (Screener.in, primary, same date as price); cross-checks
+Tickertape Rs 63,983.37 Cr and Zerodha ~Rs 60,750 Cr disclosed as real
+source variance, not averaged away. UNO Minda's own real trailing P/E:
+49.9x. Peer trailing P/E independently verified via direct source
+fetch: Endurance Technologies 32.0x, Minda Corporation 35.6x. Three
+more peers (Sundram Fasteners ~36.1x, Samvardhana Motherson ~36.3x,
+Suprajit Engineering ~33.6x) are search-sourced only and explicitly
+flagged lower-confidence, not re-verified by direct fetch.
+
+**BULL/BASE/BEAR, every judgment labeled ANALYST ASSUMPTION, every
+anchor a disclosed fact:**
+- **BASE** (unchanged, already the original analyst's real forecast):
+  FY27E revenue Rs 22,607 Cr, EBITDA margin 11.5% (disclosed top of
+  CFO guidance), PAT Rs 1,424 Cr. Justified multiple 33x (peer
+  average). Implied value Rs 46,992 Cr.
+- **BULL** (new): revenue growth assumption of +20% YoY -- a
+  deliberately partial step toward, not equal to, two real reference
+  points (the 5-year revenue CAGR of ~24% and the real Q1 FY27 YoY
+  growth of +25.7%, computed from disclosed segment data). Margin held
+  at the same 11.5% as BASE -- no expansion beyond management's own
+  guidance ceiling assumed. Justified multiple 36x (top of the
+  verified peer range). Implied value Rs 53,496 Cr.
+- **BEAR** (new): revenue growth assumption of +10% YoY, grounded in
+  the CFO's own disclosed Q1 FY27 call quote (Rs 2,000 Cr of the Rs
+  3,788 Cr capex pipeline still to be spent over 18-24 months) and the
+  unresolved China-side Inovance JV delay. Margin at 10.5% -- the real
+  disclosed LOWER bound of management's own guidance band, not a
+  number below what management itself guided to. Justified multiple
+  28x (below the full peer range, reflecting the disclosed governance/
+  audit-trail risk). Implied value Rs 34,832 Cr.
+- PAT in all three scenarios uses BASE's own implied PAT/EBITDA
+  conversion ratio (54.8%), reused for methodological consistency
+  rather than inventing a fresh D&A/interest/tax assumption per
+  scenario.
+
+**Computed, honest result -- not tuned to look favorable:** BASE
+-23.0%, BULL -12.4%, BEAR -42.9% expected return vs the real market
+cap. **Every scenario, including BULL, is negative.** UNO Minda's own
+real trailing P/E (49.9x) already exceeds even the BULL case's
+peer-top multiple (36x) -- a genuine, evidence-grounded variant-
+perception finding (now its own PASSing gate: the market may be
+pricing a growth premium this peer-grounded framework doesn't fully
+support), consistent with and a quantified explanation for the
+existing HOLD view, which was not changed.
+
+**Nine-gate assessment now complete: 5 PASS, 4 WATCH, 0 FAIL.** New:
+EXECUTION (PASS, real capex-pipeline progress + CFO's own quote),
+TRANSFORMATION (WATCH, real but early-stage Green Mobility mix-shift),
+OPTIONALITY (WATCH, the real but unrealized Inovance JV), VARIANT_
+PERCEPTION (PASS, the peer-vs-own-multiple finding above), MARKET_CAP_
+OPPORTUNITY (WATCH, not FAIL -- real computed downside in all three
+scenarios, tempered by real uncertainty in multiple/peer selection),
+KILL_SWITCHES (PASS, the three real triggers promoted in the prior
+session, now carried onto this new case revision). Each new gate cites
+exactly one real extracted_fact id, same provenance discipline as the
+three pre-existing gates.
+
+**Mechanical note for future work on this case:** `InvestmentCaseGate
+Result.supersedes_gate_result_id` only chains within one `investment_
+case_id` -- it does not link across `InvestmentCase` revisions. The new
+case (revision 2) re-records all nine gates and all three kill switches
+as fresh entries rather than formally chaining to their revision-1
+predecessors; this is a schema/mechanics note, not a data-quality gap.
+
+**Verified end-to-end:** real API response (9 gate_results, 3 kill_
+switches, real `expected_return_pct`, real `scenario_return_spread`)
+and visually in the browser -- the Overview tab's score tiles, nine-
+gate grid, and BASE/BEAR/BULL tiles all render the real computed
+figures correctly, 0 console errors. **Not applied to live, not a code
+change** -- data only, via existing unmodified service methods.
+
 ## Resume instructions for the next session
 
-**The SPARS Research Brain end-to-end validation (immediately above) is
-the most current work.** Two small Management-tab fixes committed as
+**UNO Minda is now a complete, real, evidence-grounded investment case
+on the isolated copy** (see immediately above) -- the next decision is
+the owner's: whether/how to apply any of this session's work (the
+`is_demo_data` migration, the evidence promotions, the completed
+investment case) to the live database, and whether to expand coverage
+to another real company using the same now-proven methodology.
+
+**The SPARS Research Brain end-to-end validation (further above) is
+otherwise still current.** Two small Management-tab fixes committed as
 `4b59861` on `feature/spars-smart-search-ui` -- **local only, not yet
 pushed** (the owner's instruction that produced them didn't ask for a
-push; ask or push on request). Seven genuine, prioritized blockers are
-recorded there, topped by "no real market price feed" -- read that
-section before deciding whether/how to expand company coverage or close
-any of those blockers.
+push; ask or push on request). The original seven blockers from that
+section are now mostly closed by the work above; re-read both sections
+together before deciding what's still genuinely open.
 
 **Pipeline: authorized to continue; three of four safety risks fixed.**
 The owner has explicitly authorized `SPARS_PipelineCycle`/`SPARS_Backup`/
