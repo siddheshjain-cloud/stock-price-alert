@@ -1014,26 +1014,132 @@ itself was not touched.
   history, including the pipeline-introducing commit `1ca6f08`, is now
   backed up remotely for the first time as a side effect).
 
+## SPARS Research Brain end-to-end validation: UNO Minda (complete, 2026-10-25)
+
+Per the owner's "next milestone" instruction, the full research ->
+forecast -> valuation -> investment-case -> Wealth Desk pipeline was
+validated end to end against the real, already-existing UNO Minda
+`InvestmentCase` discovered in the prior reconciliation. Method: a
+fresh copy of the newest `scheduled-backup` snapshot, isolated backend
++ frontend driven against it exactly as in the earlier visual
+acceptance tests -- never the live file. A known test password was set
+on the real `spa-bridge@local.test` admin account **within the isolated
+copy only**, to log in and render the Wealth Desk exactly as that real
+identity would see it.
+
+**Result: the software path is sound.** `GET /research/companies/
+{uno_minda_id}` returned 200 with no errors; all five Wealth Desk tabs
+(Overview, Financials, Governance & Ownership, Management, Market Plan)
+rendered the real, sparse data correctly across desktop/320/390/768px
+and light/dark (13 captures, 0 console errors, 0 page-level overflow).
+Every "record doesn't exist yet" case (zero kill switches, zero
+governance flags, no ownership snapshot, no market plan, a single-
+scenario forecast/valuation, `expected_return_pct: null`) rendered as
+an honest empty/not-computed state, never a crash or a fabricated
+number -- including through the new outlier-handling and scrollable-
+table code from the prior fix, both exercised here for the first time
+against real (not fixture) data.
+
+**Two small, real UI bugs found and fixed (see `4b59861`, local only,
+not pushed yet):** the Management tab/section (`CompanyWorkspace.tsx`
+and `VerdictPage.tsx`) rendered a near-blank card for a management
+record that exists but carries no real content (`quality=UNASSESSED`,
+no summary) -- UNO Minda's real data hit exactly this case. Governance
+already special-cased the equivalent "present but empty" shape;
+Management now does too, in both files.
+
+**One UI finding, not fixed (needs a schema decision, so flagged
+rather than actioned):** the "TEST DATA" badge is a pure
+`NODE_ENV !== 'production'` check with no way to distinguish genuinely-
+real research (like this UNO Minda case) from seeded/demo data -- it
+showed on UNO Minda's real analysis throughout this validation. A real
+fix needs a new field to actually track real-vs-demo, which is a
+migration -- held for the owner rather than done unilaterally here.
+
+**One structural finding, separate from UNO Minda specifically:** this
+live-database snapshot's `company` table has no `public_research_status`
+column at all -- the Nifty-50 public-access migration (PR #11,
+`48424ea`) was never actually applied to the live file, despite being
+recorded as merged into `feature/research-coverage-foundation`. The
+live file's real migration lineage currently descends from
+`feature/autonomous-research-pipeline` instead, which doesn't include
+it. Worth the owner's attention before ever relying on the public-
+access feature being live-ready; not investigated further here as out
+of this milestone's scope.
+
+**Genuine remaining blockers, in priority order (report requested
+before any company-coverage expansion):**
+1. **No real market price feed -- the root blocker.** `ticker.
+   last_price = 0.0` for UNO Minda. This alone is why `current_market_
+   cap`, `expected_return_pct`, and the BULL/BEAR scenario spread can
+   never be computed, and why the one valuation conclusion that exists
+   is an explicitly self-labeled "ILLUSTRATIVE PLACEHOLDER" 28x P/E
+   multiple, not real research (the analyst's own words, preserved
+   verbatim in `valuation_notes`). This blocker is universal, not
+   UNO-Minda-specific -- it would reproduce identically for any next
+   company, so expanding coverage would not get further past it.
+2. **Nine-gate assessment is 3/9 complete** (FINANCIAL_VALIDATION,
+   INSTITUTIONAL_ADVANTAGE, GOVERNANCE). TRANSFORMATION, EXECUTION,
+   MARKET_CAP_OPPORTUNITY, OPTIONALITY, VARIANT_PERCEPTION, and
+   KILL_SWITCHES have never been assessed for this real case.
+3. **Zero kill switches are formalized**, despite the research
+   revision's own `thesis_invalidation` text already naming three
+   specific, well-written trigger conditions in prose (capacity-program
+   slippage, EBITDA margin break, a rating-agency downgrade). This is
+   the cheapest blocker to close -- it needs no new research, only
+   promoting prose already written into `InvestmentCaseKillSwitch` rows.
+4. **No `GovernanceFlag` row exists**, despite the GOVERNANCE gate's own
+   rationale describing a specific, real, FY2026-Annual-Report-disclosed
+   audit-trail control weakness. Same prose-not-promoted-to-structured-
+   data gap as #3.
+5. **No `OwnershipSnapshot` exists**, despite the real promoter-holding
+   split (68.36%/31.64%) already present as an `extracted_fact`. Same
+   gap pattern again.
+6. **No `CycleAssessment` is cited** on the `InvestmentCase`
+   (`cycle_assessment_id: null`) -- the Phase 3 Slice C world-layer
+   cycle/macro lens was never linked to this real case, despite UNO
+   Minda's plausible auto-sector cyclicality exposure.
+7. **No `MarketPlanRevision` exists** -- no real accumulation range/
+   entry zone, consistent with #1 (an entry zone isn't meaningful
+   without a trustworthy valuation first).
+
+**Recommendation:** do not expand company coverage yet. Blocker 1 is
+foundational and would block every future company identically; closing
+it (a real market-data source, even a manually-updated one) unblocks
+more at once than adding another UNO-Minda-shaped case would. Blockers
+3-5 are comparatively cheap, real-evidence-grounded follow-ups (prose
+that already exists, just not yet promoted to structured rows) that
+don't depend on blocker 1 and could be picked up independently.
+
 ## Resume instructions for the next session
 
-**Everything through the 2026-10-24 Wealth Desk visual acceptance test
-is complete** -- see the two sections immediately above. `b037ab9` is
-pushed to `feature/spars-smart-search-ui`; not merged, no PR opened.
+**The SPARS Research Brain end-to-end validation (immediately above) is
+the most current work.** Two small Management-tab fixes committed as
+`4b59861` on `feature/spars-smart-search-ui` -- **local only, not yet
+pushed** (the owner's instruction that produced them didn't ask for a
+push; ask or push on request). Seven genuine, prioritized blockers are
+recorded there, topped by "no real market price feed" -- read that
+section before deciding whether/how to expand company coverage or close
+any of those blockers.
 
-**Three of the four live-database safety risks are fixed; the
-authorization question is not.** See "Pipeline safety corrections
-applied" above (`backendtest` commit `9d2114b`, local only, not
-pushed): failure escalation is live, the rollback runbook exists,
-disk-growth tooling exists and was deliberately left un-executed. The
-owner has confirmed the authorization gap itself is real (autonomous
-extraction was planned, but explicit authorization for live migrations
-specifically was never established) -- that confirmation is not itself
-an authorization, forward or retroactive. A future session should not
-assume this is resolved, should not run `prune_adhoc_backups.py
---execute` without a fresh decision on `--keep`, and should re-read
-both safety sections in full before doing anything further with
-`backendtest`'s `feature/autonomous-research-pipeline` branch or its
-scheduled tasks.
+**Pipeline: authorized to continue; three of four safety risks fixed.**
+The owner has explicitly authorized `SPARS_PipelineCycle`/`SPARS_Backup`/
+`SPARS_HealthCheck` to keep running "under the approved operational
+boundaries" (2026-10-25) -- this is a forward-looking authorization, not
+retroactive sign-off on migrations already applied before it. Failure
+escalation is live, the rollback runbook exists, and disk-growth tooling
+exists but stays un-executed by explicit owner instruction ("preserve
+all current backups; no pruning for now" -- not time-bound, no need to
+revisit on its own). `backendtest` commit `9d2114b` is **pushed** to
+`origin/feature/autonomous-research-pipeline` (also that branch's first
+push ever -- its full history is now backed up on GitHub). A future
+session should not run `prune_adhoc_backups.py --execute` without a
+fresh owner decision, and should re-read the safety sections in full
+before doing anything further with that branch or its scheduled tasks.
+
+**Everything through the 2026-10-24 Wealth Desk visual acceptance test
+is complete** -- `b037ab9` is pushed to `feature/spars-smart-search-ui`;
+not merged, no PR opened.
 
 **Plasmic Studio evaluated and declined (owner-directed, 2026-10-19).**
 Assessment: Plasmic's canvas (mouse-based drag/resize/typography editing)
