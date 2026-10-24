@@ -19,7 +19,11 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-10-24, end of session. Two threads this session:
+**Last updated:** 2026-10-25. **UNO Minda is now CLOSED as a complete,
+reconciled investment case** -- see "UNO Minda MILESTONE CLOSED" far
+below for the final state; that section supersedes the UNO-Minda-
+related framing in the three bullets immediately below, which are kept
+for the session's early chronology. Three threads altogether:
 
 1. **Wealth Desk visual redesign** -- status-color system, score tiles,
    merged Overview/Investment Case, forecast/valuation charts --
@@ -1406,15 +1410,69 @@ errors, 0 page-level overflow throughout. The Financials tab's forecast
 chart now shows four real fiscal years (FY2027E-FY2030E) per scenario
 instead of one.
 
+## UNO Minda MILESTONE CLOSED (2026-10-25): both horizons reconciled and shown in Wealth Desk
+
+Per the owner's final instruction, the last open item -- the near-term
+(FY27E) expected return being reported without the long-term (FY30E)
+scenario data it now sits alongside -- was fixed, not explained away.
+`backendtest` `2d8b38f` + `stock-price-alert` `4fa250e`, both pushed.
+
+**New `long_term_scenario_spread`**, computed read-side
+(`research_query_service._long_term_scenario_spread`, no schema change):
+each scenario's own justified multiple held CONSTANT from the near-term
+valuation to FY2030E (explicitly disclosed as a simplification, not a
+market-multiple prediction), applied to the FY2030 forecast line's PAT,
+annualized against today's real market cap over the real elapsed time
+(3.43 years) to FY2030's fiscal year-end. The existing near-term
+`expected_return_pct`/`scenario_return_spread` is deliberately left
+un-annualized (sub-year horizon; annualizing it would be nonsensical)
+-- two different, correctly-labeled metrics, not one number doing two
+jobs.
+
+**Result, both horizons, UNO Minda:**
+
+| Scenario | Near-term (FY27E, un-annualized) | Long-term (FY2030E CAGR, 3.43 yrs) |
+|---|---|---|
+| BASE | -25.35% | +2.18% |
+| BULL | -12.36% | +9.54% |
+| BEAR | -42.93% | -9.18% |
+
+A genuinely informative, non-obvious result: near-term, every scenario
+is negative (the market's current price already exceeds even the BULL
+case's peer-grounded fair value). Long-term, BASE and BULL turn
+positive -- multi-year real earnings growth, compounded against a
+constant multiple, can outrun an expensive entry price, while BEAR
+stays negative even over the long run. Both figures are real and
+consistent; presenting both side by side, correctly labeled, resolves
+what looked like an inconsistency but was actually two valid, distinct
+metrics with only one previously visible.
+
+**Verified:** targeted backend suite (85 tests: investment_case
+service, research query service, consumer reads, data isolation,
+presenter) passes; full suite collects cleanly (1585 tests). Frontend
+`tsc`/`eslint` clean. Confirmed visually against the real, isolated UNO
+Minda case -- light, dark, desktop, mobile -- 0 console errors, 0
+overflow throughout. Both sections now visible in the Wealth Desk
+Overview tab, each with its own methodology disclosure, matching the
+project's standing anti-fabrication discipline throughout.
+
+**Milestone status: UNO Minda is closed as a complete, reconciled,
+forward-consistent, FY30-extended, both-horizons-shown investment case
+on the isolated copy.** Everything in this and the three sections above
+it (market-cap reconciliation, forward-consistency fix, FY30 extension,
+nine-gate completion, evidence promotion) passed verification at every
+step; nothing failed or was left inconsistent. Not applied to live, no
+migration, no deployment, per the owner's standing instruction
+throughout this entire milestone.
+
 ## Resume instructions for the next session
 
-**UNO Minda is now a complete, reconciled, forward-consistent, FY30-
-extended investment case on the isolated copy** (see the two sections
-immediately above) -- the next decision is the owner's: whether/how to
-apply any of this work (the `is_demo_data` migration, the evidence
-promotions, the completed and now-finalized investment case) to the
-live database, and whether to expand coverage to another real company
-using the same now-proven methodology.
+**UNO Minda is closed** (see the milestone-close section immediately
+above) -- the next decision is the owner's: whether/how to apply any of
+this work (the `is_demo_data` migration, the evidence promotions, the
+completed and finalized investment case) to the live database, and
+whether to expand coverage to another real company using the same
+now-proven, now-complete methodology.
 
 **The SPARS Research Brain end-to-end validation (further above) is
 otherwise still current.** Two small Management-tab fixes committed as
