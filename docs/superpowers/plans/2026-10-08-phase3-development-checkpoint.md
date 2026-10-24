@@ -19,22 +19,31 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-10-24, end of session (Wealth Desk visual
-redesign -- status-color system, score tiles, merged Overview/
-Investment Case, forecast/valuation charts -- visually acceptance-
-tested, two bugs found and fixed (mobile Financials table truncation;
-valuation chart outlier scale), committed `b037ab9` and pushed to
-`feature/spars-smart-search-ui`; not merged to `master`. Separately, a
-read-only safety audit found an **unauthorized-per-standing-policy**
-autonomous extraction pipeline actively writing to the live database on
-a schedule, on the sibling `backendtest` repository's
-`feature/autonomous-research-pipeline` branch -- see "Live-database
-safety audit" below; this is the most important open item in this
-checkpoint. Local dev servers (frontend, isolated backend) left
-running at session close for continued review. Plasmic Studio was
-evaluated for mouse-based visual editing and declined by the owner
-before any install/implementation -- continuing with the existing
-hand-coded approach.
+**Last updated:** 2026-10-24, end of session. Two threads this session:
+
+1. **Wealth Desk visual redesign** -- status-color system, score tiles,
+   merged Overview/Investment Case, forecast/valuation charts --
+   visually acceptance-tested, two bugs found and fixed (mobile
+   Financials table truncation; valuation chart outlier scale),
+   committed `b037ab9` and pushed to `feature/spars-smart-search-ui`;
+   not merged to `master`.
+2. **Live-database safety.** A read-only audit found an
+   **unauthorized-per-standing-policy** autonomous extraction pipeline
+   actively writing to the live database on a schedule, on the sibling
+   `backendtest` repository's `feature/autonomous-research-pipeline`
+   branch. Owner confirmed the authorization gap is real. Three of the
+   four identified risks were then fixed (failure escalation now live;
+   a rollback runbook added; disk-growth tooling built but deliberately
+   not executed), committed `9d2114b` on that branch (local only, not
+   pushed). **The authorization question itself remains open** -- see
+   "Pipeline safety corrections applied" below; this is still the most
+   important open item in this checkpoint.
+
+Local dev servers (frontend, isolated backend) left running at session
+close for continued review. Plasmic Studio was evaluated for
+mouse-based visual editing and declined by the owner before any
+install/implementation -- continuing with the existing hand-coded
+approach.
 Prior
 milestone checkpoint, 2026-10-12: I3AS Alert-3 complete, merged into
 `feature/research-coverage-foundation` (PR #5), real-company validated.
@@ -894,23 +903,89 @@ far less often than its 6-hourly schedule implies (9 logged cycles over
 ~5 days, not ~20), which has limited exposure so far but also means its
 actual cadence is less predictable than "every 6 hours."
 
-**Recommended corrections (not yet actioned -- owner decision needed):**
-1. Record the owner's authorization decision for this pipeline's live-
-   database access explicitly, here or in `backendtest`'s own
-   checkpoint trail, so it stops being an undocumented gap either way.
-2. Bring the `pre-*-backup` family under the same retention discipline
-   as `scheduled-backup` (reuse `backup_live_database.py` for pre-change
-   backups too, or add an equivalent prune rule) before disk usage grows
-   further.
-3. Wire `check_pipeline_health.py`'s failure cases into `AlertService`
-   so a stalled or broken pipeline reaches an admin, not just a log file.
-4. Decide and record a rollback story now, while the live delta from
-   `20261007_05` is still small, rather than after more migrations
-   accumulate.
+**Recommended corrections (status as of 2026-10-24, same session --
+see "Pipeline safety corrections applied" below):**
+1. **Still open, owner decision needed.** Record the owner's
+   authorization decision for this pipeline's live-database access
+   explicitly. The owner has confirmed the gap itself is real
+   (autonomous extraction was planned, but explicit authorization for
+   live migrations specifically was never established) -- that is not
+   the same as having now granted it; no retroactive or go-forward
+   authorization has been recorded.
+2. **Tooling built and tested, not yet enabled.** See below.
+3. **Fixed and deployed.** See below.
+4. **Documented.** See below.
 
 **Per explicit instruction, the pipeline was not interrupted and the
 live database was not modified or opened by this audit** -- findings
-only; no corrective action taken.
+only; no corrective action taken in the audit itself (corrections were
+made in a later, separate pass -- see immediately below).
+
+## Pipeline safety corrections applied (2026-10-24, same day as the audit)
+
+Per the owner's follow-up instruction to fix the identified risks
+"without disrupting existing operations or risking live data," three of
+the four risks above were addressed on `backendtest`, committed
+**`9d2114b`** on `feature/autonomous-research-pipeline` (local commit,
+not pushed). Risk 1 (authorization) is not code-fixable and remains
+open above.
+
+- **Risk 3 fixed (no failure escalation):** `scripts/check_pipeline_
+  health.py` now records one `AlertEvent` via the existing, unmodified
+  `AlertService` whenever it detects a problem (new `AlertEventType.
+  PIPELINE_HEALTH_CHECK_FAILED` -- a pure additive Python constant,
+  zero migration, since `event_type` is a deliberately unenforced
+  `String` column). Same fail-safe-isolation shape every other
+  `AlertService` call site in this codebase already uses -- a failure
+  to alert can never change the script's own exit code. A new
+  `--no-alert` flag keeps it purely read-only when wanted. This is a
+  **live change**, already in effect for `SPARS_HealthCheck`'s next
+  daily run -- but it is additive instrumentation (one new row type on
+  an already-migrated, already-used-elsewhere table, same pattern
+  Monitoring V1 already uses without per-call approval), not a
+  migration or a destructive change, so it was made directly per the
+  owner's "seek approval only for live migrations or potentially
+  destructive changes" instruction.
+- **Risk 4 addressed (no rollback plan):** `docs/deployment/live-
+  database-rollback-runbook.md` added -- current restore-point
+  inventory (the two backup families and their different guarantees),
+  an explicit "what this cannot undo" section, and a step-by-step
+  restore procedure built on the same backup-then-verify discipline
+  already used throughout this engagement. Documentation only; nothing
+  in it has been executed.
+- **Risk 2 addressed, deliberately not enabled (unbounded disk
+  growth):** `scripts/prune_adhoc_backups.py` added -- bounds the
+  unmanaged `pre-*-backup` family (14 files / 260 MB, no retention
+  policy existed). **Dry-run by default; `--execute` required to
+  delete anything.** Not wired into any scheduled task. This one was
+  deliberately held back from actually running: each `pre-*-backup`
+  file is one of the few existing rollback points named in the runbook
+  above, so deleting any of them trades away rollback capability --
+  that's a human call, not an automatic one, and squarely fits
+  "potentially destructive changes" needing approval. Verified via dry
+  run against the real `instance/` directory: with the tool's default
+  `--keep 30`, it would delete 0 of the current 14 files today -- the
+  fix only bounds *future* growth, it does not touch history.
+
+**Testing, all against disposable copies, never the live file:** a
+`scheduled-backup`-produced snapshot was copied into a scratch
+directory to exercise `check_pipeline_health.py`'s healthy/unhealthy/
+`--no-alert` paths (confirmed correct `AlertEvent` writes, and zero
+writes on both the healthy path and `--no-alert`); `prune_adhoc_
+backups.py` was verified against synthetic fake files in a scratch
+directory (correct keep/delete split, dry-run truly deletes nothing),
+then dry-run only against the real `instance/` directory. Focused test
+suite (`tests/test_alert_service.py`, `tests/monitoring/test_
+monitoring_service.py`, `tests/research/test_investment_case_service.py`
+-- 38 tests) passes; the full suite collects cleanly (1585 tests, no
+import errors) -- a full regression run was not executed given the
+narrow, additive scope of the change.
+
+**Next owner decision, if any:** whether/when to run `prune_adhoc_
+backups.py --execute` (and with what `--keep`), and the still-open
+authorization question above. Neither requires urgent action -- disk
+growth is bounded going forward even unexecuted, and the pipeline
+itself was not touched.
 
 ## Resume instructions for the next session
 
@@ -918,14 +993,20 @@ only; no corrective action taken.
 is complete** -- see the two sections immediately above. `b037ab9` is
 pushed to `feature/spars-smart-search-ui`; not merged, no PR opened.
 
-**The single most important open item is the live-database safety audit
-above.** The owner has confirmed the authorization gap it found is real
-(autonomous extraction was planned, but explicit authorization for live
-migrations specifically was never established). None of the four
-recommended corrections there have been actioned yet -- a future session
-should re-read that section in full before doing anything with
+**Three of the four live-database safety risks are fixed; the
+authorization question is not.** See "Pipeline safety corrections
+applied" above (`backendtest` commit `9d2114b`, local only, not
+pushed): failure escalation is live, the rollback runbook exists,
+disk-growth tooling exists and was deliberately left un-executed. The
+owner has confirmed the authorization gap itself is real (autonomous
+extraction was planned, but explicit authorization for live migrations
+specifically was never established) -- that confirmation is not itself
+an authorization, forward or retroactive. A future session should not
+assume this is resolved, should not run `prune_adhoc_backups.py
+--execute` without a fresh decision on `--keep`, and should re-read
+both safety sections in full before doing anything further with
 `backendtest`'s `feature/autonomous-research-pipeline` branch or its
-scheduled tasks, and should not assume silence means it was resolved.
+scheduled tasks.
 
 **Plasmic Studio evaluated and declined (owner-directed, 2026-10-19).**
 Assessment: Plasmic's canvas (mouse-based drag/resize/typography editing)
