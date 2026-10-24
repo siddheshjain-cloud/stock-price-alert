@@ -17,11 +17,6 @@ import { EmptyState } from '@/components/research/EmptyState';
 import { fmtPct, fmtNum, fmtDate } from '@/lib/research-format';
 import { CompanyDetail, LockedSection } from '@/types/research';
 
-// Statically inlined by Next.js at build time -- a real production build
-// can never evaluate to true, so this can't leak into the production/
-// public research experience regardless of which API it's pointed at.
-const IS_REVIEW_ENVIRONMENT = process.env.NODE_ENV !== 'production';
-
 function lockedFor(locked: LockedSection[], section: string) {
   return locked.find((item) => item.section === section) ?? null;
 }
@@ -113,7 +108,7 @@ function VerdictPageContent({ detail }: { detail: CompanyDetail }) {
             <span className="whitespace-nowrap text-xs text-muted-foreground">
               {company.symbol} · {company.exchange}
             </span>
-            {IS_REVIEW_ENVIRONMENT && (
+            {company.is_demo_data && (
               <Badge variant="destructive" className="whitespace-nowrap">
                 TEST DATA
               </Badge>

@@ -23,6 +23,7 @@ export interface ResearchCompany {
   isin: string;
   sector: string | null;
   industry: string | null;
+  is_demo_data: boolean;
 }
 
 export interface ResearchBusinessGroup {

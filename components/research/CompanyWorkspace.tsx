@@ -42,10 +42,6 @@ import { CompanyDetail, ForecastLine, LockedSection, Valuation } from '@/types/r
 import { cn } from '@/lib/utils';
 import { fmtPct, fmtNum, fmtDate } from '@/lib/research-format';
 
-// Statically inlined by Next.js at build time -- a real production build
-// can never evaluate to true. Mirrors the same check on the Verdict Page.
-const IS_REVIEW_ENVIRONMENT = process.env.NODE_ENV !== 'production';
-
 function lockedFor(locked: LockedSection[], section: string) {
   return locked.find((item) => item.section === section) ?? null;
 }
@@ -202,7 +198,7 @@ function CompanyWorkspaceContent({ detail }: { detail: CompanyDetail }) {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <CardTitle className="text-2xl">{company.name}</CardTitle>
-                {IS_REVIEW_ENVIRONMENT && (
+                {company.is_demo_data && (
                   <Badge variant="destructive" className="whitespace-nowrap">
                     TEST DATA
                   </Badge>
