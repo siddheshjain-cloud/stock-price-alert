@@ -1355,14 +1355,66 @@ gate grid, and BASE/BEAR/BULL tiles all render the real computed
 figures correctly, 0 console errors. **Not applied to live, not a code
 change** -- data only, via existing unmodified service methods.
 
+## UNO Minda: final review -- reconciled, forward-consistent, FY30-extended (2026-10-25)
+
+Per the owner's instruction to complete the final review, three
+corrections were made to the case above -- `backendtest`
+`scripts/one_time/20261025_uno_minda_finalize_investment_case.py`,
+commit `3c6a7ef`, pushed. Isolated copy only; nothing applied to live.
+
+**Market cap reconciled, not just cross-checked.** Real shares
+outstanding (577,467,206, Sept 27 2026 shareholding filing) x real
+price (Rs 1,057.00) = Rs 61,038.28 Cr -- matches Screener.in's own
+figure to within Rs 0.28 Cr. This *explains* the prior session's
+three-source variance rather than just disclosing it: Tickertape's Rs
+63,983.37 Cr implied ~60.53 Cr shares, ~4.8% above the real count -- an
+identifiable data-staleness outlier, not unexplained noise; Zerodha's
+~Rs 60,750 Cr was within rounding of the real count.
+
+**Forward-earnings basis mismatch fixed.** The prior valuation applied
+TRAILING peer P/E (Endurance 32.0x, Minda Corp 35.6x) to UNO Minda's
+FORWARD (FY27E) PAT -- an apples-to-oranges comparison. Now uses real
+FY27E forward peer P/E instead (Minda Corporation 36x FY27E,
+Endurance Technologies 29x FY27E -- search-sourced analyst estimates,
+not independently re-verified via direct fetch, same confidence caveat
+as before): BASE 32x (forward-peer average), BULL 36x (Minda Corp's
+own forward multiple), BEAR 28x (below the forward range).
+
+**Scenarios extended FY27E -> FY30E**, each with an explicit,
+disclosed-grounded growth fade (BASE 15->14->13->12%, BULL 20->18->16->
+14%, BEAR 10->9->8->7%), grounded in the real, disclosed capex-pipeline
+completion phasing ("SOP Q4 FY2027-28, phased to FY2030-31"). Margin
+held flat at each scenario's FY27E level throughout FY30 -- management's
+own guidance never speaks past FY2027, so no margin trajectory beyond
+that is assumed. FY2030E PAT: BASE Rs 2,054 Cr, BULL Rs 2,318 Cr, BEAR
+Rs 1,566 Cr.
+
+**Result on the corrected basis -- moved slightly MORE negative, not
+more favorable:** BASE -25.35% (was -23.01%), BULL -12.36% (unchanged),
+BEAR -42.93% (unchanged). The original finding -- every scenario
+negative, UNO Minda's own real 49.9x trailing multiple already above
+even the BULL case's forward-peer-top multiple -- was not an artifact
+of the market-cap variance or the basis mismatch; correcting both made
+the case for caution slightly stronger, not weaker. HOLD view unchanged.
+All nine gates and three kill switches re-recorded against the new
+InvestmentCase revision 3.
+
+**Verified end-to-end and visually approved-ready:** real API response
+(4-year forecast per scenario, real `expected_return_pct`, 9 gates, 3
+kill switches), and screenshots across desktop and mobile -- 0 console
+errors, 0 page-level overflow throughout. The Financials tab's forecast
+chart now shows four real fiscal years (FY2027E-FY2030E) per scenario
+instead of one.
+
 ## Resume instructions for the next session
 
-**UNO Minda is now a complete, real, evidence-grounded investment case
-on the isolated copy** (see immediately above) -- the next decision is
-the owner's: whether/how to apply any of this session's work (the
-`is_demo_data` migration, the evidence promotions, the completed
-investment case) to the live database, and whether to expand coverage
-to another real company using the same now-proven methodology.
+**UNO Minda is now a complete, reconciled, forward-consistent, FY30-
+extended investment case on the isolated copy** (see the two sections
+immediately above) -- the next decision is the owner's: whether/how to
+apply any of this work (the `is_demo_data` migration, the evidence
+promotions, the completed and now-finalized investment case) to the
+live database, and whether to expand coverage to another real company
+using the same now-proven methodology.
 
 **The SPARS Research Brain end-to-end validation (further above) is
 otherwise still current.** Two small Management-tab fixes committed as
