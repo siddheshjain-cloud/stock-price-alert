@@ -39,8 +39,9 @@ and the retry-queued exit-code fix was deployed as generation 86. The
 full bridge run's transient Drive metadata timeout is recorded as an
 operational reliability issue; a minimal correction is proposed but not
 applied. Later on 2026-11-02 the scoped IKIO/GRAUWEIL backfill
-registered 8 documents (backend 1,403 → **1,411**); see "Backlog
-closeout actions" below.
+registered 8 documents and IKIO row 1430 one more (backend 1,403 →
+**1,412**); IKIO/GRAUWEIL are now in the scheduled ticker scope
+(69/93). See "Backlog closeout actions" below.
 
 **Current frontend / research state (2026-10-25):** **UNO Minda is
 CLOSED as a complete, reconciled investment case** -- see "UNO Minda
@@ -2341,8 +2342,7 @@ IKIO/GRAUWEIL backfill registrations, and the (blocked) queue cleanup.
   scheduled task cannot pick it up before approval. Apply only after the
   2026-11-03 09:00:30 bridge run is observed.
 
-### EX-003 — row 1430 is distinct; ticker-scope addition blocked
-- Dry-run: 95 rows, all `DRY_RUN_OK`.
+### EX-003 — row 1430 registered; IKIO/GRAUWEIL in scope
 - Backfill: **8 REGISTERED**, 46 ALREADY_REGISTERED, 40
   ALREADY_REGISTERED_METADATA_CONFLICT (informational), and **1
   DUPLICATE_REVIEW_REQUIRED** at IKIO row 1430. Backend 1,403 → **1,411**.
@@ -2359,13 +2359,18 @@ IKIO/GRAUWEIL backfill registrations, and the (blocked) queue cleanup.
   - Text similarity **0.0015**. Row 1430 is a **distinct filing** — the
     full annual report — not a duplicate or revision of the 2-page
     dispatch letter.
-- **Scope safety:** adding IKIO/GRAUWEIL now would make every scheduled
-  bridge run hit the unresolved duplicate review and exit 1. The minimal
-  safe path is: (1) approve registering row 1430 as a distinct document
-  via the existing recovery-plan mechanism; (2) rerun the idempotent
-  scoped backfill to confirm `ALREADY_REGISTERED`; (3) add IKIO/GRAUWEIL
-  to the ticker scope. Do not suppress the conflict or weaken the
-  duplicate-review safeguard.
+- Row 1430 was registered via
+  `scripts/spa_bridge/recovery_plan_ikio_1430_2026-11-02.csv` as document
+  `90c15724-346e-4757-b6ec-6d0e2b09ed6e`, title
+  `Reg. 34 (1) Annual Report. [2cfbb62f…]`, content `02c1d905…`;
+  backend 1,411 → **1,412**.
+- Scoped IKIO/GRAUWEIL verification: exit 0, 54 ALREADY_REGISTERED and
+  41 ALREADY_REGISTERED_METADATA_CONFLICT (informational), **0
+  DUPLICATE_REVIEW_REQUIRED**. IKIO and GRAUWEIL were added to the
+  scheduled ticker list; it now has **69 tokens** with no duplicates.
+  Coverage is **69/93**; the remaining 24 are the EX-005 identity queue.
+  Do not suppress any future conflict or weaken duplicate-review
+  safeguards.
 
 ### EX-004 — stale queue rows removed
 - Source rows 168 and 2775 were verified `STORED`; their stale
@@ -2411,12 +2416,12 @@ checkpoint" above. Dev-tools execution is still a separate Level 3
 decision; both scripts remain `$ExecuteForReal = $false`.
 
 **2026-11-02 backlog closeout:** see "Backlog closeout actions" above.
-EX-002 is deferred until the 2026-11-03 09:00:30 bridge run; EX-003
-backfilled 8 IKIO/GRAUWEIL documents; row 1430 is confirmed a distinct
-full annual report (not the 2-page dispatch letter), so registering it
-via the recovery plan is the gate before adding IKIO/GRAUWEIL to the
-ticker scope; EX-004 stale queue rows 38/290 were removed; EX-005 awaits
-authoritative ISINs; EX-007 is resolved.
+EX-002 is deferred until the 2026-11-03 09:00:30 bridge run; EX-003 is
+resolved — IKIO row 1430 was registered as a distinct full annual
+report and IKIO/GRAUWEIL are now in the scheduled ticker scope (69/93);
+the remaining 24 identity gaps are EX-005; EX-004 stale queue rows
+38/290 were removed; EX-005 awaits authoritative ISINs; EX-007 is
+resolved.
 
 **2026-11-02 update:** For ingestion work, the current resume point is
 the Pipeline operations checkpoint above. The single chained daily
