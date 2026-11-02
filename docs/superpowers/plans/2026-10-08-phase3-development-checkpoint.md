@@ -2372,13 +2372,18 @@ IKIO/GRAUWEIL backfill registrations, and the (blocked) queue cleanup.
   Do not suppress any future conflict or weaken duplicate-review
   safeguards.
 
-### EX-004 — stale queue rows removed
-- Source rows 168 and 2775 were verified `STORED`; their stale
-  queue-tab rows **38** and **290** were deleted in descending order
-  (290, then 38). Queue row 8 (source row 83, the GPECO audit record) and
-  all Documents records were preserved.
-- The queue now has **91 queued documents / 92 non-empty queue rows**
-  (was 94). The real 91-document backlog remains.
+### EX-004 — ZIP batch resolved; 59 queued documents remain
+- The 32-row NSE ZIP batch was processed through the deployed
+  `retry-queued` mode: **24 DUPLICATE_EXACT_BINARY, 8 STORED, 0
+  failures**; every plan row ended in an expected status. Queue entries
+  for all 32 source rows were removed.
+- Queue is now **59 queued documents / 60 non-empty queue rows** (was
+  91/92). Queue row 8/source row 83 remains preserved. The 8 STORED rows
+  await the 2026-11-03 09:00:30 bridge run (all within the 69-ticker
+  scope).
+- Remaining 59: 43 direct-PDF rows (identity/period/`missing_eof`/
+  `html_payload`) and 16 dead/non-PDF URLs; next batch is provenance and
+  alternate-source review, not blind retry.
 
 ### EX-005 — blocked
 - 24 companies remain identity-blocked (20 BSE-only + 4 NSE symbols).
@@ -2420,8 +2425,9 @@ EX-002 is deferred until the 2026-11-03 09:00:30 bridge run; EX-003 is
 resolved — IKIO row 1430 was registered as a distinct full annual
 report and IKIO/GRAUWEIL are now in the scheduled ticker scope (69/93);
 the remaining 24 identity gaps are EX-005; EX-004 stale queue rows
-38/290 were removed; EX-005 awaits authoritative ISINs; EX-007 is
-resolved.
+38/290 were removed and the 32-row ZIP batch resolved (8 stored, 24
+duplicates), leaving 59 queued documents; EX-005 awaits authoritative
+ISINs; EX-007 is resolved.
 
 **2026-11-02 update:** For ingestion work, the current resume point is
 the Pipeline operations checkpoint above. The single chained daily
