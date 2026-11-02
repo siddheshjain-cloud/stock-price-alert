@@ -19,7 +19,8 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-02 (merged checkpoint). This file now unites
+**Last updated:** 2026-11-02 (Phase 3.5A evidence capability added;
+merged checkpoint). This file now unites
 the docs-clone lineage's 2026-11-01/02 pipeline-operations record with
 the frontend-clone lineage's 2026-10-19→2026-10-25 sections; the two
 previously divergent copies are reconciled here (EX-001 resolved).
@@ -2540,3 +2541,69 @@ the owner, not something to infer unilaterally from this list.
   task interactivity, and the second backendtest checkout).
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
+
+## Phase 3.5A — Evidence-grounded research capability (2026-11-02)
+
+**Status:** Implemented and demonstrated in isolation. No production
+deployment, no live database write, no migration, no schedule change.
+Branch `feature/phase3-5a-evidence-retrieval` (from `7cee4e5`).
+
+**What changed:** two new read-only services and one CLI were added in
+the backendtest worktree:
+
+- `app/services/evidence_retrieval_service.py` — company-scoped
+  deterministic retrieval over the existing `extraction_unit` page text,
+  with document authority, extraction-quality, recency and
+  corroboration scoring; explicit coverage, conflict and missing-evidence
+  reporting; temporal cutoff; identity-flag and superseded-document
+  exclusion; quote verification against the real page text.
+- `app/services/evidence_brief_service.py` — a four-class brief
+  contract (VERIFIED_FACT / MANAGEMENT_CLAIM / ANALYST_INFERENCE /
+  MISSING_EVIDENCE) that refuses to render an uncited, fabricated,
+  wrong-company, superseded or time-inconsistent citation.
+- `scripts/retrieve_evidence.py` and
+  `scripts/build_ikio_evidence_brief.py` — read-only CLIs. The IKIO
+  builder runs 7 fixed questions, generates the brief and validates every
+  citation.
+
+**Evidence:** 41 new focused tests pass; the adjacent `tests/pipeline` +
+`tests/research` suites pass 814/814. The IKIO brief has 54 claims and
+103/103 verified citations (26 verified facts, 8 management claims, 12
+analyst inferences, 8 missing-evidence findings). Retrieval measured on
+7 hand-chosen questions: acceptable-document hit@5 7/7 (100%),
+exact-document hit@5 6/7 (86%), mean acceptable rank 2.0. The one exact
+miss is the 28-Jul-2026 auditor-resignation filing; a parallel
+additional-information filing and annual-report governance pages
+outranked it. Generated artifacts live under
+`backendtest/docs/phase3_5a/`; the full report is
+`backendtest/docs/PHASE3_5A_EVIDENCE_CAPABILITY_2026-11-02.md`.
+
+**Live-corpus audit evidence (read-only, 2026-11-02):** 1,412 documents;
+540 with usable extracted text (38.2%), 10 with zero-text runs, 862 with
+no extraction; 15,780 pages / 48.55M characters; 59 documents lack a
+filing date, 0/1,412 have an original-publication date. IKIO: 45
+documents, 42 searchable, 634 pages (624 with text), 2 unextracted
+(the Reg. 34 annual report and the 29-Oct-2026 call), 1 zero-text scanned
+declaration. Existing `evidence` rows are not uniformly verbatim: 31/71
+unit-linked snippets (43.7%) pass the existing 40% quote-grounding floor
+(IKIO sample 12/19). IKIO has 0 `fin.raw.*` facts; its 16 curated facts
+use research-specific names, and six `fin.raw.revenue/pat/ebitda`
+candidates remain OPEN, duplicated, in INR crore. That vocabulary gap is
+the main blocker to using the existing Phase 3 diagnostics for IKIO.
+
+**Backlog:** EX-010 (Evidence not uniformly verbatim), EX-011
+(publication-date precision absent), EX-012 (862 unextracted; two IKIO
+material gaps), EX-013 (IKIO fact vocabulary/units) added in
+`backendtest/docs/SPARS_EXCEPTION_BACKLOG.md`.
+
+**Decision gate (exact approvals requested, Level 3 unless noted):**
+1. Deploy the retrieval read path / read-only API endpoint to production.
+2. Bounded publication-date repair, starting with IKIO annual reports.
+3. Scoped extraction retry for the two unextracted IKIO documents.
+4. Normalize/promote IKIO facts to `fin.raw.*` after human review.
+5. Authorize Phase 3.5B market-price/share-count and normalized forecast
+   inputs before any valuation.
+
+**Not done:** no production deployment, no live DB write or migration,
+no LLM synthesis, no vector database/new service, no Bear/Base/Bull
+valuation (no current market price or normalized multi-year inputs).
