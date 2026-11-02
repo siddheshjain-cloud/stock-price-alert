@@ -19,12 +19,16 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-02 (generic priority-extraction mechanism
-deployed live and `SPARS_PriorityExtraction` task registered — see
-"Resume instructions" top entry; IKIO's two previously-pending
-documents extracted live and verified earlier the same day; evidence
-capability added earlier still; merged checkpoint). This file now
-unites
+**Last updated:** 2026-11-03 (Choice International's evidence-grounded
+research brief built via the existing Phase 3.5A pipeline with no code
+changes, confirming reusability across companies — see "Resume
+instructions" top entry; Choice's full 29-document backlog extracted
+live, 100% coverage, zero failures, the same day; generic
+priority-extraction mechanism deployed live and
+`SPARS_PriorityExtraction` task registered earlier the same day;
+IKIO's two previously-pending documents extracted live and verified
+earlier still; evidence capability added earlier still; merged
+checkpoint). This file now unites
 the docs-clone lineage's 2026-11-01/02 pipeline-operations record with
 the frontend-clone lineage's 2026-10-19→2026-10-25 sections; the two
 previously divergent copies are reconciled here (EX-001 resolved).
@@ -2425,6 +2429,92 @@ IKIO/GRAUWEIL backfill registrations, and the (blocked) queue cleanup.
   `origin/feature/autonomous-research-pipeline`.
 
 ## Resume instructions
+
+**2026-11-03 Choice International evidence brief -- second company
+proven through Phase 3.5A, no code changes:** built on
+`feature/phase3-5a-evidence-retrieval` (commit `7cad082`) using the
+exact same `EvidenceRetrievalService`/`EvidenceBriefService` already
+proven for IKIO, pointed at a freshly-extracted isolated copy of
+Choice's now-complete corpus. **24 claims, 23/23 citations
+independently verified** (16 VERIFIED_FACT, 3 MANAGEMENT_CLAIM, 1
+ANALYST_INFERENCE, 4 MISSING_EVIDENCE): three Ind AS 108 segments,
+select clean consolidated/standalone PAT figures, the NH Investment &
+Securities Rs.9,000m CCPS investment (announced July 9, closed
+October 27), the Choice Proptech related-party acquisition (arm's
+length, independent valuer), a CFO transition, an independent
+director's routine term-completion (not a contested resignation), a
+clean unqualified internal-financial-controls opinion and limited
+review, zero whistleblower complaints, no IBC proceedings, and (across
+all 20 Reg-30 filings) no penalties/fines/non-compliance findings. No
+valuation attempted -- zero `fin.raw.*`/`ForecastRevision`/
+`ValuationRevision` rows exist for Choice, same Phase 3.5B gate as
+IKIO.
+
+Two real issues surfaced and disclosed while authoring, not hidden:
+(1) the Quarterly Results table's text extraction lost
+thousands-separators/decimals inconsistently cell-by-cell -- one
+comparative PAT figure extracted as the literal corrupted string
+`a19.61`; only independently-confirmed-clean cells were cited; (2) a
+near-miss where the Investor Presentation's "REVENUE SPLIT" label sits
+next to percentages that actually belong to an unrelated chart --
+caught before citing, flagged as `MISSING_EVIDENCE` instead. One real
+citation bug the verifier itself caught and rejected, not a
+hypothetical: two Reg-30 filings share the same date/subject but have
+different `content_id`s; an early draft read one and cited the other,
+and `EvidenceBriefService.validate()` returned 0% shingle coverage
+rather than silently passing a wrong-document citation. Full detail:
+exception backlog EX-013 (`backendtest`).
+
+**Next action:** none required. Extending this brief with the full
+Annual Report / remaining Reg-30 filings, or authorizing Phase 3.5B
+market-data scope for either company, are both separate future
+decisions.
+
+**2026-11-02/03 First real use of priority extraction — Choice
+International Limited, fully extracted live:** verified the company id
+from the live DB rather than assuming it
+(`aec69f8f-149f-4528-81c9-22ff2cf36107`, ISIN `INE102B01014`, single
+unambiguous match). Baseline: 29 registered documents, 0 extracted, 0
+prior failures, no identity flags. Added to
+`scripts/priority_companies.txt` via `add_priority_company.py` (file
+write succeeded standalone; the immediate-extraction half of that
+script failed once with the same `DATABASE_URL`-not-set error the
+classifier guard is designed to raise, because the script does not
+forward `DATABASE_URL` to the subprocess it spawns -- a real,
+pre-existing gap, not touched/fixed here, worked around by setting the
+same env var the production launcher already sets). Ran 3 bounded
+`--limit 10` cycles via the standard `run_extraction_pipeline.py`
+path (10, 10, 9 documents) -- **29/29 extracted, 0 failed, 0
+duplicate `ExtractionRun` rows, 0 zero-text runs** -- then one more
+confirming cycle scanned 0 (idempotency holds). All four
+`PipelineCycleRun` rows' `company_scope` confirmed scoped to Choice
+only; no other company touched. 328 pages extracted (325 with text, 3
+empty cover pages); 1 document missing a publication date (point-in-time
+precision note, not a coverage gap). Total wall-clock time across all
+4 cycles: ~4m11s (18:33:16.628535 UTC -> 18:37:27.936917 UTC).
+
+Evidence-retrieval coverage (via `scripts/retrieve_evidence.py`,
+isolated copy of the now-updated live DB, same methodology as IKIO):
+**29/29 documents searchable, 0 without extraction, 0 empty/scanned,
+0 excluded by identity flag, 0 superseded** -- full coverage, better
+than IKIO's corpus state at Phase 3.5A time. Mix: 1 annual report, 1
+concall, 1 investor presentation, 2 quarterly results, 4 press
+releases, 20 Reg-30 attachments (including an acquisition
+announcement and a change-in-directorate notice).
+
+**Not yet sufficient for a verdict:** zero `ExtractedFact`, curated
+`Evidence`, `CandidateFinding`, `ResearchRevision`,
+`InvestmentHypothesis`, `ForecastRevision` or `ValuationRevision` rows
+exist for Choice -- raw text is fully extracted but nothing is curated
+yet. Next research step is the same evidence-brief-building exercise
+already proven for IKIO (`EvidenceRetrievalService`/
+`EvidenceBriefService`, read-only, isolated-copy, citation-verified),
+not a formal `InvestmentCase` -- that still requires normalized
+financial facts and a `ForecastRevision`/`ValuationRevision`, same
+Phase 3.5B gate as IKIO. `priority_companies.txt` still contains
+Choice's id, confirmed -- future scheduled runs (14:25/20:25 IST) will
+correctly scan 0 until new documents are registered for it. Existing
+FIFO backlog task, bridge task, and no other company were touched.
 
 **2026-11-02 Generic priority-extraction mechanism — DEPLOYED LIVE
 (`backendtest`, `feature/autonomous-research-pipeline`, commit
