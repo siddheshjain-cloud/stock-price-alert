@@ -19,11 +19,15 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-03 (Choice International's evidence-grounded
-research brief built via the existing Phase 3.5A pipeline with no code
-changes, confirming reusability across companies — see "Resume
-instructions" top entry; Choice's full 29-document backlog extracted
-live, 100% coverage, zero failures, the same day; generic
+**Last updated:** 2026-11-03 (Phase 3.5B: Choice International
+normalized financial pilot — ROE/ROCE/leverage added to
+FinancialDiagnosticsService for the first time ever, audited Annual
+Report used as canonical with one real unresolved revenue discrepancy
+disclosed; see "Resume instructions" top entry; Choice's
+evidence-grounded research brief built via the existing Phase 3.5A
+pipeline with no code changes, confirming reusability across
+companies, earlier the same day; Choice's full 29-document backlog
+extracted live, 100% coverage, zero failures, the same day; generic
 priority-extraction mechanism deployed live and
 `SPARS_PriorityExtraction` task registered earlier the same day;
 IKIO's two previously-pending documents extracted live and verified
@@ -2429,6 +2433,66 @@ IKIO/GRAUWEIL backfill registrations, and the (blocked) queue cleanup.
   `origin/feature/autonomous-research-pipeline`.
 
 ## Resume instructions
+
+**2026-11-03 Phase 3.5B -- Choice International normalized financial
+pilot (ROE/ROCE/leverage added for the first time):** built on
+`feature/phase3-5b-choice-normalization` (commit `09ec1d2`, from
+`339ddc1`). Audited first, per the owner's direction that audited
+statements are canonical where reconciled -- full-repo grep confirmed
+ROE, ROCE and leverage did not exist anywhere in SPARS before this.
+
+**Reconciliation, three sources cross-checked (Screener.in workbook,
+an explicitly-provisional Google Drive "normalized pilot" reference
+transformation, and Choice's own statutory filings already in the
+corpus):** three apparent discrepancies resolved as scope/
+classification differences, not errors -- Net Worth (the gap was
+exactly the Non-Controlling-Interest balance, Rs.152.25cr), the PAT
+split (owners Rs.217.66cr vs. total Rs.237.89cr, NCI Rs.20.22cr --
+exact match across all three sources), Borrowings (the workbook
+bundles Lease Liabilities into Borrowings, Rs.23.83cr exact match).
+**One real, unresolved gap disclosed rather than papered over:**
+Revenue from Operations FY2026, audited Rs.1,119.13cr vs. the
+workbook's Rs.1,137.37cr -- Rs.18.24cr (1.63%) unexplained; the
+audited figure was used as canonical, the workbook figure was not
+promoted into `fin.raw.*`. FY2017-FY2024 explicitly flagged as
+unreconcilable against any statutory filing in this corpus and not
+promoted for those years.
+
+**Schema** (data-insert only, no migration, zero behaviour change for
+any existing company): 7 new `fin.raw.*` slugs (`pbt`, `finance_costs`,
+`total_equity`, `non_controlling_interest_equity`,
+`non_controlling_interest_pat`, `borrowings`, `loans_and_advances`) and
+3 new NORMALIZED metrics (`roe_pct`, `roce_pct`, `debt_to_equity_pct`).
+ROE/leverage use owners-only equity (matching the company's own
+disclosed segment ROEs); ROCE uses full capital employed. Verified
+backward compatible: a company with zero NCI facts (every existing
+one) computes identically to before.
+
+**Results, Choice FY2026:** ROE 13.02%, ROCE 14.98%, Debt/Equity
+52.88%, revenue growth YoY 22.93% -- the first real multi-period
+growth diagnostic ever computed in SPARS. COGS/inventory-dependent
+ratios correctly marked inapplicable, confirmed from the source data
+itself (the workbook's own Raw Material Cost/Inventory Change rows
+stop being populated after FY2018).
+
+**Market price/cap: a real architectural constraint found, not worked
+around.** `Evidence.document_id` is a FK to a registered `Document`;
+the workbook's price snapshot is not one, and registering it would
+need new xlsx-extraction infrastructure, out of scope. Valuation
+remains blocked for Choice, same as IKIO -- not faked.
+
+**Also caught before any write:** a hand-transcription of evidence
+quotes was byte-for-byte wrong on whitespace for 10 of 11 snippets --
+replaced by a programmatic extraction script, now committed for reuse.
+
+8 new focused tests + 13 adjacent + full `tests/research/` suite (701
+passed, 0 failed). Full detail: exception backlog EX-014
+(`backendtest`); `docs/phase3_5b/CHOICE_RECONCILIATION_2026-11-03.md`
+and `docs/phase3_5b/COMPANY_NORMALIZATION_WORKFLOW.md`.
+
+**Next action:** owner review before any live integration. A real
+Phase 3.5B market-data source decision (Choice and IKIO both) remains
+open and separate.
 
 **2026-11-03 Choice International evidence brief -- second company
 proven through Phase 3.5A, no code changes:** built on
