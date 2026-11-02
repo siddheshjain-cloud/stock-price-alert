@@ -19,12 +19,29 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-10-12 (milestone checkpoint -- I3AS Alert-3
-complete, merged into `feature/research-coverage-foundation` (PR #5),
-real-company validated. `master` itself is current as of PR #4
-(Research Coverage Slices 1-4, Phase 3 A-G, I3AS Slice 1/Alert-2);
-Alert-3 is one PR ahead of `master`, pending its own separate merge
-decision, per the Quality-Gated Autonomous Development Protocol below.)
+**Last updated:** 2026-11-02 (pipeline operations + daily automation
+deployment -- `SPARS_SpaBridgeCatchup` re-enabled Ready for
+2026-11-02 09:00:30 IST; 66 discovered rows acquired (4 new `STORED`,
+60 exact duplicates, 2 manual-upload exceptions); the single chained
+daily Cloud Run job (`--mode daily`, generation 84, image
+`sha256:df19b1ed…`) was deployed at 01:50 IST; the first scheduled run
+succeeded at 07:30 IST and the bridge registered 20 documents at 09:00
+IST. STL row 1990 was closed as a semantic duplicate and Shanti Gold
+row 2137 was registered; the remaining 16 duplicate-review rows were
+then resolved (13 registered, 3 closed) and the duplicate-review queue
+is now **0**. The NSE ZIP attachment fix was deployed as generation 85;
+the two ZIP manual-queue rows were resolved (one STORED, one exact
+duplicate), and the retry-queued exit-code fix was deployed as
+generation 86. The full bridge run's transient Drive metadata timeout
+is recorded as an operational reliability issue; a minimal correction
+is proposed but not applied. The 2026-10-12 sections below remain the
+prior milestone record.)
+
+**Sync policy (2026-11-02):** This docs clone
+(`C:\GitHub\stock-price-alert`) is the only place this checkpoint is
+edited. The copy in the `stock-price-alert` frontend clone
+(`C:\Users\Home\Documents\GitHub\stock-price-alert`) is a read-only
+mirror: sync it from this clone, never edit it independently.
 
 ---
 
@@ -961,7 +978,348 @@ live database was re-confirmed untouched (`alembic_version`
 `20261007_05`, same file, same timestamp) throughout this entire
 backup-and-upload process.
 
+## Pipeline operations checkpoint (2026-11-01/02)
+
+Per the owner's 2026-11-01 follow-up: explain and fix the disabled
+`SPARS_SpaBridgeCatchup` task, acquire the day's 66 `DISCOVERED` rows,
+and flag (not implement) whether discovery and acquisition should be
+chained. No code, deployment, credential, or infrastructure changes.
+
+### Owner's overnight closing position (recorded as stated)
+
+- 47 documents recovered; 8 duplicate rows closed; 5 exceptions
+  remaining; SPARS bridge scheduler disabled; no further development
+  authorized that night.
+- Verified: the 47 recovered documents are exactly the backend
+  `document` rows created since midnight IST (`document` count 1,368;
+  `max(created_at)` = 2026-10-31 22:39 UTC). The recovery logs show
+  46 + 1 = 47 `REGISTERED`; the earlier catch-up registered 0 new
+  (2,509 rows all `ALREADY_REGISTERED`, 1 documented missing Drive
+  file).
+
+### Scheduler state: why it was Disabled, and the fix
+
+- **Created Ready:** 2026-11-01 00:13:05 IST via
+  `schtasks /create /tn "SPARS_SpaBridgeCatchup" /tr ... /sc DAILY /st 09:00 /ru "Home"`;
+  verified `Status: Ready`, next run 01-11-2026 09:00 at 00:13:11 IST.
+- **Disabled by the prior session:** 2026-11-01 02:13:35 IST via
+  `Disable-ScheduledTask`, per the prior explicit instruction to
+  disarm the task before the bridge patch and leave it off pending
+  release review. This was not a failed registration or a different
+  task; the same task's `NextRunTime` still displays while disabled,
+  which is why it looked armed.
+- **Re-enabled on the current owner instruction:** 2026-11-01
+  evening. Verified `State=Ready`, `Settings.Enabled=True`, trigger
+  enabled, next run **2026-11-02 09:00:30 IST**,
+  `LastTaskResult=267011` (never run).
+- **Caveat (unchanged):** the task runs as `Home` with
+  `InteractiveToken`; it requires the PC on and the Home session
+  logged in at 09:00, and has no `StartWhenAvailable`. Changing that
+  would be a separate settings decision.
+- **Patch state:** `scripts/bridge_spa_manifest.py`,
+  `scripts/scheduled/run_spa_bridge_catchup.bat`, and
+  `app/services/monitoring_service.py` fixes are committed
+  (`57d14d0`, `f40a19e`, `ad83ccc`); the bridge CLI imports cleanly;
+  the repo working tree is unchanged by this checkpoint.
+
+### Acquisition of 2026-11-01's 66 DISCOVERED rows
+
+Used the existing local worker path (`Run-Local.ps1` with the
+`spa-ingestion-worker` service-account key and the production
+`SPA_DRIVE_OAUTH_JSON` secret): `--mode promote-discovered`, then
+`--mode ingest-all --limit 66` (eligible rows sort descending by sheet
+row, so this targeted exactly rows 3219–3284).
+
+| Status | Before | After promotion | After acquisition |
+|---|---:|---:|---:|
+| `STORED` | 3,056 | 3,056 | **3,060 (+4)** |
+| `DISCOVERED` | 66 | 0 | 0 |
+| `AWAITING_UPLOAD` | 5 | 71 | 5 (old Aug–Sep rows) |
+| `MANUAL_UPLOAD_QUEUED` | 91 | 91 | **93 (+2)** |
+| `DUPLICATE_EXACT_BINARY` | 65 | 65 | **125 (+60)** |
+| **Total** | **3,283** | **3,283** | **3,283** |
+
+Discovery source stats (07:30 IST Cloud Run run):
+
+| Source | Attempted | Succeeded | Accepted/appended | Failed | Note |
+|---|---:|---:|---:|---:|---|
+| BSE-AJAX | 77 | 0 | 0 | 77 | HTTP 403, known WAF block |
+| BSE-RSS | 1 | 1 | 0 | 0 | 9 fetched; 0 new |
+| NSE | 73 | 73 | **66** | 0 | 98 items → 66 new |
+
+Acquisition: `manifest_url` for all 64 successful rows (4 stored,
+60 duplicate); the remaining 2 exhausted all six routes
+(`manifest_url;bse_archive;exchange_rss;screener;business_standard;alternate_url`)
+and were queued for manual upload.
+
+#### 4 newly STORED documents (Drive + manifest verified)
+
+| Row | Company | Type | Date | Drive file | Size |
+|---:|---|---|---|---|---:|
+| 3219 | AXISCADES Technologies Ltd | REG30 | 2026-10-31 | `AXISCADES_REG30_31_10_2026_251B4322.pdf` | 265,680 B |
+| 3263 | Juniper Green Energy Ltd | QUARTERLY_RESULTS | 2026-10-31 | `JUNIPER_RESULTS_31_10_2026_9D1FE9DC.pdf` | 1,436,196 B |
+| 3283 | Priority Jewels Ltd | INVESTOR_PRESENTATION | 2026-10-31 | `PRIORITY_PRESENTATION_31_10_2026_4683CE2B.pdf` | 2,544,431 B |
+| 3284 | Priority Jewels Ltd | REG30 | 2026-10-31 | `PRIORITY_REG30_31_10_2026_5B049158.pdf` | 11,135,258 B |
+
+Drive IDs: `1GvUndxUL7SJH8WODY2ub-tI8rrN64KV3`,
+`1g8PQbL24aCmrLXleIi4uHGjJ3-cHbM6v`,
+`1pX_m252_PdS_wgEXQLHW3i1SBmdxqPnd`,
+`12xUrwKGC_kTez3ndCTN7J7055_FRtv1a`; all match their manifest rows;
+files created 16:28–16:41 UTC (21:58–22:11 IST).
+
+#### 60 exact duplicates
+
+Downloaded and SHA-256-verified, but not stored as new files because
+the bytes already exist under another manifest row. They are now
+`DUPLICATE_EXACT_BINARY` and carry the existing Drive File IDs. This
+is a dedupe outcome, not an acquisition failure.
+
+#### 2 new manual-upload exceptions
+
+| Queue row | Company | Document | Failure | Recommended |
+|---:|---|---|---|---|
+| 351 | Tempsens Instruments (India) Ltd | REG30, 2026-10-30 | `missing_pdf_signature;no_configured_url`; all six routes attempted; source is an NSE ZIP | download exact PDF from Screener |
+| 350 | Morepen Laboratories Ltd | REG30, 2026-10-31 | `missing_pdf_signature;no_configured_url`; all six routes attempted; source is an NSE ZIP | download exact PDF from Screener |
+
+The queue already had older entries for the same two documents
+(rows 345/348 for Tempsens, 346/349 for Morepen), so retries are
+appending repeat queue rows. Not fixed; flagged for the next session.
+
+### Backend state
+
+- `document` count unchanged at **1,368**; `max(created_at)` still
+  **2026-10-31 22:39 UTC** (the 47 overnight manual recoveries).
+- The 4 new `STORED` rows await the bridge run at
+  **2026-11-02 09:00:30 IST**; AXISCADES, JNPR, and PRIORITY are all
+  inside the bridge's `--only-tickers` scope.
+- The 60 duplicate rows and 2 queued rows are not `STORED` and will
+  not be picked up by the bridge.
+
+### Chaining decision (made 2026-11-02): single chained daily Cloud Run job
+
+The owner approved the single chained daily job after the release gate.
+The earlier recommendation for two scheduled steps was superseded once
+the Cloud Run task timeout was raised and the BSE-AJAX known-degraded
+status was fixed.
+
+**Deployed 2026-11-02 01:50:14 IST** to the existing
+`spa-ingestion-live-test` job (no new job, no scheduler change):
+- generation **84**
+- image
+  `asia-south1-docker.pkg.dev/spa-ingestion/cloud-run-source-deploy/spa-ingestion-live-test@sha256:df19b1ed88ddbc75d09e2de9c8c01275c12cd6d83b09f2beefbbd71401e07e80`
+- args `cloud_entrypoint.py --mode daily --lookback-days 7 --limit 100`
+- task timeout **2400s**; max retries **1**; 1 task; 1 CPU / 2 GiB
+- env adds `SPA_MANUAL_CHECK_FOLDER_ID`; the Drive secret is unchanged
+- scheduler unchanged: ENABLED, `0 2 * * *` Etc/UTC (07:30 IST),
+  180s attempt deadline, target `:run`; next run 2026-11-02 07:30 IST
+- the first automatic run succeeded at 07:30 IST on 2026-11-02; the
+  bridge ran at 09:00:30 and registered 20 documents (see the
+  post-deployment subsection below).
+
+The daily mode does discovery → promotion of `DISCOVERED` rows →
+bounded acquisition (oldest-first, 100 max) in one execution. BSE-AJAX
+403 is reported as known-degraded and no longer makes the cycle fail;
+real NSE/BSE-RSS failures still produce DEGRADED/FAILED. The explicit
+`ingest-all` mode keeps newest-first for manual use. The release-gate
+starvation test proved newest-first could strand the oldest rows under
+a >=limit arrival day; oldest-first fixes that.
+
+**Rollback:** `release_gate/spa-ingestion-live-test.pre-automation.yaml`
+restores generation 83, old digest `sha256:3630c8cf…`, args
+`discover --lookback-days 7`, 900s timeout, 0 retries. Fallback
+`gcloud run jobs update` commands and source-level backups
+(`release_gate/source-pre-automation/`) are recorded in
+`release_gate/DEPLOYMENT_RESULT_2026-11-02.md`. No schema/data
+rollback; the manifest/Drive changes are additive and idempotent.
+
+**Backend coverage limitation:** the Windows bridge's
+`--only-tickers` scope has 67 tokens and covers **67 of the 93
+approved companies**. 26 are outside it:
+- 2 have M1 identities but are omitted from the batch list: **IKIO**
+  and **GRAUWEIL** (adding them would also backfill their historical
+  `STORED` rows; needs a scoped run/approval);
+- 4 have NSE symbols but no M1 ticker: **JASCHIND, ASINPET, CHEMKART,
+  MRTX**;
+- 20 are BSE-only with no M1 ticker (the known identity-exception
+  queue).
+
+Full 93-company backend automation is therefore not yet complete: the
+daily Cloud Run job covers all 93 on discovery/acquisition, while the
+bridge registers 67.
+
+### First post-deployment runs and two duplicate resolutions (2026-11-02)
+
+- **Cloud Run 07:30 IST — SUCCESS.** Execution `sxxgr`, 9m58s
+  (07:30:15–08:10:13). Discovery 23 new; processed 28 (23 new + 5 old
+  AWAITING); stored 19; exact duplicates 9; manual queue 0; other issues
+  0. BSE-AJAX 77/77 403 was `known_degraded` and did not fail the run;
+  NSE 73/73, 23 accepted; BSE-RSS 1/1, 0 accepted.
+- Manifest after: **STORED 3,079 / DUPLICATE_EXACT_BINARY 134 /
+  MANUAL_UPLOAD_QUEUED 93 / AWAITING_UPLOAD 0 / DISCOVERED 0**; total
+  3,306.
+- **Bridge 09:00 IST — completed, exit 1 on duplicate-review warnings.**
+  20 REGISTERED (the four pending rows 3219, 3263, 3283, 3284 plus 16
+  new rows), 1,621 ALREADY_REGISTERED, 864
+  ALREADY_REGISTERED_METADATA_CONFLICT (informational), 18
+  DUPLICATE_REVIEW_REQUIRED, 1 documented missing Drive file. Backend
+  `document` count 1,368 → **1,388**.
+- **STL 1990 closed.** The manifest PDF is a scanned 3-page NSE copy of
+  the same STL Networks resignation filing already in the backend as
+  `8d210bcc` (3-page BSE text copy; Ms. Prerna Wadhwa, 2026-08-04).
+  Manifest row set to `DUPLICATE_EXACT_BINARY` with a review note; no
+  backend document added. Not byte-identical; owner-approved semantic
+  closure.
+- **Shanti Gold 2137 registered.** The manifest PDF is the 5-page full
+  Board Meeting Outcome; backend `2d5a3063` is a 3-page
+  rights-issue-only extract (text similarity 0.833; 2137 contains
+  additional board content). Registered via a one-row recovery plan
+  (`scripts/spa_bridge/recovery_plan_shanti_2137_2026-11-02.csv`) as
+  document `73663d5a-0ad9-4bb1-8084-592e0907c6ac`, title `Board Meeting
+  Outcome for For Meeting Held On July 31, 2026
+  [404a570b-3891-4835-9165-3b50266e6833]`, content `b011b840…`;
+  backend count 1,388 → **1,389**. A scoped verification run now
+  reports `ALREADY_REGISTERED_METADATA_CONFLICT` for 2137 and exits 0.
+- **Second batch — all remaining 16 resolved (2026-11-02).** 13 distinct
+  filings registered via
+  `scripts/spa_bridge/recovery_plan_remaining_duplicate_reviews_2026-11-02.csv`:
+  AXISCADES 232, 234, 238, 242, 243, 245 (six distinct Jupiter Capital
+  SAST events, 19 Jun–8 Jul 2026); Chemplast 353 (Amansa transaction);
+  UNO Minda 1261 (Customs anti-dumping order); Quality Power 1601
+  (original earnings-call intimation); Dee Development 1749 (full
+  17-page board meeting outcome); Ratnaveer 2029 (preferential-issue
+  monitoring report); Choice 2467 (Mr. Ashok Kumar Thakur tenure);
+  Manipal Health 2620 (47-page promoter non-disposal/encumbrance
+  disclosure). 3 duplicates closed: Quality 1626 and Dee 1790 (exact
+  same Drive file/SHA as 1601/1749) and Sadhav 2732 (same transcript,
+  0.999 text similarity, earlier 14-vs-12 Aug typo; backend holds the
+  corrected copy). The scoped 9-ticker bridge recovery run registered
+  **13**, with **0 DUPLICATE_REVIEW_REQUIRED** and exit 0 (log:
+  `logs/spa_bridge_remaining16_recovery_2026-11-02.log`).
+- Current state after the NSE ZIP retry and scoped bridge
+  registration: **STORED 3,076 / DUPLICATE_EXACT_BINARY 139 /
+  MANUAL_UPLOAD_QUEUED 91 / AWAITING_UPLOAD 0 / DISCOVERED 0**; total
+  3,306; backend `document` **1,403**; duplicate-review queue **0**.
+- Next automatic runs: Cloud Run **2026-11-03 07:30 IST**; bridge
+  **2026-11-03 09:00:30 IST**.
+
+### NSE ZIP attachment fix (2026-11-02)
+
+- `validation.py` now unwraps ZIP attachments: raw PDFs pass through,
+  a single PDF is extracted, and multiple PDFs are merged in archive
+  order into one PDF; entries/size are capped and ambiguous/corrupt
+  archives produce specific failure reasons.
+- `production_ingestion.py` unwraps on every acquisition route and
+  stores the PDF, not the ZIP; route provenance records
+  `archive=zip member=<name>`.
+- Deployed as **generation 85**, image
+  `sha256:93ef44240dce1fc6fd409044b949cbf8e5889da6ef4754be0fbb07831c5b0f4b`;
+  daily args/timeout/retries unchanged.
+- **Row 3230 Tempsens — STORED** from
+  `CIMG_544886_30102026214248_1.pdf` (sha `cb254b258c511a6e…`).
+  **Row 3235 Morepen — DUPLICATE_EXACT_BINARY** of row 3289 (same PDF
+  sha `7ae63a39783965b4…`); both queue entries removed.
+- The full scheduled bridge task at 11:51 aborted on a transient Drive
+  API read timeout before reaching row 3230 (`LastResult` 1). A scoped
+  `TEMPSENS` bridge rerun at 12:32 succeeded (exit 0) and registered
+  row 3230 as document `bd4e18e2-c6d0-4752-9fe6-814d14a2e41d`; backend
+  `document` count 1,402 → **1,403**. The next full scheduled bridge
+  run is 2026-11-03 09:00:30 IST.
+- The 3235 retry execution originally showed a failed status because the
+  pre-existing `retry-queued` mode returned exit 3 for
+  `DUPLICATE_EXACT_BINARY`, causing one Cloud Run retry that then saw
+  `ROW_NOT_ELIGIBLE`. Data was correct. The exit-code fix
+  (`DUPLICATE_EXACT_BINARY` now returns 0 from `retry-queued`) was
+  deployed as **generation 86**, image
+  `sha256:b6136bc680d7af344ce8e21e8e38ef250fdf95d5aed0c76573b82aa93752919c`;
+  19/19 entrypoint tests pass. No row retry was needed.
+
+### Operational reliability issue — Drive metadata timeout (2026-11-02)
+
+- **Evidence:** the full `SPARS_SpaBridgeCatchup` run at 11:51 IST
+  aborted at 12:01 with `TimeoutError: The read operation timed out`
+  inside `bridge_spa_manifest.py:492` → `file_metadata()` →
+  `files().get(...).execute()` → `httplib2`; the task exited 1 before
+  reaching row 3230. A scoped `TEMPSENS` rerun registered row 3230
+  (`bd4e18e2…`), taking the backend to 1,403; no full rerun was done
+  merely to clear `LastResult`.
+- **Existing handling:** the bridge sets a 15s socket timeout on its
+  Drive/Sheets transports, but its `file_metadata` and
+  `ManifestSheetsReader.read_tab` `.execute()` calls use the default
+  **0 retries**. Only `HttpError` 404/410 is isolated (documented
+  missing Drive file); any other HttpError or TimeoutError propagates
+  out of `run()` and aborts the entire 66-ticker batch. Results are
+  printed only after `run()` returns, so the aborted run loses its
+  per-row summary. Prior writes are durable and the bridge is
+  idempotent; this is a batch-availability issue, not data corruption.
+- **Proposed minimal correction (not applied; no production changes
+  today):**
+  1. pass `num_retries=2` (or 3) to the read-only `.execute()` calls in
+     `drive_evidence.file_metadata`, `drive_evidence.download_and_hash`
+     (canary-only) and `ManifestSheetsReader.read_tab`, reusing
+     googleapiclient's own socket-timeout/ConnectionError/5xx retry;
+  2. wrap the lazy `build_drive_service()` + `file_metadata()` per-row
+     call in `bridge_spa_manifest.run()`; on a final
+     TimeoutError/OSError/ConnectionError or transient HttpError,
+     append a `DRIVE_METADATA_TIMEOUT` / `DRIVE_METADATA_ERROR` result
+     (row, company, Drive file ID), `continue` to the next row, and add
+     those outcomes to the failure summary/exit code;
+  3. add focused tests for timeout-then-success and
+     timeout-then-continue, with no live credentials.
+  This is a backend bridge change only; apply/test after tomorrow's
+  scheduled verification.
+- **Tomorrow's verification unchanged:** Cloud Run daily
+  **2026-11-03 07:30 IST**; bridge **2026-11-03 09:00:30 IST**. The
+  bridge task's `LastResult` is 1 from the transient timeout; do not
+  rerun the full bridge merely to clear it.
+
+### Boundaries
+
+The 2026-11-01 operational work was limited to the authorized task
+enable, 66 promotions, 4 stores, 2 queue entries, and 60 duplicate
+classifications. On 2026-11-02 the owner explicitly approved the daily
+Cloud Run job deployment; the only production change was the existing
+job update (generation 84, image `sha256:df19b1ed…`). No scheduler
+change, credential/infrastructure change, or schema change. After the
+first runs, the owner explicitly approved the two-row resolution (STL
+1990 closed as a semantic duplicate; Shanti Gold 2137 registered via a
+one-row recovery plan, scoped SHANTIGOLD run) and then the remaining-16
+batch (13 registered, 3 duplicates closed; scoped 9-ticker recovery
+run). On the same day the owner approved the NSE ZIP fix deployment
+(generation 85) and the two-row retry. Logs:
+`C:\SPA\cloudrun_fixed_v7_5\acquisition_promote_2026-11-01.log`,
+`acquisition_ingest_2026-11-01.log`,
+`C:\GitHub\backendtest\logs\spa_bridge_shanti2137_recovery_2026-11-02.log`,
+`spa_bridge_shanti2137_verify_2026-11-02.log`,
+`spa_bridge_remaining16_recovery_2026-11-02.log`,
+`C:\SPA\cloudrun_fixed_v7_5_dev_2026-11-02\release_gate\deployment_zipfix_2026-11-02.log`;
+deployment evidence:
+`C:\SPA\cloudrun_fixed_v7_5_dev_2026-11-02\release_gate\deployment_retry_debug.log`
+and `DEPLOYMENT_RESULT_2026-11-02.md`. The three confirmed distinct
+filings, STL 1990, Shanti Gold 2137, and the existing 5 exceptions
+were not touched.
+
 ## Resume instructions
+
+**2026-11-02 update:** For ingestion work, the current resume point is
+the Pipeline operations checkpoint above. The single chained daily
+Cloud Run job is deployed (generation 84) and its first run succeeded
+on 2026-11-02 07:30 IST; the 09:00:30 bridge registered 20 documents.
+STL 1990 is closed as a semantic duplicate; Shanti Gold 2137 is
+registered (document `73663d5a…`). The remaining 16 were then resolved
+(13 registered, 3 closed), so the duplicate-review queue is **0**. The
+two NSE ZIP manual-queue entries are also resolved (3230 STORED and
+registered in the backend as `bd4e18e2…`; 3235 exact duplicate); 91
+other manual-queue rows remain, and the bridge scope gap (67 of 93; 26
+missing) is open. The full bridge task's `LastResult` is 1 from a
+transient Drive timeout before row 3230; the scoped TEMPSENS rerun
+registered it, and the next full scheduled run is 2026-11-03 09:00:30.
+Review the Drive metadata timeout reliability proposal in the
+subsection above (and `REVIEW_DRIVE_TIMEOUT_RELIABILITY.md`); do not
+rerun the full bridge merely to clear `LastResult`. Do not re-run
+discovery for rows 3219–3284. The chaining decision is made (single
+daily job). The owner's stated next priorities are the three confirmed
+distinct filings, the remaining manual-queue rows, and fixing future M1
+filing identification.
 
 Disaster recovery is complete. If resuming on **this PC**: read this
 checkpoint, confirm `git status` is clean on all three repo working
