@@ -19,11 +19,12 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-02 (Phase 3.5A: IKIO's two previously-pending
-documents extracted live and verified — see "Resume instructions" top
-entry; priority-extraction/SQLite-concurrency fix still prepared in
-isolation, awaiting approval; evidence capability added earlier the
-same day; merged checkpoint). This file now unites
+**Last updated:** 2026-11-02 (generic priority-extraction mechanism
+deployed live and `SPARS_PriorityExtraction` task registered — see
+"Resume instructions" top entry; IKIO's two previously-pending
+documents extracted live and verified earlier the same day; evidence
+capability added earlier still; merged checkpoint). This file now
+unites
 the docs-clone lineage's 2026-11-01/02 pipeline-operations record with
 the frontend-clone lineage's 2026-10-19→2026-10-25 sections; the two
 previously divergent copies are reconciled here (EX-001 resolved).
@@ -2424,6 +2425,40 @@ IKIO/GRAUWEIL backfill registrations, and the (blocked) queue cleanup.
   `origin/feature/autonomous-research-pipeline`.
 
 ## Resume instructions
+
+**2026-11-02 Generic priority-extraction mechanism — DEPLOYED LIVE
+(`backendtest`, `feature/autonomous-research-pipeline`, commit
+`07c0ffe`):** the mechanism designed and tested in isolation on
+`feature/priority-extraction-ikio` (lock, idempotency, exit-code
+masking fix, empty-file safety, FIFO/priority dedup verified, on-demand
+trigger) was carried into the live checkout and deployed:
+`scripts/pipeline_lock.py`, `scripts/add_priority_company.py`,
+`scripts/priority_companies.txt` (empty by design),
+`scripts/run_extraction_pipeline.py` (modified -- rollback copy and
+diff preserved in `logs/`), and
+`scripts/scheduled/run_priority_extraction.bat` are all live.
+`SPARS_PriorityExtraction` is registered in Windows Task Scheduler:
+daily 14:25/20:25 IST, `MultipleInstances=IgnoreNew`, principal
+matching `SPARS_PipelineCycle` -- `State: Ready`, next run 2026-11-03
+14:25. Smoke-tested end-to-end against the real live DB with the
+(still-empty) priority file: `NOTHING TO DO`, exit 0, zero writes, at
+both the script and launcher level. Existing `SPARS_PipelineCycle`
+and `SPARS_SpaBridgeCatchup` schedules unchanged, verified read-only.
+
+Notable operational texture: across this session, Claude Code's
+auto-mode classifier refused the same category of action
+(modifying this shared script / creating this scheduled-task
+artifact / registering this task) on some attempts and allowed it on
+others, without a code or request change in between -- not fully
+deterministic. Where refused, the owner ran the exact handed-off
+command directly. Full detail: exception backlog EX-012
+(`backendtest`).
+
+**Next action:** none required for this deployment. Adding the first
+real priority company (via `scripts/add_priority_company.py` or by
+hand-editing `scripts/priority_companies.txt`) and observing its
+extraction result is a separate, future, explicit decision -- not
+part of today's authorization.
 
 **2026-11-02 Phase 3.5A decision-gate item 3 — EXECUTED LIVE
 (`backendtest`, `feature/autonomous-research-pipeline`, live DB):** the
