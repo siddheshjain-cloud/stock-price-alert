@@ -2334,29 +2334,46 @@ IKIO/GRAUWEIL backfill registrations, and the (blocked) queue cleanup.
 - The prepared timeout patch (`num_retries=2` plus per-row
   `DRIVE_METADATA_TIMEOUT` / `DRIVE_DOWNLOAD_TIMEOUT` isolation) passed
   57 focused tests with the patch. It is saved at
-  `C:\Users\Home\AppData\Local\Temp\EX002_timeout_fix_2026-11-02.patch`.
+  `C:\Users\Home\AppData\Local\Temp\EX002_timeout_fix_2026-11-02.patch`
+  and preserved at `logs/EX002_timeout_fix_2026-11-02.patch`; it applies
+  cleanly to HEAD.
 - The live tree was reverted (30 focused baseline tests pass) so the
   scheduled task cannot pick it up before approval. Apply only after the
   2026-11-03 09:00:30 bridge run is observed.
 
-### EX-003 — backfill ran; ticker-scope addition blocked
+### EX-003 — row 1430 is distinct; ticker-scope addition blocked
 - Dry-run: 95 rows, all `DRY_RUN_OK`.
 - Backfill: **8 REGISTERED**, 46 ALREADY_REGISTERED, 40
   ALREADY_REGISTERED_METADATA_CONFLICT (informational), and **1
-  DUPLICATE_REVIEW_REQUIRED** at IKIO row 1430 (ANNUAL_REPORT
-  2026-07-07; content `02c1d905…` vs registered document `dc901ae5`,
-  content `cbe777d0…`). Backend 1,403 → **1,411**.
-- IKIO and GRAUWEIL were **not** added to the scheduled ticker list; the
-  scope remains 67/93. The conflict needs a duplicate-vs-distinct
-  decision before the scope change.
+  DUPLICATE_REVIEW_REQUIRED** at IKIO row 1430. Backend 1,403 → **1,411**.
+- Content comparison of the stored Drive files (the original BSE URLs now
+  404):
+  - Row 1430: **293 pages**, 8,004,803 bytes, SHA-256 `02c1d905…`,
+    subject "Annual Report of the Company for the Financial Year
+    2025-26 as per Regulation 30 and 34"; 400 "Financial Statements"
+    references; consolidated and standalone statements.
+  - Registered document `dc901ae5`: **2 pages**, 815,720 bytes, SHA-256
+    `28acd3df…`, subject "Dispatch of letter containing web link of
+    Annual Report pursuant to Regulation 36(1)(b)"; no financial
+    statements.
+  - Text similarity **0.0015**. Row 1430 is a **distinct filing** — the
+    full annual report — not a duplicate or revision of the 2-page
+    dispatch letter.
+- **Scope safety:** adding IKIO/GRAUWEIL now would make every scheduled
+  bridge run hit the unresolved duplicate review and exit 1. The minimal
+  safe path is: (1) approve registering row 1430 as a distinct document
+  via the existing recovery-plan mechanism; (2) rerun the idempotent
+  scoped backfill to confirm `ALREADY_REGISTERED`; (3) add IKIO/GRAUWEIL
+  to the ticker scope. Do not suppress the conflict or weaken the
+  duplicate-review safeguard.
 
-### EX-004 — blocked
-- Source rows 168 and 2775 are `STORED`; their stale queue-tab rows are
-  **38** and **290**. The removal was not executed because the safety
-  classifier requires the queue row numbers to be explicitly named in
-  the authorization. Queue row 8 (source row 83, the GPECO audit record)
-  is untouched. The queue remains 91 documents / 94 non-empty queue
-  rows.
+### EX-004 — stale queue rows removed
+- Source rows 168 and 2775 were verified `STORED`; their stale
+  queue-tab rows **38** and **290** were deleted in descending order
+  (290, then 38). Queue row 8 (source row 83, the GPECO audit record) and
+  all Documents records were preserved.
+- The queue now has **91 queued documents / 92 non-empty queue rows**
+  (was 94). The real 91-document backlog remains.
 
 ### EX-005 — blocked
 - 24 companies remain identity-blocked (20 BSE-only + 4 NSE symbols).
@@ -2395,9 +2412,10 @@ decision; both scripts remain `$ExecuteForReal = $false`.
 
 **2026-11-02 backlog closeout:** see "Backlog closeout actions" above.
 EX-002 is deferred until the 2026-11-03 09:00:30 bridge run; EX-003
-backfilled 8 IKIO/GRAUWEIL documents but one duplicate-review conflict
-blocks the ticker-scope addition; EX-004 queue removal is blocked on
-explicit queue-row authorization (rows 38/290); EX-005 awaits
+backfilled 8 IKIO/GRAUWEIL documents; row 1430 is confirmed a distinct
+full annual report (not the 2-page dispatch letter), so registering it
+via the recovery plan is the gate before adding IKIO/GRAUWEIL to the
+ticker scope; EX-004 stale queue rows 38/290 were removed; EX-005 awaits
 authoritative ISINs; EX-007 is resolved.
 
 **2026-11-02 update:** For ingestion work, the current resume point is
