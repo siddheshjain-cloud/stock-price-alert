@@ -2108,6 +2108,11 @@ bridge registers 67.
   corrected copy). The scoped 9-ticker bridge recovery run registered
   **13**, with **0 DUPLICATE_REVIEW_REQUIRED** and exit 0 (log:
   `logs/spa_bridge_remaining16_recovery_2026-11-02.log`).
+  **The three previously-designated "confirmed distinct filings" were
+  Ratnaveer 2029, Choice 2467 and Manipal 2620 -- all three are among
+  the 13 registered here** (backend documents `19959044…`, `cfa46c85…`,
+  `b5ab4cf5…`, verified 2026-11-02 against the manifest rows, the
+  recovery log and the backend). They are not a separate pending item.
 - Current state after the NSE ZIP retry and scoped bridge
   registration: **STORED 3,076 / DUPLICATE_EXACT_BINARY 139 /
   MANUAL_UPLOAD_QUEUED 91 / AWAITING_UPLOAD 0 / DISCOVERED 0**; total
@@ -2209,7 +2214,9 @@ deployment evidence:
 `C:\SPA\cloudrun_fixed_v7_5_dev_2026-11-02\release_gate\deployment_retry_debug.log`
 and `DEPLOYMENT_RESULT_2026-11-02.md`. The three confirmed distinct
 filings, STL 1990, Shanti Gold 2137, and the existing 5 exceptions
-were not touched.
+were not touched at that time; the three were later registered in the
+2026-11-02 second batch (Ratnaveer 2029, Choice 2467, Manipal 2620),
+STL 1990 was closed as a duplicate, and Shanti Gold 2137 was registered.
 
 ## Engineering governance & tooling checkpoint (2026-11-02)
 
@@ -2329,9 +2336,11 @@ Review the Drive metadata timeout reliability proposal in the
 subsection above (and `REVIEW_DRIVE_TIMEOUT_RELIABILITY.md`); do not
 rerun the full bridge merely to clear `LastResult`. Do not re-run
 discovery for rows 3219–3284. The chaining decision is made (single
-daily job). The owner's stated next priorities are the three confirmed
-distinct filings, the remaining manual-queue rows, and fixing future M1
-filing identification.
+daily job). The three previously-designated confirmed distinct filings
+(Ratnaveer 2029, Choice 2467, Manipal 2620) were already registered in
+the 2026-11-02 second batch and are no longer pending; the remaining
+priorities are the manual-queue rows and fixing future M1 filing
+identification.
 
 Disaster recovery is complete. If resuming on **this PC**: read this
 checkpoint, confirm `git status` is clean on all three repo working
