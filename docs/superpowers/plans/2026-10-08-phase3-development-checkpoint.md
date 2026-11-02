@@ -19,35 +19,50 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-02 (pipeline operations + daily automation
-deployment -- `SPARS_SpaBridgeCatchup` re-enabled Ready for
-2026-11-02 09:00:30 IST; 66 discovered rows acquired (4 new `STORED`,
-60 exact duplicates, 2 manual-upload exceptions); the single chained
-daily Cloud Run job (`--mode daily`, generation 84, image
+**Last updated:** 2026-11-02 (merged checkpoint). This file now unites
+the docs-clone lineage's 2026-11-01/02 pipeline-operations record with
+the frontend-clone lineage's 2026-10-19→2026-10-25 sections; the two
+previously divergent copies are reconciled here (EX-001 resolved).
+
+**Current operational state (2026-11-02):** `SPARS_SpaBridgeCatchup`
+re-enabled Ready for 2026-11-02 09:00:30 IST; 66 discovered rows acquired
+(4 new `STORED`, 60 exact duplicates, 2 manual-upload exceptions); the
+single chained daily Cloud Run job (`--mode daily`, generation 84, image
 `sha256:df19b1ed…`) was deployed at 01:50 IST; the first scheduled run
 succeeded at 07:30 IST and the bridge registered 20 documents at 09:00
-IST. STL row 1990 was closed as a semantic duplicate and Shanti Gold
-row 2137 was registered; the remaining 16 duplicate-review rows were
-then resolved (13 registered, 3 closed) and the duplicate-review queue
-is now **0**. The NSE ZIP attachment fix was deployed as generation 85;
-the two ZIP manual-queue rows were resolved (one STORED, one exact
-duplicate), and the retry-queued exit-code fix was deployed as
-generation 86. The full bridge run's transient Drive metadata timeout
-is recorded as an operational reliability issue; a minimal correction
-is proposed but not applied. The 2026-10-12 sections below remain the
-prior milestone record.)
+IST. STL row 1990 was closed as a semantic duplicate and Shanti Gold row
+2137 was registered; the remaining 16 duplicate-review rows were then
+resolved (13 registered, 3 closed) and the duplicate-review queue is now
+**0**. The NSE ZIP attachment fix was deployed as generation 85; the two
+ZIP manual-queue rows were resolved (one STORED, one exact duplicate),
+and the retry-queued exit-code fix was deployed as generation 86. The
+full bridge run's transient Drive metadata timeout is recorded as an
+operational reliability issue; a minimal correction is proposed but not
+applied.
+
+**Current frontend / research state (2026-10-25):** **UNO Minda is
+CLOSED as a complete, reconciled investment case** -- see "UNO Minda
+MILESTONE CLOSED" below. The Wealth Desk visual redesign is complete
+(status-color system, score tiles, merged Overview/Investment Case,
+forecast/valuation charts), committed `b037ab9` and pushed to
+`feature/spars-smart-search-ui`; not merged to `master`. The
+live-database safety audit and the open authorization question it raised
+are recorded in "Pipeline safety corrections applied" below. Plasmic
+Studio was evaluated and declined (2026-10-19); no Plasmic files or
+dependencies exist.
+
+**Prior milestone (2026-10-12):** I3AS Alert-3 complete, merged into
+`feature/research-coverage-foundation` (PR #5), real-company validated.
+`master` is current through PR #7; Continuous Monitoring V1 (PR #8) is
+one PR ahead on the feature branch.
 
 **Sync policy (2026-11-02):** This docs clone
 (`C:\GitHub\stock-price-alert`) is the only place this checkpoint is
 edited. The copy in the `stock-price-alert` frontend clone
 (`C:\Users\Home\Documents\GitHub\stock-price-alert`) is a read-only
-mirror: sync it from this clone, never edit it independently.
-
-**Known divergence (2026-11-02):** the frontend copy currently contains
-2026-10-19→2026-10-25 sections (UNO Minda milestone, live-database
-safety audit, pipeline safety corrections) that are absent here. The
-two lineages must be merged before either is treated as complete; see
-`docs/SPARS_EXCEPTION_BACKLOG.md` EX-001 in the `backendtest` repo.
+mirror, synced once from this merged result on 2026-11-02. Neither copy
+is edited independently after that. The previous divergence is recorded
+as EX-001 in `docs/SPARS_EXCEPTION_BACKLOG.md` (backendtest).
 
 ---
 
@@ -625,22 +640,6 @@ minor, known gap: nothing yet reconciles a run killed externally back
 to a terminal state. Not fixed in this slice (out of approved scope);
 flagged here for whoever picks up Monitoring V2.
 
-## Resume instructions for the next session
-
-**Everything through Continuous Monitoring V1 is complete.** `master`
-is current through PR #7 (Alert-3 + the Wealth Desk `investment_case`
-read API). `feature/research-coverage-foundation` additionally holds
-Continuous Monitoring V1 (PR #8) on top of that -- not yet merged into
-`master`; that merge is a separate decision, not yet made. The
-Wealth Desk UI (Daily Brief + Investment Coverage Grid + Company
-Workspace, provisional) and the real `InvestmentCase` build for UNO
-Minda remain the next executable items -- see "SPA -- Priority
-Directive | 12-25 October 2026" and the Real-Company Acceptance
-section above. If a future session is asked to "continue Monitoring,"
-"continue Wealth Desk," or "continue Investment Brain acceptance,"
-read this checkpoint first and confirm there is genuinely new scope
-before writing any code.
-
 ## Wealth Desk UI, provisional slice 1 (complete, 2026-10-12)
 
 Per "SPA -- Resume Development." Before writing any code: verified the
@@ -984,6 +983,905 @@ live database was re-confirmed untouched (`alembic_version`
 `20261007_05`, same file, same timestamp) throughout this entire
 backup-and-upload process.
 
+## Nifty 50 Open Research: public access gaps (PR open, not yet merged, 2026-10-19)
+
+Per the owner's approved, corrected "Nifty 50 open research" access proposal
+(audited against this checkpoint and the Registry after an earlier draft
+mistakenly used the stale `feature/investment-operating-system-m1` branch),
+the three genuinely missing code-side capabilities were implemented on
+`backendtest`, extending the existing tiered-access stack exactly --
+`ResearchTier.PUBLIC`, `optional_consumer`, `EntitlementService.
+resolve_optional`, `Company.public_research_status`
+(`NOT_PUBLIC`/`PUBLISHED`), `ResearchAccessPolicy.PUBLIC_SECTIONS` (empty by
+design -- no section is public until a separate, later, explicit decision),
+and a fourth explicit `CompanyPublicSchema` in `ResearchPresenter`'s
+existing Admin/Premium/Free selection. `PUBLIC` cannot be persisted as a
+real `UserEntitlement.tier` -- that column's own `enum_type` only accepts
+`FREE`/`PREMIUM`; `PUBLIC` only ever arises from `resolve_optional(None)`.
+A `PUBLIC`-tier request for an unpublished company 404s, never 403, so an
+anonymous caller is never told unpublished research exists for a company.
+No new router, no second access-control mechanism -- same `research_bp`,
+same `EntitlementService`/`ResearchAccessPolicy`/`ResearchPresenter` stack.
+
+Full regression: **1543 passed, 0 failed** (11:55), after one false-negative
+run (1126 spurious errors) traced to two pytest processes colliding on this
+repo's shared `--basetemp=../.spa-pytest-temp` config when run concurrently
+from two sessions against the same working tree -- not a code defect; a
+coordination mistake this session made and then corrected by giving the
+implementing agent exclusive access to the working tree.
+
+Committed as `34b148f` on new branch `feature/public-research-access`
+(off `feature/research-coverage-foundation`'s tip `061b3b3`). Opened as
+**PR #11**, state **OPEN, not merged** -- per this session's own harness
+guardrail (blocks an agent from merging any PR without a human reviewing
+the diff first, overriding this project's usual Quality-Gated Autonomous
+Development Protocol for routine gates), the merge decision is left to the
+owner. No live-database read or write occurred at any point; the migration
+(`dce47b38cde9_add_company_public_research_status`) was tested only
+against isolated temp SQLite files.
+
+**Still not built** (explicitly out of this task's scope, named in the
+proposal's §4/§5): the Nifty 50 constituents/index-membership model, and
+any real publishable research content -- system-wide, the live database
+still has zero `ResearchRevision`/`ForecastRevision`/`ValuationRevision`/
+`InvestmentCase` rows for any company, Nifty 50 or otherwise (unchanged
+from the Real-Company Investment Brain Acceptance inventory above). Merging
+PR #11 makes the access layer ready; it does not by itself make any real
+company's research public, because none exists yet to publish.
+
+**Merge decision (owner, 2026-10-19):** PR #11 reviewed and approved for
+merge into `feature/research-coverage-foundation` **only** -- merge commit
+`48424ea` (`48424eab671a000686e47ca46c356429d98740e4`). Explicitly withheld
+in the same instruction, unchanged standing position: no merge to `master`,
+no deploy, no live-database migration, and **no company may be marked
+`PUBLISHED` yet** -- the code path exists; the owner has not authorized
+using it on any real company.
+
+**Pre-launch requirements (owner-recorded, 2026-10-19) -- none satisfied
+yet, all block actually setting any company to `PUBLISHED`:**
+1. **Nifty 50 constituent eligibility enforcement** -- publication must be
+   gated on real index membership (the still-unbuilt `IndexConstituent`
+   model, proposal §4), not left to an admin's unchecked discretion to
+   publish any company.
+2. **Explicit review of public response fields and market-data licensing**
+   -- someone must review the `CompanyPublicSchema`/`PUBLIC_SECTIONS`
+   field list against what SPARS is actually licensed to republish
+   (exchange/market-data terms, any third-party-sourced fields) before any
+   section is added to `PUBLIC_SECTIONS` or any company is published.
+3. **Administrator identity and timestamp audit for publication changes**
+   -- no audit trail exists yet for who set `public_research_status` and
+   when; `set_public_research_status` records the status change itself
+   but not (yet) an attributed, queryable history of each change. Needs a
+   deliberate design (likely the same `AlertService`/audit-log shape this
+   codebase already uses elsewhere), not an ad-hoc field.
+
+## SPARS Frontend: Smart Search + Verdict Page (complete, committed + pushed, 2026-10-19)
+
+Per the owner's iterative design-review series this session (UI/UX
+direction review -> Nifty 50 open-research correction -> backend
+access-gap implementation (PR #11 above) -> homepage/header/Verdict Page
+frontend implementation -> visual review -> final acceptance), the
+frontend side of the Nifty 50 open-research initiative is implemented and
+shipped to the feature branch:
+
+- Smart Search (`components/spars/CompanySearch.tsx`) no longer gates
+  results behind sign-in -- hits the backend's new anonymous-capable
+  `research_bp` endpoints directly and routes into a new public page.
+- New public Verdict Page (`app/company/[companyId]/page.tsx`,
+  `components/spars/VerdictPage.tsx`): one scrolling page, sticky compact
+  summary bar, plain-language sections (The Case / Why we believe this /
+  The Numbers / Stewardship / Entry zone). `PUBLIC`-tier viewers see real
+  content or an honest "not yet available" state -- never a locked/
+  premium collage. Signed-in FREE/PREMIUM/ADMIN viewers keep the Wealth
+  Desk's existing tiered lock behavior unchanged.
+- Shared `components/spars/SparsHeader.tsx`: homepage logo hidden
+  (internal pages keep it), "Explore Research" plain link (tablet
+  breakpoint up, both auth states), "My Desk" strictly gated on a
+  *resolved* authenticated session (never shown to anonymous, never
+  flickers during the auth-loading state), "Account" a dropdown reusing
+  the existing logout mechanism (Settings / Sign Out) -- not a new auth
+  path. My Desk and the adjacent Sign In/Account control verified
+  pixel-identical at 40px height/radius across 320/390/768/1280px.
+- Mobile layout bug found and fixed during visual review: neither Verdict
+  Page `<Table>` was wrapped in its own scroll container, and the sticky
+  bar's `-mx-4/-mx-6` trick assumed a parent padding that didn't exist --
+  both caused real page-level horizontal overflow at 390px (confirmed via
+  `scrollWidth`/`clientWidth`, not just visually). Fixed; re-verified
+  zero overflow.
+- A build-time-gated "TEST DATA" badge (`process.env.NODE_ENV !==
+  'production'`, statically unreachable in a production build) marks
+  demonstration/seeded research on both the new Verdict Page and,
+  identically, the existing Wealth Desk workspace (`CompanyWorkspace.tsx`)
+  -- no other change to that page's functionality, auth, entitlements, or
+  layout.
+- `lib/research-format.ts` factors out the three formatter helpers
+  `CompanyWorkspace` already had; `researchApi.getCompanyDetail`/
+  `researchStore.fetchCompanyDetail` gained an optional, backward-
+  compatible `silent` path so the routine "not published yet" 404 doesn't
+  surface a raw backend error slug as a toast; `types/research.ts` gained
+  the `'PUBLIC'` tier value.
+
+All of it verified against an isolated, disposable local database
+(`backendtest`'s own `ResearchSeedService` IKIO fixture) -- never the
+live `instance/trading_app.db`, and no company has ever been marked
+`PUBLISHED` anywhere, real or isolated.
+
+**Committed as `0354b26` on `feature/spars-smart-search-ui`, pushed to
+origin.** Not merged into `master`; no PR opened yet (left for the
+owner). The three pre-launch requirements above (constituent enforcement,
+licensing review, publication audit trail) still block ever actually
+setting a real company to `PUBLISHED` -- unchanged, still none satisfied.
+
+**End-of-session state (2026-10-19):** both repositories confirmed
+clean -- frontend `stock-price-alert` at `0354b26` (==
+`origin/feature/spars-smart-search-ui`), backend `backendtest` at
+`48424ea` on `feature/research-coverage-foundation` (== origin), no
+uncommitted changes in either. Local dev servers (frontend :3000,
+isolated backend :5055, the latter against the disposable
+`isolated_dev.db`, never the live file) stopped at session close.
+
+## Wealth Desk visual redesign: acceptance-tested, two bugs fixed (complete, committed + pushed, 2026-10-24)
+
+Per the owner's "SPARS Wealth Desk Visual Acceptance Test" and follow-up
+"Two Final Corrections" instructions, the already-uncommitted
+`CompanyWorkspace.tsx` visual redesign from the prior session (shared
+PASS/WATCH/FAIL status-color system, score tiles, merged Overview +
+Investment Case tab, forecast/valuation bar charts, `AssumptionNote`
+callouts) was visually acceptance-tested end to end, two real bugs were
+found, fixed, and re-verified, and the result was committed.
+
+**Test method:** an isolated, disposable backend (fresh scratch SQLite
+file, never `instance/trading_app.db`) seeded via the existing,
+unmodified `ResearchSeedService` IKIO fixture plus a full
+`InvestmentCase` (nine gate results, two kill switches, BULL/BASE/BEAR
+scenario spread, zero/negative/missing/extreme-outlier valuation
+methods) built entirely through existing service methods, the same
+disposable-fixture pattern Phase 3 Slice G's own tests use. Frontend and
+backend dev servers driven headlessly via Chrome DevTools Protocol,
+using only Node 22's built-in `fetch`/`WebSocket` against the
+already-installed system Chrome -- no packages installed.
+
+**Bug 1 -- mobile Financials table silently truncated data:** the shared
+`Table` primitive's `overflow-x-auto` wrapper never engaged because the
+`<table>` had no minimum width, so narrow viewports compressed columns
+instead of scrolling (the EPS header shrank to "P"; values like 4.9/6
+clipped to 5/1), with zero page-level overflow to signal anything was
+wrong. Fixed by wrapping the forecast table in its own `overflow-x-auto`
+div with `min-w-[640px]`. Verified at 320/390/768/desktop widths,
+light/dark: the internal container now shows a real `scrollWidth >
+clientWidth`, scrolling it to the end renders every header and value
+(including decimals) intact, and page-level horizontal overflow
+measured 0 in every capture.
+
+**Bug 2 -- valuation chart had no outlier handling:** the fixture's own
+pre-existing placeholder PE valuation (9,99,999 Cr implied value against
+a ~900-1,400 Cr range for other methods) stretched the chart's axis so
+far that every other bar became an invisible sliver -- a real
+"misleading chart scale" risk for any company whose data includes a
+stale or extreme figure. Fixed with a documented, deterministic rule
+(`OUTLIER_MEDIAN_MULTIPLE = 5`: a method's implied value is flagged when
+its magnitude is at least 5x the group's median magnitude; sign-
+agnostic, so zero/negative values are never flagged purely for being
+zero or negative; fewer than two real values means no group median, so
+nothing is flagged). A flagged method is excluded only from the chart's
+own axis scale -- its full, unaltered value is still shown in the
+per-method detail list below, badged `OUTLIER -- EXCLUDED FROM CHART
+SCALE` with a note that this is a statistical scale flag, not a
+correctness judgment. The market-cap reference line is preserved and
+now carries an explanatory caption. The rule's logic was verified
+against nine cases (ordinary, extreme-amid-ordinary, zero, negative-
+ordinary, negative-extreme, missing-value, single-value, all-missing,
+all-zero) and separately against real isolated-fixture data covering
+every case.
+
+**Verified:** `tsc --noEmit`, `eslint`, and `next build` all clean; zero
+console errors and zero page-level horizontal overflow across 15 headless
+captures (both pages, both themes, four widths). The public Verdict
+Page, homepage, and authentication were re-confirmed unchanged, including
+a genuinely logged-out anonymous pass (an earlier pass had been
+accidentally still-authenticated due to the test harness reusing Chrome
+cookies/localStorage across captures -- caught and fixed before trusting
+the result). No backend, API, or database changes.
+
+**Committed as `b037ab9` on `feature/spars-smart-search-ui`, pushed to
+origin.** Not merged into `master`; no PR opened (left for the owner).
+
+## Live-database safety audit: unauthorized autonomous pipeline found (2026-10-24, read-only, pipeline not interrupted)
+
+Per the owner's instruction to audit the `pre-*-migration-backup`
+snapshots flagged during the visual acceptance test, a read-only
+investigation (file timestamps, `git log`, `schtasks /query`, log
+tails -- the live `instance/trading_app.db` itself was never opened, not
+even read-only) found this is materially more significant than stray
+backup files.
+
+**Finding:** an autonomous document-extraction pipeline has been writing
+to the live database on a recurring schedule since 2026-10-19, and is
+still active. Three Windows Scheduled Tasks on the `backendtest` host
+(`SPARS_PipelineCycle` every 6h, `SPARS_Backup` daily 02:00,
+`SPARS_HealthCheck` daily 08:00) were registered by commit `1ca6f08`
+("feat(pipeline): add autonomous extraction pipeline, scheduling, and
+backups", 2026-10-19 23:30, `feature/autonomous-research-pipeline`,
+same author as this engagement). `SPARS_PipelineCycle`'s own batch file
+sets `DATABASE_URL` to the live file explicitly and invokes
+`run_extraction_pipeline.py` against it; its log shows 9 completed
+cycles (8 success, 1 transient DNS/OAuth-network failure that
+self-recovered next cycle, no corruption), each scanning ~20-25
+documents. The commit message itself states the new table's migration
+was "rehearsed on an isolated copy before live" and that the pipeline
+was "validated end-to-end against the live database" for two real
+companies -- i.e. this is a direct, self-disclosed admission of live
+writes, not an inference.
+
+**This conflicts with this checkpoint's own standing constraint**
+("Never modify or migrate the live database without a separate,
+explicit authorization") **and no record of that separate authorization
+was found in either repository.** The owner has since confirmed
+(2026-10-24): autonomous extraction was a planned direction, but
+explicit authorization specifically for *live-database migrations* was
+never established -- this audit's finding stands as accurate.
+
+**Material risks identified, in priority order:**
+1. **No established authorization for live-database writes** -- the
+   core finding above; every other risk compounds this one.
+2. **No rollback plan.** Real migrations (an `extracted_fact.scope`
+   column + backfill, identity-attribution fixes, the new
+   `pipeline_cycle_run` table, LLM-usage tracking) have already been
+   applied sequentially to the live file; a clean single-step revert no
+   longer exists. Only forward-fix or restoring a backup (with data loss
+   back to that point) are realistically available, and this gets harder
+   the longer the pipeline keeps running.
+3. **Unbounded disk growth.** The properly-engineered `scheduled-backup`
+   family (via `scripts/backup_live_database.py`: online backup API +
+   integrity check + row-count verification) is correctly bounded by its
+   own `--keep 14` retention. The separate, ad-hoc `pre-*-backup` family
+   -- one taken by hand before each live-affecting change, matching no
+   script anywhere in the repository -- has **no retention policy at
+   all**: already 14 files / 260 MB (of 391 MB total in `instance/`) from
+   roughly two days of work, and will grow without bound for as long as
+   that habit continues.
+4. **No failure escalation.** `check_pipeline_health.py` checks OAuth
+   token validity, pipeline recency, and backup recency, but only
+   appends to a local log file -- it does not reuse the project's own
+   `AlertService` (as Monitoring V1 already does for exactly this kind
+   of failure). A silently stalled or broken pipeline would not surface
+   to anyone without someone manually reading the log.
+
+**Mitigating factors, for balance:** the pipeline's own design is
+otherwise careful -- idempotent extraction, isolated-copy rehearsal
+before each live migration, verified backups, and (per its own commit
+message) conservative "never auto-promote" staging that keeps a human
+in the loop for anything investment-consequential. The one real failure
+observed was a transient network issue, not data corruption. Task
+Scheduler's "Interactive only" logon mode means it has in practice fired
+far less often than its 6-hourly schedule implies (9 logged cycles over
+~5 days, not ~20), which has limited exposure so far but also means its
+actual cadence is less predictable than "every 6 hours."
+
+**Recommended corrections (status as of 2026-10-24, same session --
+see "Pipeline safety corrections applied" below):**
+1. **Still open, owner decision needed.** Record the owner's
+   authorization decision for this pipeline's live-database access
+   explicitly. The owner has confirmed the gap itself is real
+   (autonomous extraction was planned, but explicit authorization for
+   live migrations specifically was never established) -- that is not
+   the same as having now granted it; no retroactive or go-forward
+   authorization has been recorded.
+2. **Tooling built and tested, not yet enabled.** See below.
+3. **Fixed and deployed.** See below.
+4. **Documented.** See below.
+
+**Per explicit instruction, the pipeline was not interrupted and the
+live database was not modified or opened by this audit** -- findings
+only; no corrective action taken in the audit itself (corrections were
+made in a later, separate pass -- see immediately below).
+
+## Pipeline safety corrections applied (2026-10-24, same day as the audit)
+
+Per the owner's follow-up instruction to fix the identified risks
+"without disrupting existing operations or risking live data," three of
+the four risks above were addressed on `backendtest`, committed
+**`9d2114b`** on `feature/autonomous-research-pipeline` (local commit,
+not pushed). Risk 1 (authorization) is not code-fixable and remains
+open above.
+
+- **Risk 3 fixed (no failure escalation):** `scripts/check_pipeline_
+  health.py` now records one `AlertEvent` via the existing, unmodified
+  `AlertService` whenever it detects a problem (new `AlertEventType.
+  PIPELINE_HEALTH_CHECK_FAILED` -- a pure additive Python constant,
+  zero migration, since `event_type` is a deliberately unenforced
+  `String` column). Same fail-safe-isolation shape every other
+  `AlertService` call site in this codebase already uses -- a failure
+  to alert can never change the script's own exit code. A new
+  `--no-alert` flag keeps it purely read-only when wanted. This is a
+  **live change**, already in effect for `SPARS_HealthCheck`'s next
+  daily run -- but it is additive instrumentation (one new row type on
+  an already-migrated, already-used-elsewhere table, same pattern
+  Monitoring V1 already uses without per-call approval), not a
+  migration or a destructive change, so it was made directly per the
+  owner's "seek approval only for live migrations or potentially
+  destructive changes" instruction.
+- **Risk 4 addressed (no rollback plan):** `docs/deployment/live-
+  database-rollback-runbook.md` added -- current restore-point
+  inventory (the two backup families and their different guarantees),
+  an explicit "what this cannot undo" section, and a step-by-step
+  restore procedure built on the same backup-then-verify discipline
+  already used throughout this engagement. Documentation only; nothing
+  in it has been executed.
+- **Risk 2 addressed, deliberately not enabled (unbounded disk
+  growth):** `scripts/prune_adhoc_backups.py` added -- bounds the
+  unmanaged `pre-*-backup` family (14 files / 260 MB, no retention
+  policy existed). **Dry-run by default; `--execute` required to
+  delete anything.** Not wired into any scheduled task. This one was
+  deliberately held back from actually running: each `pre-*-backup`
+  file is one of the few existing rollback points named in the runbook
+  above, so deleting any of them trades away rollback capability --
+  that's a human call, not an automatic one, and squarely fits
+  "potentially destructive changes" needing approval. Verified via dry
+  run against the real `instance/` directory: with the tool's default
+  `--keep 30`, it would delete 0 of the current 14 files today -- the
+  fix only bounds *future* growth, it does not touch history.
+
+**Testing, all against disposable copies, never the live file:** a
+`scheduled-backup`-produced snapshot was copied into a scratch
+directory to exercise `check_pipeline_health.py`'s healthy/unhealthy/
+`--no-alert` paths (confirmed correct `AlertEvent` writes, and zero
+writes on both the healthy path and `--no-alert`); `prune_adhoc_
+backups.py` was verified against synthetic fake files in a scratch
+directory (correct keep/delete split, dry-run truly deletes nothing),
+then dry-run only against the real `instance/` directory. Focused test
+suite (`tests/test_alert_service.py`, `tests/monitoring/test_
+monitoring_service.py`, `tests/research/test_investment_case_service.py`
+-- 38 tests) passes; the full suite collects cleanly (1585 tests, no
+import errors) -- a full regression run was not executed given the
+narrow, additive scope of the change.
+
+**Next owner decision, if any:** whether/when to run `prune_adhoc_
+backups.py --execute` (and with what `--keep`), and the still-open
+authorization question above. Neither requires urgent action -- disk
+growth is bounded going forward even unexecuted, and the pipeline
+itself was not touched.
+
+**Owner decisions recorded (2026-10-24/25, later same engagement):**
+- **Authorization: the pipeline is approved to continue running "under
+  the approved operational boundaries"** -- the owner's own phrase,
+  taken as explicit, standing authorization for `SPARS_PipelineCycle`/
+  `SPARS_Backup`/`SPARS_HealthCheck` to keep operating as already
+  built (idempotent extraction, isolated-copy-rehearsed migrations,
+  verified backups, conservative never-auto-promote staging, real
+  writes to the live database as part of normal operation). This
+  resolves risk 1 above as **authorized going forward**; it is not
+  framed as, and should not be read as, retroactive sign-off on the
+  specific migrations already applied before this authorization existed
+  -- that history is unchanged, only the forward posture is settled.
+  Any *new* schema migration or a genuinely destructive action still
+  needs its own separate approval, same as every other live-database
+  change in this engagement.
+- **No pruning for now.** The owner explicitly declined to run
+  `prune_adhoc_backups.py --execute` at this time -- "preserve all
+  current backups." All 14 `pre-*-backup` files stay. The tool remains
+  built, tested, and available for whenever (if ever) the owner decides
+  otherwise; nothing about this decision is time-bound or needs
+  revisiting on its own.
+- **`backendtest` commit `9d2114b` pushed** to `origin/feature/
+  autonomous-research-pipeline` (previously local-only; this was in
+  fact the *first* push of this branch to GitHub at all -- its full
+  history, including the pipeline-introducing commit `1ca6f08`, is now
+  backed up remotely for the first time as a side effect).
+
+## SPARS Research Brain end-to-end validation: UNO Minda (complete, 2026-10-25)
+
+Per the owner's "next milestone" instruction, the full research ->
+forecast -> valuation -> investment-case -> Wealth Desk pipeline was
+validated end to end against the real, already-existing UNO Minda
+`InvestmentCase` discovered in the prior reconciliation. Method: a
+fresh copy of the newest `scheduled-backup` snapshot, isolated backend
++ frontend driven against it exactly as in the earlier visual
+acceptance tests -- never the live file. A known test password was set
+on the real `spa-bridge@local.test` admin account **within the isolated
+copy only**, to log in and render the Wealth Desk exactly as that real
+identity would see it.
+
+**Result: the software path is sound.** `GET /research/companies/
+{uno_minda_id}` returned 200 with no errors; all five Wealth Desk tabs
+(Overview, Financials, Governance & Ownership, Management, Market Plan)
+rendered the real, sparse data correctly across desktop/320/390/768px
+and light/dark (13 captures, 0 console errors, 0 page-level overflow).
+Every "record doesn't exist yet" case (zero kill switches, zero
+governance flags, no ownership snapshot, no market plan, a single-
+scenario forecast/valuation, `expected_return_pct: null`) rendered as
+an honest empty/not-computed state, never a crash or a fabricated
+number -- including through the new outlier-handling and scrollable-
+table code from the prior fix, both exercised here for the first time
+against real (not fixture) data.
+
+**Two small, real UI bugs found and fixed (see `4b59861`, local only,
+not pushed yet):** the Management tab/section (`CompanyWorkspace.tsx`
+and `VerdictPage.tsx`) rendered a near-blank card for a management
+record that exists but carries no real content (`quality=UNASSESSED`,
+no summary) -- UNO Minda's real data hit exactly this case. Governance
+already special-cased the equivalent "present but empty" shape;
+Management now does too, in both files.
+
+**One UI finding, not fixed (needs a schema decision, so flagged
+rather than actioned):** the "TEST DATA" badge is a pure
+`NODE_ENV !== 'production'` check with no way to distinguish genuinely-
+real research (like this UNO Minda case) from seeded/demo data -- it
+showed on UNO Minda's real analysis throughout this validation. A real
+fix needs a new field to actually track real-vs-demo, which is a
+migration -- held for the owner rather than done unilaterally here.
+
+**One structural finding, separate from UNO Minda specifically:** this
+live-database snapshot's `company` table has no `public_research_status`
+column at all -- the Nifty-50 public-access migration (PR #11,
+`48424ea`) was never actually applied to the live file, despite being
+recorded as merged into `feature/research-coverage-foundation`. The
+live file's real migration lineage currently descends from
+`feature/autonomous-research-pipeline` instead, which doesn't include
+it. Worth the owner's attention before ever relying on the public-
+access feature being live-ready; not investigated further here as out
+of this milestone's scope.
+
+**Genuine remaining blockers, in priority order (report requested
+before any company-coverage expansion):**
+1. **No real market price feed -- the root blocker.** `ticker.
+   last_price = 0.0` for UNO Minda. This alone is why `current_market_
+   cap`, `expected_return_pct`, and the BULL/BEAR scenario spread can
+   never be computed, and why the one valuation conclusion that exists
+   is an explicitly self-labeled "ILLUSTRATIVE PLACEHOLDER" 28x P/E
+   multiple, not real research (the analyst's own words, preserved
+   verbatim in `valuation_notes`). This blocker is universal, not
+   UNO-Minda-specific -- it would reproduce identically for any next
+   company, so expanding coverage would not get further past it.
+2. **Nine-gate assessment is 3/9 complete** (FINANCIAL_VALIDATION,
+   INSTITUTIONAL_ADVANTAGE, GOVERNANCE). TRANSFORMATION, EXECUTION,
+   MARKET_CAP_OPPORTUNITY, OPTIONALITY, VARIANT_PERCEPTION, and
+   KILL_SWITCHES have never been assessed for this real case.
+3. **Zero kill switches are formalized**, despite the research
+   revision's own `thesis_invalidation` text already naming three
+   specific, well-written trigger conditions in prose (capacity-program
+   slippage, EBITDA margin break, a rating-agency downgrade). This is
+   the cheapest blocker to close -- it needs no new research, only
+   promoting prose already written into `InvestmentCaseKillSwitch` rows.
+4. **No `GovernanceFlag` row exists**, despite the GOVERNANCE gate's own
+   rationale describing a specific, real, FY2026-Annual-Report-disclosed
+   audit-trail control weakness. Same prose-not-promoted-to-structured-
+   data gap as #3.
+5. **No `OwnershipSnapshot` exists**, despite the real promoter-holding
+   split (68.36%/31.64%) already present as an `extracted_fact`. Same
+   gap pattern again.
+6. **No `CycleAssessment` is cited** on the `InvestmentCase`
+   (`cycle_assessment_id: null`) -- the Phase 3 Slice C world-layer
+   cycle/macro lens was never linked to this real case, despite UNO
+   Minda's plausible auto-sector cyclicality exposure.
+7. **No `MarketPlanRevision` exists** -- no real accumulation range/
+   entry zone, consistent with #1 (an entry zone isn't meaningful
+   without a trustworthy valuation first).
+
+**Recommendation:** do not expand company coverage yet. Blocker 1 is
+foundational and would block every future company identically; closing
+it (a real market-data source, even a manually-updated one) unblocks
+more at once than adding another UNO-Minda-shaped case would. Blockers
+3-5 are comparatively cheap, real-evidence-grounded follow-ups (prose
+that already exists, just not yet promoted to structured rows) that
+don't depend on blocker 1 and could be picked up independently.
+
+## UNO Minda: closing genuine gaps toward an investment-grade case (2026-10-25)
+
+Per the owner's instruction to complete UNO Minda as the first
+genuinely investment-grade case, three of the prior section's
+blockers were closed with real, cited evidence -- and one was
+deliberately *not* closed, with the reasoning recorded rather than
+papered over. All work below is on the isolated copy only; nothing
+has touched the live database.
+
+**Market-price dependency: data gap closed, judgment gap left open and
+explained.** Fetched UNO Minda's real share price and market cap from
+Tickertape (Rs 1,057.00 / Rs 63,983.37 Cr, as of 23 Oct 2026), cross-
+checked against Zerodha (~Rs 60,750 Cr, same week). Both sources cited
+by URL and date. The isolated copy's `Ticker.last_price`/`last_updated`
+were updated to this real value -- the Wealth Desk header now shows a
+real CMP instead of "No live quote available."
+
+**Deliberately did not** feed this real market cap into the existing
+PE valuation's own `current_market_cap` field, and **deliberately did
+not** compute a new `expected_return_pct`. Reason: that valuation's
+28x multiple is the original analyst's own self-labeled "ILLUSTRATIVE
+PLACEHOLDER, NOT A RESEARCHED NUMBER." Populating `current_market_cap`
+would make the platform auto-compute an expected-return percentage by
+dividing a real number into an admittedly-fabricated one -- producing a
+figure that *looks* like a real conclusion but isn't one. A new,
+superseding `ValuationRevision` (revision 2) was created instead,
+carrying the real market data in its `valuation_notes` as disclosed
+text, with the reasoning above spelled out verbatim, so a future
+analyst has the real number available without the platform silently
+laundering it into a confident-looking return.
+
+**The same reasoning blocks "meaningful scenario valuations."** A real
+BULL/BEAR build requires new financial-modeling judgment (depreciation/
+interest/tax-rate assumptions to turn an EBITDA-margin sensitivity into
+a real PAT figure; real upside/downside catalysts, not just the
+disclosed historical margin band) that isn't already sitting in the
+evidence as a mechanical derivation -- and notably, the existing BASE
+case's FY27E assumption (11.5% EBITDA margin) already sits at the *top*
+of the disclosed 10.6-11.5% historical band, so there isn't even room
+for a "BULL" case built from that band alone. This is exactly the kind
+of investment-consequential judgment this engagement's own architecture
+reserves for human review (see the automated-extraction-plus-human-
+approval clarification, recorded earlier in this document) -- not
+fabricated here, reported as a genuine blocker instead.
+
+**Evidence-backed records populated (mechanical promotion of already-
+written, already-approved evidence -- no new research, no new
+judgment):**
+- `OwnershipSnapshot`: 68.36% promoter holding, as of 2026-08-04, from
+  the real post-amalgamation shareholding fact already in the corpus
+  (extracted_fact `015bc3d4...`). No pledge figure was disclosed in the
+  source, so none was entered.
+- `GovernanceFlag`: the real, auditor-corroborated audit-trail control
+  weakness (FY2026 Annual Report, Consolidated Note 45 / Standalone
+  Note 46 p.474 / Auditor's Report p.355), already the GOVERNANCE
+  gate's own rationale and extracted_fact `fd02097a...` -- promoted
+  into its proper structured table verbatim.
+- Three `InvestmentCaseKillSwitch` rows, one per condition already
+  named in the research revision's own `thesis_invalidation` text
+  (capacity-program slippage, EBITDA margin break, a rating-agency
+  downgrade) -- none triggered.
+
+All three verified end-to-end via the real API response and visually in
+the browser (screenshots taken; Overview, Governance & Ownership, and
+Financials tabs all render the new real data correctly, 0 console
+errors).
+
+**Nine-gate assessment: still 3/9, left alone.** The remaining six
+gates (TRANSFORMATION, EXECUTION, MARKET_CAP_OPPORTUNITY, OPTIONALITY,
+VARIANT_PERCEPTION, KILL_SWITCHES-as-a-gate) were not assessed here, for
+the same reason as the scenario valuations: each requires new analyst
+judgment this session chose not to fabricate.
+
+## Real-vs-demo labeling: migration built, tested, NOT applied to live
+
+The "TEST DATA" badge finding from the prior validation was fixed
+properly rather than left as a UI patch. New `Company.is_demo_data`
+column (`app/models/company.py`), migration `20261020_05` (revises
+`20261020_04`, the current real head), `backendtest` commit pending
+(not yet made -- see below). Non-nullable with `server_default=false`,
+so every existing row is "real" by default with no backfill step
+required for the migration itself to apply cleanly.
+
+- Frontend badge logic (`CompanyWorkspace.tsx`, `VerdictPage.tsx`)
+  changed from a pure `NODE_ENV` check to `company.is_demo_data` --
+  removes the `IS_REVIEW_ENVIRONMENT` constant entirely from both
+  files. `ResearchCompany` type, `CompanySchema`, and `_company_dict`
+  all updated to carry the new field through the API.
+- `ResearchSeedService._get_or_create_company` now sets
+  `is_demo_data = True` on its own fixture at creation time, so future
+  seeding self-identifies correctly going forward.
+- **The real `IKIO Technologies Limited` row already in the live
+  corpus predates this fix and will still read `is_demo_data = False`
+  (the server-default) after the migration applies** -- its
+  `why_selected` text ("the first real-company reference identity...
+  used as the frozen M1 reference case") is itself the evidence that
+  this specific row is the seed fixture, not an independent real
+  analysis. A one-time, one-row backfill (`is_demo_data = True` for
+  that company only) is a reasonable companion to applying the
+  migration, but was not done here -- it's a judgment call about a
+  real production row, left for the owner alongside the migration
+  approval itself, not bundled in as if it were part of the schema
+  change.
+
+**Rehearsed on an isolated copy, both directions:** `flask db upgrade`
+correctly added the column (all existing rows defaulted to `0`/False,
+`PRAGMA integrity_check: ok`); `flask db downgrade 20261020_04` cleanly
+removed it (same integrity check, row count unchanged). Applied for
+real to the UNO Minda validation copy and verified end-to-end: the
+badge now correctly disappears for UNO Minda (real) and would show for
+a company explicitly marked demo.
+
+**Two frozen-contract tests were updated, not routed around** (same
+discipline this engagement has followed throughout -- a frozen-contract
+test failing on a real shape change means update the contract, not the
+test's enforcement): `tests/research/test_company_models.py`'s exact-
+column-set assertion and `tests/security/test_research_data_isolation.py`'s
+`COMPANY_KEYS` frozen shape. Focused suite (company models, IKIO seed,
+research query service, consumer reads, presenter, data-isolation
+security, admin facts -- 162 tests) passes clean. Full regression suite:
+**1585 passed, 0 failed** (264 pre-existing, unrelated deprecation
+warnings), 12m14s.
+
+**Code committed and pushed; the migration itself has NOT been applied
+to live** -- held for explicit approval per this task's own instruction
+("seek approval
+before live migrations or production changes").
+
+## Missing public-research migration: root cause found (read-only)
+
+The prior checkpoint entry flagged that the live database's `company`
+table has no `public_research_status` column despite PR #11 being
+recorded as merged. Root cause, found via `git fetch origin` (read-only
+-- downloads refs/objects only, never touches the working tree or any
+local branch) plus `git merge-base`:
+
+**This local clone's `feature/research-coverage-foundation` branch was
+simply stale** -- PR #11 (`48424ea`) is genuinely merged on GitHub; this
+machine's local copy of that branch had never been fetched since before
+it landed. `git fetch` alone (no checkout, no merge) resolved the local
+staleness and revealed the real, more precise issue:
+
+**`feature/autonomous-research-pipeline` branched from `061b3b3`
+(`feature/research-coverage-foundation`'s tip immediately after PR #10,
+*before* PR #11 merged) and never incorporated PR #11's migration
+afterward.** Confirmed directly: `git merge-base --is-ancestor 48424ea
+feature/autonomous-research-pipeline` returns false. Since the live
+database's actual migration history was driven entirely by
+`feature/autonomous-research-pipeline`'s own lineage, PR #11's schema
+change was simply never in the chain that got applied to the live file
+-- a branch-timing divergence, not a lost or broken migration.
+
+**Remediation is straightforward but not done here:** merging
+`origin/feature/research-coverage-foundation` into
+`feature/autonomous-research-pipeline` (or cherry-picking just the
+`dce47b38cde9` migration) would bring the public-access schema into the
+branch that actually drives the live file -- but that merge, and
+especially applying its migration to live, needs its own explicit
+approval, same as every other live-affecting change in this engagement.
+Not actioned; flagged for the owner's decision.
+
+## UNO Minda: investment-grade case completed (2026-10-25)
+
+Per the owner's explicit instruction that UNO Minda's remaining work was
+"investment research, not data plumbing," the six previously-unassessed
+gates and real scenario valuations/expected returns were completed --
+on the isolated copy only, nothing applied to live. Script:
+`backendtest` `scripts/one_time/20261025_uno_minda_complete_investment_
+case.py`, commit `e3793ba`, pushed.
+
+**Real peer valuation data, fetched and cited (2026-10-25):** UNO
+Minda's price (Rs 1,057.00) independently confirmed by two sources
+(Tickertape and Screener.in, both Oct 23, 2026 close). Market cap Rs
+61,038 Cr (Screener.in, primary, same date as price); cross-checks
+Tickertape Rs 63,983.37 Cr and Zerodha ~Rs 60,750 Cr disclosed as real
+source variance, not averaged away. UNO Minda's own real trailing P/E:
+49.9x. Peer trailing P/E independently verified via direct source
+fetch: Endurance Technologies 32.0x, Minda Corporation 35.6x. Three
+more peers (Sundram Fasteners ~36.1x, Samvardhana Motherson ~36.3x,
+Suprajit Engineering ~33.6x) are search-sourced only and explicitly
+flagged lower-confidence, not re-verified by direct fetch.
+
+**BULL/BASE/BEAR, every judgment labeled ANALYST ASSUMPTION, every
+anchor a disclosed fact:**
+- **BASE** (unchanged, already the original analyst's real forecast):
+  FY27E revenue Rs 22,607 Cr, EBITDA margin 11.5% (disclosed top of
+  CFO guidance), PAT Rs 1,424 Cr. Justified multiple 33x (peer
+  average). Implied value Rs 46,992 Cr.
+- **BULL** (new): revenue growth assumption of +20% YoY -- a
+  deliberately partial step toward, not equal to, two real reference
+  points (the 5-year revenue CAGR of ~24% and the real Q1 FY27 YoY
+  growth of +25.7%, computed from disclosed segment data). Margin held
+  at the same 11.5% as BASE -- no expansion beyond management's own
+  guidance ceiling assumed. Justified multiple 36x (top of the
+  verified peer range). Implied value Rs 53,496 Cr.
+- **BEAR** (new): revenue growth assumption of +10% YoY, grounded in
+  the CFO's own disclosed Q1 FY27 call quote (Rs 2,000 Cr of the Rs
+  3,788 Cr capex pipeline still to be spent over 18-24 months) and the
+  unresolved China-side Inovance JV delay. Margin at 10.5% -- the real
+  disclosed LOWER bound of management's own guidance band, not a
+  number below what management itself guided to. Justified multiple
+  28x (below the full peer range, reflecting the disclosed governance/
+  audit-trail risk). Implied value Rs 34,832 Cr.
+- PAT in all three scenarios uses BASE's own implied PAT/EBITDA
+  conversion ratio (54.8%), reused for methodological consistency
+  rather than inventing a fresh D&A/interest/tax assumption per
+  scenario.
+
+**Computed, honest result -- not tuned to look favorable:** BASE
+-23.0%, BULL -12.4%, BEAR -42.9% expected return vs the real market
+cap. **Every scenario, including BULL, is negative.** UNO Minda's own
+real trailing P/E (49.9x) already exceeds even the BULL case's
+peer-top multiple (36x) -- a genuine, evidence-grounded variant-
+perception finding (now its own PASSing gate: the market may be
+pricing a growth premium this peer-grounded framework doesn't fully
+support), consistent with and a quantified explanation for the
+existing HOLD view, which was not changed.
+
+**Nine-gate assessment now complete: 5 PASS, 4 WATCH, 0 FAIL.** New:
+EXECUTION (PASS, real capex-pipeline progress + CFO's own quote),
+TRANSFORMATION (WATCH, real but early-stage Green Mobility mix-shift),
+OPTIONALITY (WATCH, the real but unrealized Inovance JV), VARIANT_
+PERCEPTION (PASS, the peer-vs-own-multiple finding above), MARKET_CAP_
+OPPORTUNITY (WATCH, not FAIL -- real computed downside in all three
+scenarios, tempered by real uncertainty in multiple/peer selection),
+KILL_SWITCHES (PASS, the three real triggers promoted in the prior
+session, now carried onto this new case revision). Each new gate cites
+exactly one real extracted_fact id, same provenance discipline as the
+three pre-existing gates.
+
+**Mechanical note for future work on this case:** `InvestmentCaseGate
+Result.supersedes_gate_result_id` only chains within one `investment_
+case_id` -- it does not link across `InvestmentCase` revisions. The new
+case (revision 2) re-records all nine gates and all three kill switches
+as fresh entries rather than formally chaining to their revision-1
+predecessors; this is a schema/mechanics note, not a data-quality gap.
+
+**Verified end-to-end:** real API response (9 gate_results, 3 kill_
+switches, real `expected_return_pct`, real `scenario_return_spread`)
+and visually in the browser -- the Overview tab's score tiles, nine-
+gate grid, and BASE/BEAR/BULL tiles all render the real computed
+figures correctly, 0 console errors. **Not applied to live, not a code
+change** -- data only, via existing unmodified service methods.
+
+## UNO Minda: final review -- reconciled, forward-consistent, FY30-extended (2026-10-25)
+
+Per the owner's instruction to complete the final review, three
+corrections were made to the case above -- `backendtest`
+`scripts/one_time/20261025_uno_minda_finalize_investment_case.py`,
+commit `3c6a7ef`, pushed. Isolated copy only; nothing applied to live.
+
+**Market cap reconciled, not just cross-checked.** Real shares
+outstanding (577,467,206, Sept 27 2026 shareholding filing) x real
+price (Rs 1,057.00) = Rs 61,038.28 Cr -- matches Screener.in's own
+figure to within Rs 0.28 Cr. This *explains* the prior session's
+three-source variance rather than just disclosing it: Tickertape's Rs
+63,983.37 Cr implied ~60.53 Cr shares, ~4.8% above the real count -- an
+identifiable data-staleness outlier, not unexplained noise; Zerodha's
+~Rs 60,750 Cr was within rounding of the real count.
+
+**Forward-earnings basis mismatch fixed.** The prior valuation applied
+TRAILING peer P/E (Endurance 32.0x, Minda Corp 35.6x) to UNO Minda's
+FORWARD (FY27E) PAT -- an apples-to-oranges comparison. Now uses real
+FY27E forward peer P/E instead (Minda Corporation 36x FY27E,
+Endurance Technologies 29x FY27E -- search-sourced analyst estimates,
+not independently re-verified via direct fetch, same confidence caveat
+as before): BASE 32x (forward-peer average), BULL 36x (Minda Corp's
+own forward multiple), BEAR 28x (below the forward range).
+
+**Scenarios extended FY27E -> FY30E**, each with an explicit,
+disclosed-grounded growth fade (BASE 15->14->13->12%, BULL 20->18->16->
+14%, BEAR 10->9->8->7%), grounded in the real, disclosed capex-pipeline
+completion phasing ("SOP Q4 FY2027-28, phased to FY2030-31"). Margin
+held flat at each scenario's FY27E level throughout FY30 -- management's
+own guidance never speaks past FY2027, so no margin trajectory beyond
+that is assumed. FY2030E PAT: BASE Rs 2,054 Cr, BULL Rs 2,318 Cr, BEAR
+Rs 1,566 Cr.
+
+**Result on the corrected basis -- moved slightly MORE negative, not
+more favorable:** BASE -25.35% (was -23.01%), BULL -12.36% (unchanged),
+BEAR -42.93% (unchanged). The original finding -- every scenario
+negative, UNO Minda's own real 49.9x trailing multiple already above
+even the BULL case's forward-peer-top multiple -- was not an artifact
+of the market-cap variance or the basis mismatch; correcting both made
+the case for caution slightly stronger, not weaker. HOLD view unchanged.
+All nine gates and three kill switches re-recorded against the new
+InvestmentCase revision 3.
+
+**Verified end-to-end and visually approved-ready:** real API response
+(4-year forecast per scenario, real `expected_return_pct`, 9 gates, 3
+kill switches), and screenshots across desktop and mobile -- 0 console
+errors, 0 page-level overflow throughout. The Financials tab's forecast
+chart now shows four real fiscal years (FY2027E-FY2030E) per scenario
+instead of one.
+
+## UNO Minda MILESTONE CLOSED (2026-10-25): both horizons reconciled and shown in Wealth Desk
+
+Per the owner's final instruction, the last open item -- the near-term
+(FY27E) expected return being reported without the long-term (FY30E)
+scenario data it now sits alongside -- was fixed, not explained away.
+`backendtest` `2d8b38f` + `stock-price-alert` `4fa250e`, both pushed.
+
+**New `long_term_scenario_spread`**, computed read-side
+(`research_query_service._long_term_scenario_spread`, no schema change):
+each scenario's own justified multiple held CONSTANT from the near-term
+valuation to FY2030E (explicitly disclosed as a simplification, not a
+market-multiple prediction), applied to the FY2030 forecast line's PAT,
+annualized against today's real market cap over the real elapsed time
+(3.43 years) to FY2030's fiscal year-end. The existing near-term
+`expected_return_pct`/`scenario_return_spread` is deliberately left
+un-annualized (sub-year horizon; annualizing it would be nonsensical)
+-- two different, correctly-labeled metrics, not one number doing two
+jobs.
+
+**Result, both horizons, UNO Minda:**
+
+| Scenario | Near-term (FY27E, un-annualized) | Long-term (FY2030E CAGR, 3.43 yrs) |
+|---|---|---|
+| BASE | -25.35% | +2.18% |
+| BULL | -12.36% | +9.54% |
+| BEAR | -42.93% | -9.18% |
+
+A genuinely informative, non-obvious result: near-term, every scenario
+is negative (the market's current price already exceeds even the BULL
+case's peer-grounded fair value). Long-term, BASE and BULL turn
+positive -- multi-year real earnings growth, compounded against a
+constant multiple, can outrun an expensive entry price, while BEAR
+stays negative even over the long run. Both figures are real and
+consistent; presenting both side by side, correctly labeled, resolves
+what looked like an inconsistency but was actually two valid, distinct
+metrics with only one previously visible.
+
+**Verified:** targeted backend suite (85 tests: investment_case
+service, research query service, consumer reads, data isolation,
+presenter) passes; full suite collects cleanly (1585 tests). Frontend
+`tsc`/`eslint` clean. Confirmed visually against the real, isolated UNO
+Minda case -- light, dark, desktop, mobile -- 0 console errors, 0
+overflow throughout. Both sections now visible in the Wealth Desk
+Overview tab, each with its own methodology disclosure, matching the
+project's standing anti-fabrication discipline throughout.
+
+**Milestone status: UNO Minda is closed as a complete, reconciled,
+forward-consistent, FY30-extended, both-horizons-shown investment case
+on the isolated copy.** Everything in this and the three sections above
+it (market-cap reconciliation, forward-consistency fix, FY30 extension,
+nine-gate completion, evidence promotion) passed verification at every
+step; nothing failed or was left inconsistent. Not applied to live, no
+migration, no deployment, per the owner's standing instruction
+throughout this entire milestone.
+
+## Resume instructions for the next session
+
+**UNO Minda is closed** (see the milestone-close section immediately
+above) -- the next decision is the owner's: whether/how to apply any of
+this work (the `is_demo_data` migration, the evidence promotions, the
+completed and finalized investment case) to the live database, and
+whether to expand coverage to another real company using the same
+now-proven, now-complete methodology.
+
+**The SPARS Research Brain end-to-end validation (further above) is
+otherwise still current.** Two small Management-tab fixes committed as
+`4b59861` on `feature/spars-smart-search-ui` -- **local only, not yet
+pushed** (the owner's instruction that produced them didn't ask for a
+push; ask or push on request). The original seven blockers from that
+section are now mostly closed by the work above; re-read both sections
+together before deciding what's still genuinely open.
+
+**Pipeline: authorized to continue; three of four safety risks fixed.**
+The owner has explicitly authorized `SPARS_PipelineCycle`/`SPARS_Backup`/
+`SPARS_HealthCheck` to keep running "under the approved operational
+boundaries" (2026-10-25) -- this is a forward-looking authorization, not
+retroactive sign-off on migrations already applied before it. Failure
+escalation is live, the rollback runbook exists, and disk-growth tooling
+exists but stays un-executed by explicit owner instruction ("preserve
+all current backups; no pruning for now" -- not time-bound, no need to
+revisit on its own). `backendtest` commit `9d2114b` is **pushed** to
+`origin/feature/autonomous-research-pipeline` (also that branch's first
+push ever -- its full history is now backed up on GitHub). A future
+session should not run `prune_adhoc_backups.py --execute` without a
+fresh owner decision, and should re-read the safety sections in full
+before doing anything further with that branch or its scheduled tasks.
+
+**Everything through the 2026-10-24 Wealth Desk visual acceptance test
+is complete** -- `b037ab9` is pushed to `feature/spars-smart-search-ui`;
+not merged, no PR opened.
+
+**Plasmic Studio evaluated and declined (owner-directed, 2026-10-19).**
+Assessment: Plasmic's canvas (mouse-based drag/resize/typography editing)
+only applies to presentational code registered as "code components" --
+it doesn't speak to live data fetching or auth-tier branching, so a
+faithful trial would have required a frozen-fixture fork of the Verdict
+Page sections, a new npm dependency (`@plasmicapp/loader-nextjs`), and a
+Plasmic cloud project. Owner declined before any package install or file
+creation -- continuing with the existing hand-coded approach instead. No
+Plasmic-related files, dependencies, or routes exist anywhere in the
+repo. Do not re-propose this without a new owner request.
+
+Everything below this paragraph is earlier-session context, kept for
+continuity, not the next action.
+
+## Resume instructions for the next session
+
+**Everything through Continuous Monitoring V1 is complete.** `master`
+is current through PR #7 (Alert-3 + the Wealth Desk `investment_case`
+read API). `feature/research-coverage-foundation` additionally holds
+Continuous Monitoring V1 (PR #8) on top of that -- not yet merged into
+`master`; that merge is a separate decision, not yet made. The
+Wealth Desk UI (Daily Brief + Investment Coverage Grid + Company
+Workspace, provisional) and the real `InvestmentCase` build for UNO
+Minda remain the next executable items -- see "SPA -- Priority
+Directive | 12-25 October 2026" and the Real-Company Acceptance
+section above. If a future session is asked to "continue Monitoring,"
+"continue Wealth Desk," or "continue Investment Brain acceptance,"
+read this checkpoint first and confirm there is genuinely new scope
+before writing any code.
+
 ## Pipeline operations checkpoint (2026-11-01/02)
 
 Per the owner's 2026-11-01 follow-up: explain and fix the disabled
@@ -1306,6 +2204,12 @@ were not touched.
 
 ## Resume instructions
 
+**2026-11-02 merge note:** This resume now covers both lineages: the
+ingestion track (2026-11-02 update below) and the frontend/research
+track (latest recorded state: the 2026-10-25 UNO Minda closure above).
+The earlier "three-item list resolved" note later in this section is
+historical context, not the current next action.
+
 **2026-11-02 update:** For ingestion work, the current resume point is
 the Pipeline operations checkpoint above. The single chained daily
 Cloud Run job is deployed (generation 84) and its first run succeeded
@@ -1339,6 +2243,40 @@ credentials with the passphrase the owner holds (
 on this PC -- **move this into a password manager**, it is not
 itself a permanent secure store).
 
+**Update (2026-10-25): all three items above now appear resolved --
+discovered via read-only inspection of a cached `backendtest` backup
+copy while scoping "the next milestone," not previously recorded here.**
+- **(1) Wealth Desk UI:** done, see above (`b037ab9`).
+- **(2) Real Google Sheets/Drive ingestion:** superseded by the
+  autonomous extraction pipeline (`feature/autonomous-research-
+  pipeline`, not the originally-planned Monitoring V1 bridge script).
+  `check_pipeline_health.py`'s own OAuth checks and 8 of 9 logged
+  `PipelineCycleRun`s have succeeded against real Drive/Sheets access
+  since 2026-10-19 -- real ingestion is demonstrably working, just via
+  a different mechanism than (2) originally named. (The original
+  wording specifically wanted this verified "from a host other than
+  this dev sandbox" -- that specific framing is not satisfied, since
+  it's the same machine; practically, though, real ingestion is
+  working.)
+- **(3) Real-company Investment Brain acceptance:** **a real
+  `InvestmentCase` for UNO Minda Limited already exists** --
+  `origin=HUMAN_AUTHORED`, `view=HOLD`, `as_of_date=2026-10-19`,
+  created the same day as the autonomous-pipeline commit, citing a
+  real `ResearchRevision` (thesis: mid-teens revenue CAGR FY22-FY26,
+  ~11.5% EBITDA margin, Rs 1,415 Cr capacity expansion, AA+/A1+ ICRA
+  rating reaffirmed 2026-09-14, Minda Onkyo JV consolidation) and real
+  `ForecastRevision`/`ValuationRevision` rows. `expected_return_pct` is
+  honestly `None` ("no real current market price is available... to
+  compare the implied equity value against") -- not fabricated.
+  `extracted_fact` has grown to 70 real rows (UNO Minda 54, IKIO
+  Technologies Limited 16) as of the 2026-10-23 backup inspected.
+  **This item is done, not previously recorded in this checkpoint.**
+
+**This means the owner's three-item list from 2026-10-12 is fully
+resolved, just undocumented here until now -- there is no obvious
+"next" item left on it.** The next milestone is an open question for
+the owner, not something to infer unilaterally from this list.
+
 **Outstanding, owner-level only:**
 - Deciding on I3AS's next scope, if any -- the design proposal's named
   slices (Alert-1/2/3) are now all complete; nothing further is named
@@ -1353,5 +2291,8 @@ itself a permanent secure store).
 - Saving the credentials passphrase into a password manager and
   deleting the plaintext file -- the one remaining loose end from
   the backup itself.
+- Verifying real Google Sheets API connectivity from a host other than
+  this dev sandbox, before relying on Monitoring V1 for anything beyond
+  the bounded demonstration already completed here.
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
