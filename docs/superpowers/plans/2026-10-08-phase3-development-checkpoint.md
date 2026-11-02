@@ -43,6 +43,12 @@ edited. The copy in the `stock-price-alert` frontend clone
 (`C:\Users\Home\Documents\GitHub\stock-price-alert`) is a read-only
 mirror: sync it from this clone, never edit it independently.
 
+**Known divergence (2026-11-02):** the frontend copy currently contains
+2026-10-19→2026-10-25 sections (UNO Minda milestone, live-database
+safety audit, pipeline safety corrections) that are absent here. The
+two lineages must be merged before either is treated as complete; see
+`docs/SPARS_EXCEPTION_BACKLOG.md` EX-001 in the `backendtest` repo.
+
 ---
 
 ## Repository state (verified at last checkpoint)
