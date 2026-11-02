@@ -38,7 +38,9 @@ ZIP manual-queue rows were resolved (one STORED, one exact duplicate),
 and the retry-queued exit-code fix was deployed as generation 86. The
 full bridge run's transient Drive metadata timeout is recorded as an
 operational reliability issue; a minimal correction is proposed but not
-applied.
+applied. Later on 2026-11-02 the scoped IKIO/GRAUWEIL backfill
+registered 8 documents (backend 1,403 → **1,411**); see "Backlog
+closeout actions" below.
 
 **Current frontend / research state (2026-10-25):** **UNO Minda is
 CLOSED as a complete, reconciled investment case** -- see "UNO Minda
@@ -2305,6 +2307,78 @@ draft that is not executed.
   `be2071d` is pushed, clean.
 - No merge to `master`, no force-push, no rebase.
 
+## Backlog closeout actions (2026-11-02)
+
+Owner-approved follow-up to the exception backlog. No production code
+was deployed; the only live changes are the scheduler setting, the
+IKIO/GRAUWEIL backfill registrations, and the (blocked) queue cleanup.
+
+### Generation-84 production verification (read-only)
+- Execution `spa-ingestion-live-test-sxxgr` (image `sha256:df19b1ed…`,
+  args daily/lookback 7/limit 100) completed **SUCCESS** in 9m58s at
+  02:10:13 UTC.
+- `SPA_DAILY`: discovered 23, promoted 23, processed 28, stored 19,
+  duplicates 9, manual queue 0, other issues 0, known_degraded BSE 77;
+  container exit 0.
+- Live manifest: 3,306 total → STORED 3,076 / DUPLICATE_EXACT_BINARY
+  139 / MANUAL_UPLOAD_QUEUED 91; backend documents 1,403 before the
+  backfill. Counts are consistent with 2026-10-31 and 2026-10-06.
+- `KNOWN_DEGRADED_SOURCES` is present and behaving; dedup-key/revision
+  focused tests pass. The release gate used focused/adjacent tests, not
+  a fresh full-suite baseline; that process caveat remains.
+- The job is now generation 86 (`sha256:b6136bc6…`). `5kzsd` was a
+  generation-85 `retry-queued` test for row 3235 before the retry-exit
+  fix; next scheduled run 2026-11-03 07:30 IST.
+
+### EX-002 — deferred
+- The prepared timeout patch (`num_retries=2` plus per-row
+  `DRIVE_METADATA_TIMEOUT` / `DRIVE_DOWNLOAD_TIMEOUT` isolation) passed
+  57 focused tests with the patch. It is saved at
+  `C:\Users\Home\AppData\Local\Temp\EX002_timeout_fix_2026-11-02.patch`.
+- The live tree was reverted (30 focused baseline tests pass) so the
+  scheduled task cannot pick it up before approval. Apply only after the
+  2026-11-03 09:00:30 bridge run is observed.
+
+### EX-003 — backfill ran; ticker-scope addition blocked
+- Dry-run: 95 rows, all `DRY_RUN_OK`.
+- Backfill: **8 REGISTERED**, 46 ALREADY_REGISTERED, 40
+  ALREADY_REGISTERED_METADATA_CONFLICT (informational), and **1
+  DUPLICATE_REVIEW_REQUIRED** at IKIO row 1430 (ANNUAL_REPORT
+  2026-07-07; content `02c1d905…` vs registered document `dc901ae5`,
+  content `cbe777d0…`). Backend 1,403 → **1,411**.
+- IKIO and GRAUWEIL were **not** added to the scheduled ticker list; the
+  scope remains 67/93. The conflict needs a duplicate-vs-distinct
+  decision before the scope change.
+
+### EX-004 — blocked
+- Source rows 168 and 2775 are `STORED`; their stale queue-tab rows are
+  **38** and **290**. The removal was not executed because the safety
+  classifier requires the queue row numbers to be explicitly named in
+  the authorization. Queue row 8 (source row 83, the GPECO audit record)
+  is untouched. The queue remains 91 documents / 94 non-empty queue
+  rows.
+
+### EX-005 — blocked
+- 24 companies remain identity-blocked (20 BSE-only + 4 NSE symbols).
+  NSE EQUITY_L/SME have no matches; the BSE RSS feed has scrip codes but
+  no ISIN; BSE `ListofScripData` is 403 and the HTML pages are SPA
+  shells. Per the owner's directive, repeated BSE endpoint investigation
+  is stopped; awaiting authoritative ISIN evidence.
+
+### EX-007 — resolved
+- `SPARS_SpaBridgeCatchup` `StartWhenAvailable` set False → True. All
+  other settings, the principal (`Home`/Interactive/Limited) and the
+  daily 09:00 trigger are unchanged; next run 2026-11-03 09:00:30.
+
+### EX-008 / EX-009 — no action
+- The old backendtest checkout is left in place; its modified
+  `kite/kite.json` was not touched. The dev-tools security scripts were
+  not changed.
+
+### Upstream tracking
+- `backendtest` `feature/autonomous-research-pipeline` now tracks
+  `origin/feature/autonomous-research-pipeline`.
+
 ## Resume instructions
 
 **2026-11-02 merge note:** This resume now covers both lineages: the
@@ -2318,6 +2392,13 @@ reconciliation, canonical exception backlog, checkpoint reconciliation,
 and dev-tools review are recorded in "Engineering governance & tooling
 checkpoint" above. Dev-tools execution is still a separate Level 3
 decision; both scripts remain `$ExecuteForReal = $false`.
+
+**2026-11-02 backlog closeout:** see "Backlog closeout actions" above.
+EX-002 is deferred until the 2026-11-03 09:00:30 bridge run; EX-003
+backfilled 8 IKIO/GRAUWEIL documents but one duplicate-review conflict
+blocks the ticker-scope addition; EX-004 queue removal is blocked on
+explicit queue-row authorization (rows 38/290); EX-005 awaits
+authoritative ISINs; EX-007 is resolved.
 
 **2026-11-02 update:** For ingestion work, the current resume point is
 the Pipeline operations checkpoint above. The single chained daily
