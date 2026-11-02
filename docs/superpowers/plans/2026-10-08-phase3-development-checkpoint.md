@@ -2579,8 +2579,8 @@ outranked it. Generated artifacts live under
 `backendtest/docs/PHASE3_5A_EVIDENCE_CAPABILITY_2026-11-02.md`.
 
 **Live-corpus audit evidence (read-only, 2026-11-02):** 1,412 documents;
-540 with usable extracted text (38.2%), 10 with zero-text runs, 862 with
-no extraction; 15,780 pages / 48.55M characters; 59 documents lack a
+540 with at least one extracted page (38.2%), 10 with zero-text runs, 862
+with no extraction; 15,780 pages / 48.55M characters; 59 documents lack a
 filing date, 0/1,412 have an original-publication date. IKIO: 45
 documents, 42 searchable, 634 pages (624 with text), 2 unextracted
 (the Reg. 34 annual report and the 29-Oct-2026 call), 1 zero-text scanned
