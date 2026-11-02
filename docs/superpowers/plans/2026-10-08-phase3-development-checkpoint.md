@@ -51,6 +51,15 @@ are recorded in "Pipeline safety corrections applied" below. Plasmic
 Studio was evaluated and declined (2026-10-19); no Plasmic files or
 dependencies exist.
 
+**Engineering governance/tooling state (2026-11-02):** the SPARS
+engineering charter v1.1 is installed in `backendtest`; `CLAUDE.md` and
+`AGENTS.md` now point every session to it, with the DB/Level-2
+reconciliation recorded in `docs/SPARS_CHARTER_INTEGRATION_2026-11-02.md`.
+The canonical exception backlog is `docs/SPARS_EXCEPTION_BACKLOG.md`
+(EX-001 resolved; EX-009 signed off). The reviewed dev-tools
+least-privilege scripts are committed and pushed as `f41bc92`; both
+still carry `$ExecuteForReal = $false`, and nothing has been executed.
+
 **Prior milestone (2026-10-12):** I3AS Alert-3 complete, merged into
 `feature/research-coverage-foundation` (PR #5), real-company validated.
 `master` is current through PR #7; Continuous Monitoring V1 (PR #8) is
@@ -2202,6 +2211,93 @@ and `DEPLOYMENT_RESULT_2026-11-02.md`. The three confirmed distinct
 filings, STL 1990, Shanti Gold 2137, and the existing 5 exceptions
 were not touched.
 
+## Engineering governance & tooling checkpoint (2026-11-02)
+
+Per the owner's charter-integration and dev-tools sign-off work. No
+production code, scheduler, credential, database, or cloud change was
+made; the only runtime-adjacent artifact is a review-only PowerShell
+draft that is not executed.
+
+### Charter and project instructions
+- `SPARS_ENGINEERING_CHARTER.md` v1.1 installed in `backendtest` as the
+  standing engineering mandate.
+- `CLAUDE.md` created: every session must read the charter and this
+  checkpoint before work.
+- `AGENTS.md` reconciled with the charter:
+  - C1: read-only database queries (Level 1) and operations covered by a
+    specific, cited prior approval (Level 2) are permitted; Level 3
+    (writes, migrations, deployments, credentials, etc.) is unchanged.
+  - C2: task-specific instructions may add restrictions or provide the
+    explicit Level 3 authorization, but cannot implicitly waive Level 3
+    or the charter's §5 data-integrity rules.
+  - C3: a "related consequence" is limited to a defect in the same
+    component chain/engineering outcome discovered during the authorized
+    task; broader work needs owner authorization.
+  - G1/G2: charter/checkpoint pointer added; scope broadened to all AI
+    engineering work.
+- Integration record: `backendtest/docs/SPARS_CHARTER_INTEGRATION_2026-11-02.md`.
+
+### Canonical exception backlog
+- `backendtest/docs/SPARS_EXCEPTION_BACKLOG.md` created as the single
+  canonical backlog per charter §9. Current entries: EX-001 resolved
+  (checkpoint divergence), EX-002→EX-008 open or accepted (Drive timeout,
+  bridge coverage 67/93, 91 manual-queue rows, 24-company identity
+  queue, BSE-AJAX 403 known-degraded, scheduled-task interactivity,
+  second backendtest checkout), EX-009 resolved/sign-off (dev-tools).
+
+### Checkpoint reconciliation
+- The docs-clone and frontend-clone checkpoints had diverged: the
+  frontend copy carried 2026-10-19→25 sections (UNO Minda, live-database
+  safety audit, pipeline safety corrections) absent from the docs copy.
+  A 3-way merge from common base `89c227c` produced one chronological
+  file; all 40 section headings from both lineages are present and no
+  body content was lost.
+- Docs reconciliation commit `023071a`; frontend mirror commit `be2071d`;
+  the two copies are byte-identical (`diff -q` empty).
+- Sync policy is recorded at the top: the docs clone is the only editing
+  location; the frontend copy is a read-only mirror.
+
+### Dev-tools least-privilege review (EX-009)
+- `dev-tools/spars_runner_setup.ps1` and `dev-tools/sync_to_runtime.ps1`
+  revised to review draft v2 and committed/pushed as `f41bc92`.
+  Changes:
+  - `SPARS_SpaBridgeCatchup` added to the migration; the sync copies
+    `scripts\bridge_spa_manifest.py` and `scripts\__init__.py` and
+    generates its runtime launcher; the bridge module imports from the
+    deployed layout (verified).
+  - Rolling backups move to
+    `C:\SPARS-Runtime\protected-backups\rolling`, which `spars-runner`
+    cannot write. `SPARS_Backup` keeps the owner's identity and only its
+    action is repointed; it is the one deliberate identity exception
+    (documented in the script).
+  - Setup no longer calls the sync script; a true first run aborts with
+    an explicit "run sync with $ExecuteForReal = $true first" message.
+  - Sync refuses a dirty working tree unless `$AllowDirtyTree = $true`;
+    untracked `dev-tools/` is excluded because it is the script's own
+    location.
+  - The `current` junction is verified as a reparse point/junction before
+    removal; a real directory aborts.
+- Both scripts remain `$ExecuteForReal = $false`; nothing was executed.
+  No `C:\SPARS-Runtime` and no `spars-runner` account exist. Sandbox
+  tests of the sync/backup wrapper passed and were cleaned up.
+- Credential sweep on `f41bc92`: no secret values or credential files;
+  only the known actor UUID and credential filenames in the design.
+- The owner signed off EX-009 on 2026-11-02; execution remains a separate
+  Level 3 decision (sync first, verify four launchers, then setup).
+
+### Commit / push state
+- `backendtest`: branch `feature/autonomous-research-pipeline`, HEAD
+  `f41bc92`, clean, pushed to origin (fast-forward `1e74583..f41bc92`).
+  Earlier this session: `a662138` (charter/instructions/backlog) and
+  `1e74583` (evidence CSVs + `logs/*.exit` ignore) were also pushed.
+- Docs clone: branch `feature/investment-operating-system-m1`; the
+  reconciliation commit `023071a` is pushed. The untracked `docs/legal/`
+  and `2026-10-08-phase3-slice-b-revised-implementation-plan.md` remain
+  untouched.
+- Frontend clone: branch `feature/spars-smart-search-ui`; mirror commit
+  `be2071d` is pushed, clean.
+- No merge to `master`, no force-push, no rebase.
+
 ## Resume instructions
 
 **2026-11-02 merge note:** This resume now covers both lineages: the
@@ -2209,6 +2305,12 @@ ingestion track (2026-11-02 update below) and the frontend/research
 track (latest recorded state: the 2026-10-25 UNO Minda closure above).
 The earlier "three-item list resolved" note later in this section is
 historical context, not the current next action.
+
+**2026-11-02 governance/tooling update:** the charter, AGENTS/CLAUDE
+reconciliation, canonical exception backlog, checkpoint reconciliation,
+and dev-tools review are recorded in "Engineering governance & tooling
+checkpoint" above. Dev-tools execution is still a separate Level 3
+decision; both scripts remain `$ExecuteForReal = $false`.
 
 **2026-11-02 update:** For ingestion work, the current resume point is
 the Pipeline operations checkpoint above. The single chained daily
@@ -2294,5 +2396,13 @@ the owner, not something to infer unilaterally from this list.
 - Verifying real Google Sheets API connectivity from a host other than
   this dev sandbox, before relying on Monitoring V1 for anything beyond
   the bounded demonstration already completed here.
+- Dev-tools execution decision -- the reviewed scripts are committed and
+  inert; executing them is a separate Level 3 approval (sync first with
+  its switch on, verify the four launchers, then setup, keeping the
+  rollback export).
+- EX-002→EX-008 in `docs/SPARS_EXCEPTION_BACKLOG.md` remain open or
+  accepted (Drive timeout, bridge coverage 67/93, 91 manual-queue rows,
+  the 24-company identity queue, BSE-AJAX 403 known-degraded, scheduled-
+  task interactivity, and the second backendtest checkout).
 - The Research Orchestrator remains unbuilt and unauthorized, unchanged
   from every prior checkpoint.
