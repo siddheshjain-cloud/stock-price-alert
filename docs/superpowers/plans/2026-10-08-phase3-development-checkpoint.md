@@ -19,19 +19,32 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-03 (Phase 3.5B Completion & Financial
-Intelligence Hardening, all 8 task.txt steps complete — the CRITICAL
-fin.raw.pat accounting-scope bug fixed (owners-only adopted as
-canonical after a compatibility audit found 3 independent real
-signals already agreed, against only Choice's same-session,
-never-persisted "total" choice); the Chemplast/EID Parry/AXISCADES
-factification gap closed with one reusable function (root cause:
-candidate-staging simply never ran for them); a banking normalization
-spec written (no code, zero bank presence in SPARS); Phase 3
-integration honestly verified (diagnostics work end to end for 5 real
-companies; forecast/valuation remain disconnected by design, no
-fabrication); full regression 704 passed / 0 failed / 0 skipped, run
-three times; see "Session Recovery State" above and EX-016. Earlier
+**Last updated:** 2026-11-03 (Phase 3.5B: Financial Data Backfill &
+Continuity — the four pending hardening branches verified and pushed;
+a reusable, idempotent Screener Excel backfill utility built (one
+importer, not ten, staging CandidateFindings so "provisional until
+reconciled" and "never overwrite a verified fact" are true by
+construction); Screener scraping investigated and declined on
+robots.txt + ToS grounds, manual upload only; demonstrated end to end
+against one real downloaded workbook (idempotent repeat import,
+conflict detection, interrupted-import recovery, banking-sector
+safeguard); quarterly-continuity gap identified as a configuration
+decision (--stage-candidates, opt-in and off by default) rather than
+missing code; one real document-reuse bug found and fixed; full
+regression 712 passed / 0 failed, zero regressions; see "Session
+Recovery State" above and EX-017. Earlier the same day: Phase 3.5B
+Completion & Financial Intelligence Hardening, all 8 task.txt steps
+complete — the CRITICAL fin.raw.pat accounting-scope bug fixed
+(owners-only adopted as canonical after a compatibility audit found 3
+independent real signals already agreed, against only Choice's
+same-session, never-persisted "total" choice); the Chemplast/EID
+Parry/AXISCADES factification gap closed with one reusable function
+(root cause: candidate-staging simply never ran for them); a banking
+normalization spec written (no code, zero bank presence in SPARS);
+Phase 3 integration honestly verified (diagnostics work end to end
+for 5 real companies; forecast/valuation remain disconnected by
+design, no fabrication); full regression 704 passed / 0 failed / 0
+skipped, run three times; see EX-016. Earlier still
 the same day: the ten-company normalization stress test completed —
 UNO Minda reconciled as a second real company in a different sector
 with real NCI, every diagnostic including Choice's ROE/ROCE/debt-to-
@@ -68,91 +81,101 @@ every new session here before it touches code. Git/worktree state and
 test evidence are authoritative over this note if they ever disagree
 — reconcile before acting, don't just trust the prose below.
 
-- **Active assignment:** none in progress — "SPARS — Phase 3.5B
-  Completion & Financial Intelligence Hardening" (task.txt,
-  2026-11-03) **completed, all 8 steps**. See
-  `docs/SPARS_EXCEPTION_BACKLOG.md` EX-016 for the full record. Next
-  assignment: whatever the owner directs via task.txt; the blockers
-  below are open decisions, not resumable work.
+- **Active assignment:** none in progress — "SPARS — Phase 3.5B:
+  Financial Data Backfill & Continuity" (task.txt, 2026-11-03)
+  **completed**. See `docs/SPARS_EXCEPTION_BACKLOG.md` EX-017 for the
+  full record (EX-016 covers the prior hardening pass this one builds
+  on). Next assignment: whatever the owner directs via task.txt; the
+  blockers below are open decisions, not resumable work.
 - **Branch/commit state (as of 2026-11-03, end of sub-session):**
   - `backendtest` live checkout: `feature/autonomous-research-pipeline`
-    @ `72a4c55`, clean except two pre-existing untracked files
+    @ `674471a`, clean except two pre-existing untracked files
     unrelated to this task (`logs/EX002_timeout_fix_2026-11-02.patch`,
     `logs/manual_queue_remaining_probe_2026-11-02.csv`) — do not touch.
-  - `feature/phase3-5b-ten-company-stress-test` @ `ee1a663` —
-    **pushed** (step 1, explicitly authorized). Not merged.
-  - `feature/phase3-5b-pat-scope-correction` @ `32aecc7` (step 2,
-    CRITICAL fix) — **not pushed**.
-  - `feature/phase3-5b-factification-gap` @ `72b5842` (step 3) —
-    **not pushed**.
-  - `feature/phase3-5b-banking-spec` @ `1480d06` (step 4, docs only) —
-    **not pushed**.
-  - `feature/phase3-5b-integration-verification` @ `040c740` (steps
-    5+8, includes the final hardening report) — **not pushed**.
-  - None of steps 2-5's branches are pushed: task.txt step 8
-    explicitly says the stress-test-branch push authorization does not
-    extend to new implementation branches; await a separate explicit
-    push instruction before pushing any of them.
+  - `feature/phase3-5b-ten-company-stress-test` @ `ee1a663` — pushed
+    (step 1 of the *prior* mandate). Not merged.
+  - `feature/phase3-5b-pat-scope-correction` @ `32aecc7`,
+    `feature/phase3-5b-factification-gap` @ `72b5842`,
+    `feature/phase3-5b-banking-spec` @ `1480d06`,
+    `feature/phase3-5b-integration-verification` @ `040c740` — all
+    **pushed this sub-session** (explicitly authorized: "verify and
+    push these four existing isolated branches"). Not merged.
+  - `feature/phase3-5b-excel-backfill` @ `dc5d214` (the new reusable
+    Excel backfill utility, branched from the pushed `040c740`) —
+    **not pushed**. Task.txt step 10: "do not push new implementation
+    branches without approval" — this is a *new* branch, not one of
+    the four explicitly named for push.
   - `stock-price-alert` canonical (this repo):
-    `feature/investment-operating-system-m1` @ `e3ef705`, plus this
+    `feature/investment-operating-system-m1` @ `d685f0b`, plus this
     edit. Untracked and pre-existing, not created by this task, not
     touched: `docs/legal/`,
     `docs/superpowers/plans/2026-10-08-phase3-slice-b-revised-implementation-plan.md`,
     `docs/superpowers/plans/task.txt`.
   - Frontend mirror
     (`C:\Users\Home\Documents\GitHub\stock-price-alert`):
-    `feature/spars-smart-search-ui` @ `c00ff29`, plus this sync.
-- **Completed, this sub-session:** All 8 task.txt steps. (1) Verified
-  + pushed the ten-company stress-test branch. (2) **CRITICAL** fixed
-  the `fin.raw.pat` scope inconsistency -- audited all 4 real
-  consumers (forecast/valuation have zero connection to any raw fact,
-  confirmed by grep); adopted owners-only as canonical (3 independent
-  real signals already agreed; the task's stated "total" preference
-  was the actual, never-persisted outlier); fixed the real
-  double-subtraction bug in `_owners_pat()`; added `_total_pat()`.
-  (3) Closed the Chemplast/EID Parry/AXISCADES factification gap --
-  root cause confirmed (staging step never run for any of the three,
-  not a pipeline bug); one reusable `factify_company()` function
-  populated real, audited, evidence-cited FY2026/FY2025 facts for all
-  three, including EID Parry's large genuine NCI and AXISCADES'
-  small real NCI. (4) Banking normalization spec (HDFC Bank/SBI) --
-  documentation only, confirms zero bank presence in SPARS, proposes
-  minimal future slugs/diagnostics, states the approval boundary.
-  (5) Phase 3 integration verification -- confirms diagnostics +
-  Evidence/citation genuinely work end to end (5 real companies, 4
-  sectors); confirms forecast/valuation remain disconnected by design,
-  with the one existing live row self-labeled a placeholder; no
-  fabrication. (6) Full regression run three times, same result.
-  (8) Final report + EX-016 + this checkpoint update.
-- **Pending:** nothing from this assignment. Four open items for the
-  owner (below), none silently resolved.
-- **Last verified results:** full `tests/research/` suite — **704
-  passed, 0 failed, 0 skipped**, run three times across this
-  hardening pass (after step 2's fix, after step 3's factification
-  work, and a final confirmation on the full tip `03a83a9`) — identical
-  result every time, zero regressions.
+    `feature/spars-smart-search-ui` @ `8b4d7ab`, plus this sync.
+- **Completed, this sub-session:**
+  1. Verified + pushed the four named branches (exact tip commits
+     confirmed, diffs scanned for secrets/DB files — none found).
+  2. PAT/NCI contract preserved in all new work (Screener's "Net
+     profit" maps directly to the corrected owners-only
+     `fin.raw.pat`; no NCI split ever invented from a workbook).
+  3. Built the reusable Excel backfill utility
+     (`ScreenerExcelImportService` + `screener_xlsx_parser`) — one
+     importer, not ten; every parsed row stages a `CandidateFinding`,
+     never a direct `ExtractedFact`, making "provisional until
+     reconciled" and "never overwrite a verified fact" true by
+     construction.
+  4. Screener scraping investigated (robots.txt disallows `/user/*`;
+     ToS restricts to personal transitory viewing) and **declined** —
+     manual Excel upload only, no scraper built.
+  5. Historical backfill demonstrated end to end against one real
+     downloaded workbook (Choice International, 404 real data
+     points); the other nine companies' coverage reasoned from the
+     already-established EX-015/016 structural findings rather than
+     re-run through this utility (flagged as a follow-on option, not
+     done unprompted).
+  6. Quarterly-continuity finding: the full chain already works on
+     100% existing infrastructure; the only gap is a configuration
+     decision (`--stage-candidates` is opt-in, off by default in the
+     live scheduled job) — no new scheduler/pipeline added.
+  7. `reconcile_observation()` — the repeatable, no-custom-code manual
+     quarterly exception-workflow primitive.
+  8. EID Parry/AXISCADES exceptions preserved; re-investigated, no
+     further explanation found beyond EX-016's.
+  9. Testing: 8 new focused tests + a full demonstration script
+     against real data; full suite **712 passed, 0 failed**, zero
+     regressions. One real bug found and fixed (document-reuse logic
+     was unsafe on a `METADATA_MATCH`/different-content conflict).
+  10. This checkpoint update + EX-017.
+- **Pending:** nothing from this assignment. Blockers below are open
+  decisions, not resumable work.
+- **Last verified results:** full `tests/research/` suite — **712
+  passed, 0 failed, 0 skipped** (704 prior + 8 new), zero regressions.
 - **Blockers / required decisions (open, for the owner):**
-  1. Banking/NBFC coverage: still zero bank presence in SPARS. A
-     specification exists; implementation requires expanding the
-     approved company universe plus production document ingestion --
-     an explicit decision, not an engineering default.
-  2. Two small, genuine, unresolved cross-check gaps: EID Parry's
-     total assets (audited vs. Screener, 0.14%) and AXISCADES'
-     finance costs (~3%) -- informational, not blocking.
-  3. Whether deeper historical-year factification for Chemplast/EID
-     Parry/AXISCADES (beyond the FY2026/FY2025 populated here) is
-     wanted.
-  4. Whether/when to push steps 2-5's four branches.
+  1. Banking/NBFC coverage: still zero bank presence in SPARS (spec
+     only exists; implementation needs company-universe expansion +
+     production ingestion — an explicit decision).
+  2. EID Parry total-assets (0.14%) and AXISCADES finance-costs (~3%)
+     cross-check gaps — informational, not blocking, no further
+     explanation found.
+  3. Whether to physically run the Excel backfill utility against
+     the remaining nine companies' real workbooks, or accept the
+     EX-015/016-reasoned coverage as sufficient.
+  4. Whether to enable `--stage-candidates` on the live scheduled
+     extraction job (a production configuration change).
+  5. Whether/when to push `feature/phase3-5b-excel-backfill` (not
+     covered by this sub-session's push authorization).
 - **Exact next action:** none queued. Await the owner's next task.txt
-  directive; do not push steps 2-5's branches, start new Phase 3.5B/C
-  scope, or act on any blocker above without explicit instruction.
+  directive; do not push the excel-backfill branch, start new scope,
+  or act on any blocker above without explicit instruction.
 - **Approval boundaries (unchanged by resuming):** no production DB
-  writes, no merges to `master`, no deployments, no force pushes. The
-  stress-test-branch push authorization does not extend to any new
-  implementation branch; each needs its own explicit push instruction.
-  Resuming this assignment in a new session never by itself authorizes
-  any Level 2/3 action beyond what is already explicitly approved in
-  this checkpoint and `docs/SPARS_EXCEPTION_BACKLOG.md`.
+  writes, no merges to `master`, no deployments, no force pushes. A
+  push authorization names specific branches explicitly — it never
+  extends to a branch not named. Resuming this assignment in a new
+  session never by itself authorizes any Level 2/3 action beyond what
+  is already explicitly approved in this checkpoint and
+  `docs/SPARS_EXCEPTION_BACKLOG.md`.
 
 **Current operational state (2026-11-02):** `SPARS_SpaBridgeCatchup`
 re-enabled Ready for 2026-11-02 09:00:30 IST; 66 discovered rows acquired
