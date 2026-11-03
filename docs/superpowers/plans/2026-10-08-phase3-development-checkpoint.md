@@ -123,14 +123,23 @@ test evidence are authoritative over this note if they ever disagree
     `feature/bse-rss-intraday-polling` @ `3ed75cb`, branched from that
     baseline — reviewed, tested (9 new tests + 96/96 relevant subset
     passed), **not merged, not built, not deployed**.
+  - `feature/autonomous-research-pipeline` main checkout
+    (`C:\GitHub\backendtest`) now @ `d023c6c` (not pushed): absorbed
+    `feature/phase3-5b-pat-scope-correction` @ `18422ab` and
+    `feature/phase3-5c-corroborating-evidence-link` @ `eba8501` (both
+    merged, see EX-018), then `feature/phase3-5b-factification-gap`
+    @ `72b5842` (merged `b78c6cc`), then three further local commits:
+    `d59a0a7` (extract-method refactor, no behavior change), `b504355`
+    (idempotency fix, Rule F-6), `2194b06` (live-wrapper sys.path fix),
+    `d023c6c` (docs). Working tree clean except the same two
+    pre-existing untracked files as always.
   - `feature/phase3-5b-ten-company-stress-test` @ `ee1a663`,
-    `feature/phase3-5b-pat-scope-correction` @ `18422ab` (updated this
-    sub-session, was `32aecc7`),
-    `feature/phase3-5b-factification-gap` @ `72b5842`,
     `feature/phase3-5b-banking-spec` @ `1480d06`,
     `feature/phase3-5b-integration-verification` @ `040c740`,
     `feature/phase3-5b-excel-backfill` @ `dc5d214` — unchanged since
-    last entry; all pushed, none merged.
+    last entry; all pushed, none merged (their content needed by the
+    live backfill, `72b5842`'s factification-gap work, is already
+    absorbed above via its own merge, independent of these).
   - `stock-price-alert` canonical (this repo):
     `feature/investment-operating-system-m1` @ `2e582f6`, plus this
     edit. Untracked and pre-existing, not touched: `docs/legal/`,
@@ -287,6 +296,30 @@ test evidence are authoritative over this note if they ever disagree
         `RELEASE_COMMIT.txt`, fail closed before any Python runs if
         either disagrees) to stop a future scheduled run from ever
         executing against a dirty or drifted release worktree.
+  13. **(2026-11-03, later sub-session — "Chemplast Controlled
+      Production Backfill")** First real live write of the nine-
+      company backfill track: `factify_chemplast()` executed once
+      against the real `instance/trading_app.db`, after a verified
+      fresh backup (`PRAGMA integrity_check` = `ok`, 0 FK violations,
+      byte-identical to live pre-write). Gated by an isolated-copy
+      dry run first (caught and fixed one real idempotency gap --
+      `b504355`, Rulebook Rule F-6 -- and one `sys.path` bug in the
+      live wrapper itself, `2194b06`, caught before any DB connection
+      opened). Production result: `extracted_fact` 78 → **115** (+37 =
+      26 raw + 11 normalized, exact match to every isolated rehearsal);
+      `evidence` +4; `fact_derivation` +11; `fact_derivation_input`
+      +27; `fact_evidence` +37; `financial_metric_definition` +3
+      (idempotent insert-if-missing); `candidate_finding_decision`
+      unchanged at 55. Zero conflicts. UNO Minda's 60 facts confirmed
+      unchanged; a database-wide scan found zero duplicate canonical
+      identities anywhere, not just for Chemplast. Post-write integrity
+      confirmed `ok`. EID Parry/AXISCADES deliberately not run. Full
+      detail in Rule F-6, `docs/phase3_5b/FINANCIAL_INTEGRITY_RULEBOOK.md`
+      (backendtest). Coverage caveat (important, not yet resolved as a
+      code change): this is a **selected-line-item** backfill (13
+      canonical `fin.raw.*` slugs), not a full statutory P&L/BS/CF
+      reproduction -- no tax expense, EPS, depreciation, other income,
+      or segment data captured as facts for Chemplast; see Rule F-7.
 - **Pending:** `SPARS_Backup`'s Execute-path migration — requires the
   owner's own action (Task Scheduler GUI, which will prompt for the
   Windows account password interactively) or explicit authorization to
@@ -315,12 +348,15 @@ test evidence are authoritative over this note if they ever disagree
   4. EID Parry total-assets (0.14%) and AXISCADES finance-costs (~3%)
      cross-check gaps — informational, not blocking, no further
      explanation found.
-  5. Nine-company backfill (unchanged from item 11): (a) whether to
-     deploy the already-built, unmerged `feature/phase3-5b-factification-gap`
-     fix for Chemplast Sanmar/AXISCADES/EID Parry (Level 3 — production
-     DB write); (b) whether to commission new mapping work for IKIO's
-     `fin.raw.*` vocabulary; (c) whether/when to onboard TCS, HDFC
-     Bank, Reliance and SBI from scratch.
+  5. Nine-company backfill: (a) **Chemplast Sanmar DONE** (item 13,
+     2026-11-03, live, verified) -- (b) EID Parry and AXISCADES remain:
+     same already-tested `factify_eid_parry()`/`factify_axiscades()`
+     functions, same idempotent write path, no new code needed beyond
+     a thin live-apply wrapper analogous to Chemplast's; awaiting
+     per-company authorization the same way Chemplast required it --
+     (c) whether to commission new mapping work for IKIO's `fin.raw.*`
+     vocabulary -- (d) whether/when to onboard TCS, HDFC Bank, Reliance
+     and SBI from scratch.
   6. Whether to enable `--stage-candidates` on the live scheduled
      extraction job (a production configuration change).
   7. **(RESOLVED 2026-11-03, EX-018 "P0 Financial Integrity Release")**
@@ -333,14 +369,19 @@ test evidence are authoritative over this note if they ever disagree
      observation (not fixed): all 23 currently-OPEN candidates have
      `proposed_scope IS NULL`.
   8. Whether/when to push `feature/autonomous-research-pipeline`
-     (now carries the merged P0 release, still local-only).
-- **Exact next action:** the P0 release is complete; control has moved
-  to the nine-company financial backfill (item 5 above) per the
-  owner's "Phase 3.5B Execution Acceleration" directive — prioritizing
-  one fully-reconciled company before the remaining available ones.
-  Do not merge or deploy any other unmerged branch, build/push the
-  BSE-RSS pilot image, or act on any blocker above without explicit
-  instruction.
+     (now carries the merged P0 release plus the Chemplast backfill,
+     still local-only).
+  9. **(new)** Next backfill batch recommendation: EID Parry, then
+     AXISCADES (one company per authorization, same pattern as
+     Chemplast) -- see item 13's coverage caveat and Rule F-7 before
+     treating either as a "complete statement."
+- **Exact next action:** Chemplast Sanmar's live backfill is complete
+  and verified (item 13). A read-only Financial Reconciliation Audit
+  (Screener Excel workbook coverage across all six real companies) is
+  in progress this sub-session -- no DB writes. Do not merge or deploy
+  any other unmerged branch, execute the EID Parry/AXISCADES backfill,
+  build/push the BSE-RSS pilot image, or act on any blocker above
+  without explicit instruction.
 - **Approval boundaries (unchanged by resuming):** no production DB
   writes, no merges to `master`, no deployments, no force pushes. A
   push authorization names specific branches explicitly — it never
