@@ -19,20 +19,28 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-03 (Phase 3.5B: Choice International
-normalized financial pilot — ROE/ROCE/leverage added to
-FinancialDiagnosticsService for the first time ever, audited Annual
-Report used as canonical with one real unresolved revenue discrepancy
-disclosed; see "Resume instructions" top entry; Choice's
-evidence-grounded research brief built via the existing Phase 3.5A
-pipeline with no code changes, confirming reusability across
-companies, earlier the same day; Choice's full 29-document backlog
-extracted live, 100% coverage, zero failures, the same day; generic
-priority-extraction mechanism deployed live and
-`SPARS_PriorityExtraction` task registered earlier the same day;
-IKIO's two previously-pending documents extracted live and verified
-earlier still; evidence capability added earlier still; merged
-checkpoint). This file now unites
+**Last updated:** 2026-11-03 (Phase 3.5B: ten-company normalization
+stress test completed — UNO Minda reconciled as a second real company
+in a different sector with real NCI, every diagnostic including
+Choice's ROE/ROCE/debt-to-equity generalized with zero company-specific
+code; corpus-coverage audit found only 6/10 target companies registered
+in SPARS and only 2 ever statutorily reconciled; Screener structural
+audit found banks get the same generic industrial template, mislabeling
+deposits as borrowings; three required owner decisions flagged, not
+silently resolved; see "Session Recovery State" above and EX-015. Also
+this session: the Session Continuity mechanism itself was implemented
+and demonstrated via a controlled simulated restart. Earlier the same
+day: Choice International normalized financial pilot —
+ROE/ROCE/leverage added to FinancialDiagnosticsService for the first
+time ever, audited Annual Report used as canonical with one real
+unresolved revenue discrepancy disclosed; Choice's evidence-grounded
+research brief built via the existing Phase 3.5A pipeline with no code
+changes, confirming reusability across companies; Choice's full
+29-document backlog extracted live, 100% coverage, zero failures;
+generic priority-extraction mechanism deployed live and
+`SPARS_PriorityExtraction` task registered; IKIO's two previously-
+pending documents extracted live and verified earlier still; evidence
+capability added earlier still; merged checkpoint). This file now unites
 the docs-clone lineage's 2026-11-01/02 pipeline-operations record with
 the frontend-clone lineage's 2026-10-19→2026-10-25 sections; the two
 previously divergent copies are reconciled here (EX-001 resolved).
@@ -48,93 +56,68 @@ every new session here before it touches code. Git/worktree state and
 test evidence are authoritative over this note if they ever disagree
 — reconcile before acting, don't just trust the prose below.
 
-- **Active assignment:** Phase 3.5B — Ten-Company Normalization Stress
-  Test (task.txt, verbatim mandate archived in
-  `docs/SPARS_EXCEPTION_BACKLOG.md` cross-reference once filed).
-  Companies: Choice International, IKIO Technologies, Chemplast
-  Sanmar, Uno Minda, Axiscades, EID Parry, TCS, HDFC Bank, Reliance
-  Industries, SBI. Baseline: Choice's completed Phase 3.5B pilot
-  (`backendtest` commit `09ec1d2`).
-- **Branch/commit state (as of 2026-11-03):**
+- **Active assignment:** none in progress — the Phase 3.5B Ten-Company
+  Normalization Stress Test (task.txt, 2026-11-03) completed this
+  session. See `docs/SPARS_EXCEPTION_BACKLOG.md` EX-015 for the full
+  record. Next assignment: whatever the owner directs via task.txt;
+  three required decisions are open (below) and nothing should be
+  assumed-resumed from them without an explicit instruction.
+- **Branch/commit state (as of 2026-11-03, end of session):**
   - `backendtest` live checkout: `feature/autonomous-research-pipeline`
-    @ `59566af`, clean except two pre-existing untracked files
+    @ `6d557b2`, clean except two pre-existing untracked files
     unrelated to this task (`logs/EX002_timeout_fix_2026-11-02.patch`,
     `logs/manual_queue_remaining_probe_2026-11-02.csv`) — do not touch.
-  - New isolated worktree:
+    Not pushed yet.
+  - Isolated worktree:
     `backendtest/.claude/worktrees/phase35b-tencompany`, branch
-    `feature/phase3-5b-ten-company-stress-test`, branched from `09ec1d2`.
-    Clean, no commits yet.
+    `feature/phase3-5b-ten-company-stress-test`, branched from `09ec1d2`,
+    now at `ee1a663`. Clean. Not merged, not pushed.
   - `stock-price-alert` canonical (this repo):
-    `feature/investment-operating-system-m1` @ `4e12d1d`, plus this
+    `feature/investment-operating-system-m1` @ `2b5490b`, plus this
     edit. Untracked and pre-existing, not created by this task, not
     touched: `docs/legal/`,
     `docs/superpowers/plans/2026-10-08-phase3-slice-b-revised-implementation-plan.md`,
-    `docs/superpowers/plans/task.txt`.
+    `docs/superpowers/plans/task.txt`. Not pushed yet.
   - Frontend mirror
     (`C:\Users\Home\Documents\GitHub\stock-price-alert`):
-    `feature/spars-smart-search-ui` @ `30a19b8`, clean. Sync after this
-    edit per the standing mirror policy below.
-- **Completed:** (1) Corpus-state audit — 6/10 companies registered in
-  SPARS with real documents/extraction (Choice, IKIO, Chemplast
-  Sanmar, UNO Minda, AXISCADES, EID Parry); **TCS, HDFC Bank, Reliance
-  Industries, and SBI have zero presence in SPARS** (no company row at
-  all — confirmed by direct query, not an extraction gap). (2) Screener
-  Data Sheet structural audit for all 10 workbooks — Screener applies
-  one generic industrial P&L/BS/CF template to every company
-  including the two banks; for HDFC/SBI, "Borrowings" bundles customer
-  deposits with actual debt, "Depreciation" is reported as zero, and
-  no Deposits/Advances/NII/NIM/NPA/CRAR concept exists anywhere in the
-  template.
-- **In progress:** Statutory reconciliation of UNO Minda (2nd company,
-  auto-components manufacturing) against its own audited FY2026
-  Consolidated Financial Statements (`UNOMINDA_AR_FY2026`, document id
-  `f85e99db-a0f7-4430-88d1-5db51578c360`, pages 485-487 of the
-  extraction). `total_assets` (13,705.36), `inventory` (2,131.02),
-  `trade_receivables` (2,706.27) and `trade_payables` (2,582.09) all
-  exact-match the pre-existing `fin.raw.*` facts. **Genuine finding:**
-  the pre-existing `fin.raw.pat` fact for UNO Minda (FY2026 = 1197) is
-  **owners-only** PAT (audited consolidated P&L: owners 1,197.13 vs.
-  total 1,284.06, NCI share 86.93) — not total-including-NCI, unlike
-  Choice's Phase 3.5B `pat` convention set earlier this session. See
-  Blockers.
-- **Pending:** architecture-gap catalog across sectors; diagnostic-
-  applicability validation per sector (explicitly: no mechanical
-  ROCE/EBITDA/FCF/debt interpretation for banks); minimal reusable
-  additions in the isolated branch only where justified by real data;
-  focused tests + full regression; final ten-company stress-test
-  matrix and report.
+    `feature/spars-smart-search-ui` @ `6781abd`, clean. Not pushed yet.
+- **Completed, this session:** full ten-company stress test — corpus-
+  coverage audit (6/10 registered, only Choice + UNO Minda ever
+  reconciled statutorily, 4 not in SPARS at all), Screener structural
+  audit (all 10 workbooks), UNO Minda statutory reconciliation (second
+  real company, auto-components manufacturing, real NCI), diagnostic-
+  applicability-per-sector validation, full regression (701 passed, 0
+  failed, re-run clean in the new worktree), final comparative matrix
+  and report. Also completed: the Session Continuity mechanism itself
+  (this section + the `CLAUDE.md` pointer), demonstrated with a
+  controlled simulated restart that correctly reconstructed the resume
+  point from this note + live git state alone.
+- **Pending:** nothing from this assignment. Three required decisions
+  are open for the owner (below) before any further Phase 3.5B work on
+  banking/NBFC coverage, the `fin.raw.pat` convention, or
+  Chemplast/EID Parry/AXISCADES factification.
 - **Last verified results:** full `tests/research/` suite — 701
-  passed, 0 failed (`backendtest`, Choice Phase 3.5B commit `09ec1d2`).
-  Nothing new has been run yet in the ten-company worktree.
-- **Blockers / required decisions (not yet resolved):**
+  passed, 0 failed, run twice this session (baseline at `09ec1d2`, and
+  again at `ee1a663` after the UNO Minda additions) — zero regressions.
+- **Blockers / required decisions (open, for the owner):**
   1. `fin.raw.pat` scope (owners-only vs. total-including-NCI) is not
-     uniformly defined across the corpus — pre-existing facts for at
-     least one NCI-bearing company (UNO Minda) are owners-only; this
-     session's new Choice facts are total. `_owners_pat()` cannot be
-     trusted blindly across companies with NCI until this is decided.
+     uniformly defined across the corpus — UNO Minda's pre-existing
+     `pat` fact is owners-only; Choice's (this phase) is total.
+     `_owners_pat()` cannot be trusted blindly across NCI-bearing
+     companies until one convention is chosen corpus-wide.
   2. TCS, HDFC Bank, Reliance Industries, SBI have zero SPARS corpus
-     presence — no statutory reconciliation is possible for them, only
-     a Screener-structure comparison. This looks like a deliberate
-     small/mid-cap scoping of SPARS today, not a defect; flagged for
-     an explicit decision in the final report.
-  3. Banking/NBFC-specific fields (Deposits, Advances, NII, NIM,
-     Gross/Net NPA, CRAR, CASA) do not exist in `fin.raw.*` and cannot
-     be derived from Screener's generic template for HDFC/SBI — a real
-     architecture gap, deferred (no new infrastructure without
-     approval).
-- **Exact next action:** in
-  `backendtest/.claude/worktrees/phase35b-tencompany`
-  (`feature/phase3-5b-ten-company-stress-test`), against an **isolated
-  DB copy only**, add UNO Minda's missing `fin.raw.*` facts for
-  FY2026/FY2025 from the verified consolidated statements above
-  (`total_equity` 7260.47/6113.42, `non_controlling_interest_equity`
-  430.90/386.22, `borrowings` 2537.29/2294.46, `pbt` 1616.38/1306.60,
-  `finance_costs` 187.02/170.36) — deliberately **without** adding
-  `non_controlling_interest_pat` for UNO Minda (would double-subtract
-  against the already owners-only pre-existing `pat` fact; Blocker 1)
-  — then run the full `FinancialDiagnosticsService` battery and record
-  computed/inapplicable/missing-deferred results, before moving to
-  Chemplast Sanmar / EID Parry / AXISCADES.
+     presence. Is bringing a bank/mega-cap into SPARS actually wanted,
+     or is today's small/mid-cap scoping deliberate? If a bank is
+     wanted, new banking-specific `fin.raw.*` slugs (Deposits,
+     Advances, NII, NIM, NPA, CRAR) are the minimal addition required
+     — only once real statutory data exists to source them from.
+  3. Chemplast Sanmar / EID Parry / AXISCADES have real extracted
+     documents but zero `ExtractedFact` rows (a gap recorded since
+     2026-10-12, not introduced here). Worth its own scoped assignment
+     rather than folding into future Phase 3.5B work.
+- **Exact next action:** none queued. Await the owner's next task.txt
+  directive; do not start Phase 3.5C or any of the three decisions
+  above without explicit instruction.
 - **Approval boundaries (unchanged by resuming):** no production DB
   writes, no merges to `master`, no deployments, no force pushes.
   Resuming this assignment in a new session never by itself authorizes
