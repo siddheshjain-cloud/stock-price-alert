@@ -81,38 +81,63 @@ every new session here before it touches code. Git/worktree state and
 test evidence are authoritative over this note if they ever disagree
 — reconcile before acting, don't just trust the prose below.
 
-- **Active assignment:** none in progress — "SPARS — Phase 3.5B:
-  Financial Data Backfill & Continuity" (task.txt, 2026-11-03)
-  **completed**. See `docs/SPARS_EXCEPTION_BACKLOG.md` EX-017 for the
-  full record (EX-016 covers the prior hardening pass this one builds
-  on). Next assignment: whatever the owner directs via task.txt; the
-  blockers below are open decisions, not resumable work.
-- **Branch/commit state (as of 2026-11-03, end of sub-session):**
-  - `backendtest` live checkout: `feature/autonomous-research-pipeline`
-    @ `674471a`, clean except two pre-existing untracked files
-    unrelated to this task (`logs/EX002_timeout_fix_2026-11-02.patch`,
-    `logs/manual_queue_remaining_probe_2026-11-02.csv`) — do not touch.
-  - `feature/phase3-5b-ten-company-stress-test` @ `ee1a663` — pushed
-    (step 1 of the *prior* mandate). Not merged.
-  - `feature/phase3-5b-pat-scope-correction` @ `32aecc7`,
+- **Active assignment:** none in progress — "SPARS — Operational
+  Safety and BSE Release" / "Final Infrastructure Stabilization
+  Closure" (2026-11-03) **substantially complete**: Windows execution
+  isolation closed for 4 of 5 scheduled tasks (see item 12 below);
+  `backendtest`'s extraction-pipeline retry/OCR fix (EX-017 follow-on)
+  merged and live; BSE RSS intraday-polling patch prepared, reviewed,
+  version-controlled, not deployed. Control explicitly returned to
+  Phase 3.5B financial-intelligence development per owner instruction
+  — infrastructure work is closed pending the one item in "Blockers"
+  below. The other blockers are open decisions, not resumable work.
+- **Branch/commit state (as of 2026-11-03, end of session):**
+  - `backendtest` live checkout (`C:\GitHub\backendtest`):
+    `feature/autonomous-research-pipeline` @ `211222d`, clean except
+    the same two pre-existing untracked files as always
+    (`logs/EX002_timeout_fix_2026-11-02.patch`,
+    `logs/manual_queue_remaining_probe_2026-11-02.csv`) — do not
+    touch. `211222d` = merge of PR #12 (`d5b4c8c`: durable
+    `OCR_REQUIRED`/bounded-retry/`force_reextract_document_ids`/
+    new-filing-priority extraction fix, reviewed clean, 1672 passed
+    full suite) plus one follow-on commit pointing the 5 scheduled
+    `.bat` scripts at the new isolated release worktree (below).
+  - **New: `C:\SPARS-release\backendtest`** — a detached-HEAD git
+    worktree of the same `backendtest` repo, pinned to `211222d`
+    (verified clean, correct deps, correct credential/DB/log paths).
+    This is now the sole execution source for 4 of the 5
+    production-affecting Windows Scheduled Tasks (see item 12).
+    Promotion to a new approved commit is only ever
+    `git -C C:\SPARS-release\backendtest fetch && git -C
+    C:\SPARS-release\backendtest checkout <sha>` — never a side
+    effect of dev work in the main checkout.
+  - **New: `C:\SPA\cloudrun_fixed_v7_5_dev_2026-11-02`** — the SPA
+    ingestion-worker source (previously had *no* version control at
+    all) is now a git repo. `master` @ `78c0b49`, tagged
+    `deployed-baseline-gen86-2026-11-02` = the rollback reference,
+    confirmed to match the live `spa-ingestion-live-test` Cloud Run
+    Job's actual image digest
+    (`sha256:b6136bc680d7af344ce8e21e8e38ef250fdf95d5aed0c76573b82aa93752919c`,
+    confirmed still present in Artifact Registry). The BSE-RSS
+    intraday-polling patch (see EX-017 update below) lives on
+    `feature/bse-rss-intraday-polling` @ `3ed75cb`, branched from that
+    baseline — reviewed, tested (9 new tests + 96/96 relevant subset
+    passed), **not merged, not built, not deployed**.
+  - `feature/phase3-5b-ten-company-stress-test` @ `ee1a663`,
+    `feature/phase3-5b-pat-scope-correction` @ `32aecc7`,
     `feature/phase3-5b-factification-gap` @ `72b5842`,
     `feature/phase3-5b-banking-spec` @ `1480d06`,
-    `feature/phase3-5b-integration-verification` @ `040c740` — all
-    **pushed this sub-session** (explicitly authorized: "verify and
-    push these four existing isolated branches"). Not merged.
-  - `feature/phase3-5b-excel-backfill` @ `dc5d214` (the new reusable
-    Excel backfill utility, branched from the pushed `040c740`) —
-    **pushed to origin 2026-11-03**, explicit owner authorization
-    ("Push the excel-backfill branch, don't merge"). Still not merged.
+    `feature/phase3-5b-integration-verification` @ `040c740`,
+    `feature/phase3-5b-excel-backfill` @ `dc5d214` — unchanged since
+    last entry; all pushed, none merged.
   - `stock-price-alert` canonical (this repo):
-    `feature/investment-operating-system-m1` @ `d685f0b`, plus this
-    edit. Untracked and pre-existing, not created by this task, not
-    touched: `docs/legal/`,
+    `feature/investment-operating-system-m1` @ `2e582f6`, plus this
+    edit. Untracked and pre-existing, not touched: `docs/legal/`,
     `docs/superpowers/plans/2026-10-08-phase3-slice-b-revised-implementation-plan.md`,
     `docs/superpowers/plans/task.txt`.
   - Frontend mirror
     (`C:\Users\Home\Documents\GitHub\stock-price-alert`):
-    `feature/spars-smart-search-ui` @ `8b4d7ab`, plus this sync.
+    `feature/spars-smart-search-ui` @ `8b4d7ab`, unchanged.
 - **Completed, this sub-session:**
   1. Verified + pushed the four named branches (exact tip commits
      confirmed, diffs scanned for secrets/DB files — none found).
@@ -174,34 +199,103 @@ test evidence are authoritative over this note if they ever disagree
       fabricated/synthetic financial data, no live DB writes. Full
       detail recorded as an update to EX-017 in
       `docs/SPARS_EXCEPTION_BACKLOG.md` (backendtest).
-- **Pending:** nothing from this assignment. Blockers below are open
-  decisions, not resumable work.
-- **Last verified results:** full `tests/research/` suite — **712
-  passed, 0 failed, 0 skipped** (704 prior + 8 new), zero regressions;
-  plus the 2026-11-03 re-run of `test_screener_excel_import_service.py`
-  alone (8/8 passed) against the pushed branch.
+  12. **(2026-11-03, later sub-session — "SPARS Operational Safety and
+      BSE Release" / "Final Infrastructure Stabilization Closure")**
+      Root-caused and closed the Windows execution-isolation gap:
+      - **Incident:** 5 of 7 `SPARS_*` Windows Scheduled Tasks ran
+        code from `C:\github\backendtest` — the same directory used
+        for active dev/review — with no isolation. `SPARS_PriorityExtraction`
+        fired for the very first time ever at 14:25 IST (root cause:
+        its `LogonType: Interactive` trigger had never previously
+        coincided with an active console session; one began at 12:20
+        IST that day) while an unreviewed, unmerged branch
+        (`feature/phase3-5c-extraction-retry-classification`) was
+        checked out there — before PR #12 was reviewed/merged. Outcome
+        was benign (4 Choice International documents, all extracted
+        correctly) but the authorization sequence was violated; fully
+        disclosed, not papered over.
+      - **Fix implemented:** created `C:\SPARS-release\backendtest`
+        (detached-HEAD worktree, pinned to `211222d`) and repointed 4
+        of the 5 affected tasks' `Execute` path to it via
+        `schtasks /change /tr` (only that field — triggers, logon
+        types, arguments, privileges confirmed byte-identical
+        before/after). Live database and all logs deliberately left
+        at their original `C:\github\backendtest\instance` /
+        `C:\github\backendtest\logs` paths (no data migration, no
+        duplication — verified).
+      - **Verification:** release worktree confirmed at `211222d`,
+        clean, correct deps/credentials (all hardcoded absolute paths
+        under `C:\SPA\private\`, unaffected by checkout location).
+        One real, non-destructive execution-path proof: manually
+        triggered `SPARS_HealthCheck` (read-only; no ingestion/
+        extraction triggered) — ran end-to-end from the new path,
+        Drive/Sheets token checks both succeeded, correct log write to
+        the original location. Confirmed exactly one `trading_app.db`
+        exists anywhere, no duplicate created.
+      - **PASS/FAIL per task:** `SPARS_HealthCheck` PASS,
+        `SPARS_PipelineCycle` PASS, `SPARS_PriorityExtraction` PASS,
+        `SPARS_SpaBridgeCatchup` PASS, `SPARS_Backup` **FAIL/BLOCKED**
+        — its `LogonType: Password` requires the Windows account
+        password to be re-supplied on any modification (confirmed via
+        both `schtasks /change` and `Set-ScheduledTask`, including an
+        explicit empty-password attempt); correctly declined to handle
+        or request that credential. `SPARS_Backup` still points at
+        `C:\github\backendtest` — the one open item, see Blockers.
+      - **Rollback:** all 5 original task definitions exported to
+        `C:\SPARS-release\task_backups\*.pre-execpath-change-20261103_184250.xml`
+        before any change; restorable via `schtasks /delete` +
+        `schtasks /create /xml`, or simply `schtasks /change /tr`
+        back to the `C:\github\backendtest\...` path for the 4 changed
+        tasks.
+      - **Recommended, not implemented:** a lightweight pre-flight
+        check (compare the worktree's live `git rev-parse HEAD` and
+        `git status --porcelain` against a recorded-on-promotion
+        `RELEASE_COMMIT.txt`, fail closed before any Python runs if
+        either disagrees) to stop a future scheduled run from ever
+        executing against a dirty or drifted release worktree.
+- **Pending:** `SPARS_Backup`'s Execute-path migration — requires the
+  owner's own action (Task Scheduler GUI, which will prompt for the
+  Windows account password interactively) or explicit authorization to
+  change its logon type away from `Password` (not done, per standing
+  instruction not to change logon modes without separate approval).
+  Everything else below is an open decision, not resumable work.
+- **Last verified results:** full `backendtest` suite — **1672
+  passed, 0 failed** (branch `feature/phase3-5c-extraction-retry-classification`
+  → merged as PR #12 → `211222d`); BSE-RSS intraday patch — 9 new
+  tests passed, 337/337 relevant subset passed in
+  `cloudrun_fixed_v7_5_dev_2026-11-02`, baseline-confirmed zero
+  regressions; `tests/research/` suite — 712 passed, 0 failed (carried
+  over from item 11, unchanged this sub-session).
 - **Blockers / required decisions (open, for the owner):**
-  1. Banking/NBFC coverage: still zero bank presence in SPARS (spec
+  1. **`SPARS_Backup` Execute-path migration** — needs the owner's
+     direct action (see Pending above). Lowest-risk, most actionable
+     item open right now.
+  2. BSE RSS intraday-polling pilot: the exact build/deploy/one-run
+     commands were drafted and approved for *reporting* but the pilot
+     itself has not been executed, no Cloud Run Job created, no Cloud
+     Scheduler change made — awaiting the owner's go-ahead to actually
+     run the one-off pilot job.
+  3. Banking/NBFC coverage: still zero bank presence in SPARS (spec
      only exists; implementation needs company-universe expansion +
      production ingestion — an explicit decision).
-  2. EID Parry total-assets (0.14%) and AXISCADES finance-costs (~3%)
+  4. EID Parry total-assets (0.14%) and AXISCADES finance-costs (~3%)
      cross-check gaps — informational, not blocking, no further
      explanation found.
-  3. Nine-company backfill, now narrowed by direct evidence (see item
-     11 above): (a) whether to deploy the already-built, unmerged
-     `feature/phase3-5b-factification-gap` fix for Chemplast
-     Sanmar/AXISCADES/EID Parry (Level 3 — production DB write); (b)
-     whether to commission new mapping work to bring IKIO's existing
-     facts into the `fin.raw.*` vocabulary; (c) whether/when to onboard
-     TCS, HDFC Bank, Reliance and SBI from scratch. UNO Minda needs
-     nothing further. The original Screener-Excel-workbook route is no
-     longer the only or best path for the three companies already
-     covered by (a).
-  4. Whether to enable `--stage-candidates` on the live scheduled
+  5. Nine-company backfill (unchanged from item 11): (a) whether to
+     deploy the already-built, unmerged `feature/phase3-5b-factification-gap`
+     fix for Chemplast Sanmar/AXISCADES/EID Parry (Level 3 — production
+     DB write); (b) whether to commission new mapping work for IKIO's
+     `fin.raw.*` vocabulary; (c) whether/when to onboard TCS, HDFC
+     Bank, Reliance and SBI from scratch.
+  6. Whether to enable `--stage-candidates` on the live scheduled
      extraction job (a production configuration change).
-- **Exact next action:** none queued. Await the owner's next task.txt
-  directive; do not merge or deploy any unmerged branch, start new
-  scope, or act on any blocker above without explicit instruction.
+- **Exact next action:** none queued from the infrastructure track —
+  it is explicitly closed pending item 1 above, which is the owner's
+  to act on. Control has been returned to Phase 3.5B financial-
+  intelligence development; await the owner's next task.txt directive
+  there. Do not merge or deploy any unmerged branch, build/push the
+  BSE-RSS pilot image, or act on any blocker above without explicit
+  instruction.
 - **Approval boundaries (unchanged by resuming):** no production DB
   writes, no merges to `master`, no deployments, no force pushes. A
   push authorization names specific branches explicitly — it never
