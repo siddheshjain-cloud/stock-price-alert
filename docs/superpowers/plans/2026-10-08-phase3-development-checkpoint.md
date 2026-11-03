@@ -81,36 +81,269 @@ every new session here before it touches code. Git/worktree state and
 test evidence are authoritative over this note if they ever disagree
 — reconcile before acting, don't just trust the prose below.
 
-- **Active assignment:** none in progress — "SPARS — Operational
-  Safety and BSE Release" / "Final Infrastructure Stabilization
-  Closure" (2026-11-03) **substantially complete**: Windows execution
-  isolation closed for 4 of 5 scheduled tasks (see item 12 below);
-  `backendtest`'s extraction-pipeline retry/OCR fix (EX-017 follow-on)
-  merged and live; BSE RSS intraday-polling patch prepared, reviewed,
-  version-controlled, not deployed. Control explicitly returned to
-  Phase 3.5B financial-intelligence development per owner instruction
-  — infrastructure work is closed pending the one item in "Blockers"
-  below. The other blockers are open decisions, not resumable work.
+- **Active assignment:** **Phase 3.5B (ten-company Financial
+  Normalization & Historical Backfill) is PAUSED here, 2026-11-03 --
+  NOT completed** -- the owner is starting Direct Event Extractor
+  Pipeline development next. This is a deliberate workstream switch,
+  not an abandonment; see "Phase 3.5B Preservation & Recovery
+  Checkpoint" immediately below for the complete, verified resumption
+  state (10-company coverage, Rulebook status, branch/DB state, exact
+  resumption sequence, and the architecture boundary the new pipeline
+  must respect). Infrastructure work ("Operational Safety and BSE
+  Release"/"Final Infrastructure Stabilization Closure") was already
+  substantially complete before this pause: Windows execution
+  isolation closed for 4 of 5 scheduled tasks (item 12 below);
+  `backendtest`'s extraction-pipeline retry/OCR fix merged and live;
+  BSE RSS intraday-polling patch prepared, reviewed, version-
+  controlled, not deployed; closed pending the one item in "Blockers"
+  below (unrelated to this pause).
+
+### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
+
+**1. Program status:** PAUSED, not completed. 3 of 10 companies have
+real, live `fin.raw.*`/`fin.norm.*` facts (UNO Minda, IKIO partially,
+Chemplast Sanmar). 1 more (Choice International) is fully implemented
+and tested but sitting on an unmerged branch. 5 remain untouched for
+different reasons (see table below). All verified directly against
+the live database and `git log` this session, not assumed from prior
+prose.
+
+**2. Exact per-company state (verified against live `instance/trading_app.db`, 2026-11-03):**
+
+| Company | SPARS registered | `fin.raw.*` facts (live) | `fin.norm.*` facts (live) | Backfill/reconciliation status | Screener workbook (Drive) | Next action |
+|---|---|---|---|---|---|---|
+| UNO Minda | Yes | 16 | 10 | **Done** — pre-existing + Phase 3.5B additions (5 new facts, FY2026 audit), reconciled against its own audited Consolidated Statements directly (no Screener figure-level comparison claimed) | Yes — `Uno Minda.xlsx` | None — complete for current scope |
+| Choice International | Yes | 0 (live; 23 on unmerged branch `09ec1d2`) | 0 (live) | Implemented + tested in isolation (branch `feature/phase3-5b-choice-normalization`), **not merged, not deployed**; one real unresolved gap disclosed (Revenue from Operations, 1.63% vs. its Drive-hosted normalized-pilot reference) | Yes — `Choice Intl.xlsx` + the one SPARS-generated derivative (see §3) | Owner decision: merge/deploy or leave as-is |
+| **Chemplast Sanmar** | Yes | **26** | **11** | **DONE — live, verified 2026-11-03** (Rule F-6 `VERIFIED IN PRODUCTION`); partial-coverage caveat applies (Rule F-7 — 5/13/2 of P&L/BS/CF lines, not full statements) | Yes — `Chemplast Sanmar.xlsx` | None for this scope; 4 growth diagnostics available but never attempted (Rule F-7) |
+| EID Parry | Yes | 0 | 0 | Code ready (`factify_eid_parry()`, now idempotent per Rule F-6), **not executed live**; one small informational gap known (total assets, 0.14% vs. an uncited "Screener" figure — Rule F-8) | Yes — `EID Parry.xlsx` | **Next recommended batch** — mirror Chemplast's isolated gate, then request authorization |
+| AXISCADES | Yes | 0 | 0 | Code ready (`factify_axiscades()`, idempotent), **not executed live**; one small informational gap known (finance costs, ~3%/~₹1.3cr — Rule F-8) | Yes — `AXISCADES Tech.xlsx` | Batch after EID Parry, same pattern |
+| IKIO | Yes | 2 (`ebitda`, `pat` — found live this session, more than EX-017's last snapshot showed) | 0 | Partial/ad-hoc — 16 more facts exist under non-canonical names (`quarterly_total_revenue` etc.); canonical `fin.raw.*` vocabulary mapping gap, no fix built | Yes — `IKIO Tech.xlsx` | Needs a scoped mapping assignment before any further backfill |
+| TCS | **No** | 0 | 0 | Zero SPARS presence (no company row, no documents) | Yes — `TCS.xlsx` (workbook ready; nothing in SPARS to reconcile it against) | Owner decision: onboard from scratch, or not |
+| HDFC Bank | **No** | 0 | 0 | Zero SPARS presence; no banking `fin.raw.*` fields exist anywhere in the vocabulary (spec only, `docs/phase3_5b/BANKING_NORMALIZATION_SPEC_2026-11-03.md`) | Yes — `HDFC Bank.xlsx` | Owner decision: onboard + build banking fields, or decline |
+| Reliance Industries | **No** | 0 | 0 | Zero SPARS presence | Yes — `Reliance Industries.xlsx` | Owner decision: onboard, or not |
+| SBI | **No** | 0 | 0 | Zero SPARS presence; same banking-fields gap as HDFC | Yes — `SBI.xlsx` | Owner decision: onboard + banking fields, or decline |
+
+**3. Google Drive Screener workbook corpus — preserved:**
+Folder **`SPARS_Normalised_Financials`**, id
+`1Sr_qpk5nPtNKT5NDM2TdqNNR7zohDOY6`, owner `siddheshjain@gmail.com`,
+all originals uploaded 2026-11-02 19:14–19:52 UTC (the day before the
+ten-company stress test). **10 original per-company Screener exports**
+(uniform ~33–34KB each, one per company, exactly matching the
+ten-company universe): `Choice Intl.xlsx` (`1oADf_fD36huOqjfmergAQklC9B1uHxX4`),
+`Uno Minda.xlsx` (`1fP38wyhy9_pjlFUbWjtpqeJ6qCYZbUas`), `EID Parry.xlsx`
+(`1NlvQTY_w9bl0mejjRQJVPuepYD6RQ1Qt`), `Chemplast Sanmar.xlsx`
+(`1EgVhOheMIot4XRmb9IsU4DKZuD6jMw7Y`), `IKIO Tech.xlsx`
+(`1pSPTSGepmBVVrRfVF79eRXniR1xj3tf7`), `AXISCADES Tech.xlsx`
+(`1SR1NqmmNvHLFXQP7ZQu9B_MAs7ptkPaR`), `TCS.xlsx`
+(`1TPWdJT6tgIDfkqTvFt7XI0ScZ-nnz5ou`), `HDFC Bank.xlsx`
+(`1WBrjoBgBYmP-SVNzoIuuDILdfI-SZDOn`), `Reliance Industries.xlsx`
+(`1krFgAgpLkBwGTlovNDBge0Vdbz_o1Y5d`), `SBI.xlsx`
+(`1C7i7BeK-fvaV9u7mqtM2CfrQlkcHjLsC`). Plus **1 SPARS-generated
+derivative**, clearly distinct (different naming pattern, much
+smaller, 20,025 B): `Choice_International_Normalized_Financials_Pilot.xlsx`
+(`10y-lhBkCSgXGeEzmrLV44p3deaO4p3zK`) — an explicitly-provisional
+reference transformation of Choice's own Screener export, not an
+original. A separate, unrelated "Screener Screens" Drive folder
+(id `18mU166Q6sSPBq3Oxi253UhUd48XwPuAV`) also exists but holds
+crude-oil-cycle-analysis PDFs, not financial workbooks — not relevant,
+do not confuse the two. This corrects an earlier same-day audit in
+this session that wrongly concluded 9 of these 10 workbooks did not
+exist (it only searched the local filesystem and this repo, never
+Drive) — see Rulebook Rule F-8's correction note.
+
+**4. Financial Integrity Rulebook (`docs/phase3_5b/FINANCIAL_INTEGRITY_RULEBOOK.md`,
+`backendtest`) — current status, verified against the file, not
+recalled:**
+
+| Rule | Covers | Status | Enforced on any live/scheduled path today? |
+|---|---|---|---|
+| F-1 | `_current_fact` must be scope-aware (company/metric/period/scope identity) | `VERIFIED IN PRODUCTION` | Yes — in the release worktree (`1993751`) and the live DB confirms correct retrieval |
+| F-2 | Revenue vs. segment/product comparability guard before promotion | `VERIFIED IN PRODUCTION`, with a caveat | Code yes (release worktree); **never organically triggered** — all 23 currently-OPEN candidates have `proposed_scope IS NULL` |
+| F-3 | Corroborating evidence attaches to an existing Fact, never spawns a duplicate | `IMPLEMENTED`, deployed, **not yet `VERIFIED IN PRODUCTION`** | In the release worktree; never invoked against a real candidate |
+| F-4 | `fin.norm.*`/`fin.adj.*` facts don't carry `scope` (dormant risk) | `DOCUMENTED` only | No — no fix needed/applied, no live defect demonstrated |
+| F-5 | UNO Minda Q1 FY2027 PAT correction, 296 → 306.72 | `VERIFIED IN PRODUCTION` | Yes — live DB, supersession applied |
+| F-6 | Factification idempotency (reuse/conflict, never silent duplicate) + the Rulebook-bypass-by-design finding | `VERIFIED IN PRODUCTION` for **Chemplast only** | **No** for the general mechanism outside Chemplast's one execution — **not yet promoted to the release worktree** (pinned at `1993751`, 9 commits behind current HEAD) |
+| F-7 | A selected-line-item backfill is not a complete statement; must be reported as partial | `DOCUMENTED` | N/A — reporting discipline, no code |
+| F-8 | A cited comparison figure must name its source | `DOCUMENTED`, with a same-day correction | N/A — reporting discipline, no code |
+
+**Known, by-design bypass (Rule F-6):** any direct factification write
+(`factify_company()` and its per-company callers) writes straight via
+`ResearchBrainService.record_fact`/`record_fact_idempotent`, bypassing
+`CandidateFinding`/`promote_candidate_finding` entirely — so Rules
+F-2 (comparability guard) and F-3 (corroborating evidence) do not
+apply to it. This is intentional for a human-reviewed statutory
+backfill, not an oversight, but it is the reason F-2/F-3's
+"VERIFIED IN PRODUCTION"/deployment status says nothing about whether
+a *future* direct-write path (including the Direct Event Extractor,
+§7 below) is protected — it would need to apply the same checks
+itself, or route through candidate staging instead.
+
+**Lessons from UNO Minda, IKIO, Chemplast (the concrete, non-
+hypothetical cases each rule exists to prevent):**
+- UNO Minda: `_current_fact`'s lack of scope filtering was already
+  live-wrong before Rule F-1 — it had returned the STANDALONE 244.43
+  PAT for a CONSOLIDATED-assuming diagnostic. A second, separate
+  defect (296 vs. the correct 306.72) was a sourcing error (concall
+  "normalized" figure used instead of the statutory consolidated
+  P&L) — fixed via Rule F-5's supersession, unrelated to F-1's code
+  fix.
+- IKIO: real facts exist but under ad-hoc names outside the
+  `fin.raw.*` vocabulary — a mapping gap that silently excludes real
+  data from every diagnostic rather than computing on it wrongly; the
+  safer of the two failure modes, but still a gap.
+- Chemplast: the gate explicitly built to catch problems *did* catch
+  one — `factify_company()` had no idempotency guard at all before
+  Rule F-6; a second invocation would have created duplicate, unlinked
+  Facts for the same identity with no way to tell which was canonical.
+  Found and fixed before any live write, not after.
+
+**5. Branch/commit/DB state — verified this session, not assumed:**
+- `backendtest` main checkout (`C:\GitHub\backendtest`):
+  `feature/autonomous-research-pipeline` @ **`5edc122`**, clean except
+  the same two pre-existing untracked files as always. **20 commits
+  ahead of `origin/feature/autonomous-research-pipeline`** (origin
+  still at `d5b4c8c`, the PR #12 merge point) — **nothing from this
+  entire Phase 3.5B P0/Chemplast/Rulebook push has been pushed.**
+  Commit chain since the last push: `18422ab` (Rule F-1/F-2 fix) →
+  `e2455e8` (merge) → `eba8501`/`1993751` (Rule F-3 merge) → `fcb1113`
+  (EX-018 docs) → `72b5842`/`b78c6cc` (factification-gap merge) →
+  `d59a0a7` (extract-method refactor) → `b504355` (Rule F-6
+  idempotency fix) → `2194b06` (live-wrapper `sys.path` fix) →
+  `d023c6c` (Chemplast production-result docs) → `1d44de3` (Rule F-7)
+  → `0698fd7` (Rule F-8) → `06fa744` (Rule F-8 correction) →
+  `5edc122` (this pause's EX-016/017/018 updates).
+- **Release worktree `C:\SPARS-release\backendtest`** (the sole
+  execution source for 4 of 5 production Windows Scheduled Tasks):
+  detached HEAD @ **`1993751`** — **9 commits behind** current main
+  HEAD. Has Rules F-1/F-2/F-3. Does **not** have the factification-gap
+  merge, Rule F-6's idempotency fix, the Chemplast backfill scripts,
+  or Rules F-6/F-7/F-8's documentation. The Chemplast live backfill
+  itself was run as a one-off script directly from the main checkout
+  (`C:\GitHub\backendtest`), **not** via the release worktree — it is
+  not a scheduled-task code path, so this is consistent, but worth
+  recording precisely.
+- Other isolated worktrees, unchanged since last recorded:
+  `phase35a-evidence`@`7cad082`, `phase35b-banking-spec`@`1480d06`,
+  `phase35b-choice`@`09ec1d2`, `phase35b-excel-backfill`@`dc5d214`,
+  `phase35b-integration`@`040c740`, `phase35b-tencompany`@`ee1a663`,
+  `priority-extraction-ikio`@`94b8d3d`. (`phase35b-factification`@`72b5842`
+  and `phase35b-pat-correction`@`18422ab` are now also merged into
+  main via `b78c6cc`/`e2455e8` — their worktrees themselves are
+  unchanged/stale copies, safe to leave as-is.)
+- **Live database** `instance/trading_app.db`: `PRAGMA integrity_check`
+  = `ok`. **115** `extracted_fact` rows total (UNO Minda 60, IKIO 18,
+  Chemplast 37 — zero for any other company). **78** `candidate_finding`
+  rows, **55** decided, **23 OPEN** (unchanged all session). File size
+  grew from 76,218,368 B (confirmed byte-identical immediately after
+  the Chemplast write, 2026-11-03 20:25) to 77,824,000 B (23:28) —
+  financial-table counts are unchanged, so this is attributed to the
+  normal, independent scheduled pipeline (`document` 1,440 rows,
+  `extraction_run` 881 rows, both consistent with ordinary
+  `SPARS_SpaBridgeCatchup`/`SPARS_PriorityExtraction` activity), not
+  anything from this session's Phase 3.5B work. Not re-verified byte-
+  for-byte further than this because that growth is expected and
+  unrelated.
+- **No schema migrations anywhere in the Phase 3.5B program** — every
+  change was either a data-insert (`FinancialMetricDefinition` rows,
+  idempotent) or a direct data write to existing columns; confirmed by
+  reviewing every commit above.
+- **Relevant backups on disk** (`instance/`, newest first, Phase
+  3.5B-relevant only): `trading_app.db.pre-chemplast-live-apply-backup-20261103.db`
+  (76,218,368 B), `trading_app.db.pre-gap-companies-factification-backup-20261103.db`
+  (same size, taken minutes earlier the same evening),
+  `trading_app.db.pre-uno-minda-pat-supersession-backup-20261103_193434.db`,
+  `trading_app.db.pre-candidate-promotion-backup-20261103_192115.db`.
+  Plus the regular `SPARS_Backup` scheduled snapshots through
+  `trading_app.db.scheduled-backup-20261102_203001.db`.
+
+**6. Exact resumption sequence (already-completed steps marked, do
+not repeat them):**
+1. [DONE] UNO Minda — full backfill + diagnostics, live.
+2. [DONE, not deployed] Choice International — normalized pilot
+   complete in isolation (`09ec1d2`); owner decision pending on
+   merge/deploy.
+3. [DONE] Chemplast Sanmar — live backfill complete and verified.
+4. **[FIRST TASK ON RESUMPTION]** EID Parry — mirror Chemplast's exact
+   controlled-gate sequence: (a) thin wrapper invoking the existing,
+   unchanged `factify_eid_parry()` (no retyped constants, same
+   pattern as `apply_chemplast_factification_live.py`), (b) run once
+   against a **fresh** isolated copy of the live DB, verify exact
+   counts (expect 30 raw + 11 normalized, i.e. 15 slugs × 2 periods,
+   following Chemplast's 13-slug/26-fact pattern plus EID Parry's 2
+   extra NCI slugs), (c) re-run the same isolated copy to prove
+   idempotency (zero new rows), (d) verify the conflict path, (e) only
+   then take a fresh live backup and request explicit authorization
+   before any live write.
+5. [THEN] AXISCADES — identical pattern, after EID Parry's gate and
+   live write (if authorized) are complete.
+6. [BLOCKED on a scoping decision, not code] IKIO — needs a scoped
+   `fin.raw.*` mapping assignment (map `quarterly_total_revenue`/
+   `quarterly_ebitda`/`quarterly_pat` etc. to canonical slugs) before
+   any further backfill; 2 real `fin.raw.*` facts already exist from
+   other work.
+7. [BLOCKED on an onboarding decision] TCS, HDFC Bank, Reliance
+   Industries, SBI — zero SPARS presence; needs company
+   registration + document acquisition; HDFC/SBI additionally need
+   the still-spec-only banking `fin.raw.*` fields built against real
+   data once a bank is actually onboarded.
+8. [DEFERRED, owner decision, since EX-016] `fin.raw.pat` scope
+   convention corpus-wide (owners-only vs. total-including-NCI) —
+   still undecided, affects any future NCI-bearing company.
+9. [DEFERRED, owner decision] Whether/when to push
+   `feature/autonomous-research-pipeline` (20 commits, all local).
+10. [DEFERRED, owner decision] Whether/when to promote the release
+    worktree past `1993751` to pick up Rule F-6's idempotency fix —
+    currently protects no scheduled/production path, only ad-hoc
+    script runs like Chemplast's.
+
+**7. Architecture boundary for the Direct Event Extractor Pipeline
+(the next workstream) — must reuse, not compete with, Phase 3.5B's
+bookkeeping infrastructure:**
+- **Must reuse:** `ExtractedFact`/`Evidence`/`FactEvidence` models;
+  `ResearchBrainService.record_fact`/`record_evidence` and their
+  idempotent siblings `record_fact_idempotent`/`find_or_record_evidence`
+  (Rule F-6); `FinancialDiagnosticsService._current_fact` (Rule F-1's
+  scope-aware identity lookup); the `CandidateFinding` →
+  `CandidateFindingDecision` → `promote_candidate_finding` staging/
+  promotion workflow, which already carries Rule F-2's comparability
+  guard; append-only supersession (`supersedes_fact_id`) for any
+  revision.
+- **Must not:** invent a parallel fact/evidence model, a parallel
+  idempotency mechanism, a parallel notion of financial identity
+  (company/metric/period/scope/unit), or a parallel promotion/
+  reconciliation gate. Any new event-driven write path goes through
+  the *same* `record_fact_idempotent`/`promote_candidate_finding`
+  surfaces so it inherits Rules F-1/F-2/F-6 automatically, not by
+  reimplementation.
+- **Open question the new pipeline must explicitly answer, not
+  inherit by default:** if it writes directly (like
+  `factify_company()`) rather than via candidate staging, it bypasses
+  Rules F-2/F-3 the same way Rule F-6 found — it must either reuse
+  `record_fact_idempotent`'s pattern itself (minimum bar) or route
+  through `promote_candidate_finding` instead (gets F-2/F-3 for free).
+  Silently defaulting to a third, new approach is exactly what this
+  boundary exists to prevent.
 - **Branch/commit state (as of 2026-11-03, end of session):**
   - `backendtest` live checkout (`C:\GitHub\backendtest`):
-    `feature/autonomous-research-pipeline` @ `211222d`, clean except
+    **superseded by the "Phase 3.5B Preservation & Recovery
+    Checkpoint" §5 above — current HEAD is `5edc122`, not `211222d`.**
+    `211222d` (merge of PR #12 — durable `OCR_REQUIRED`/bounded-retry/
+    `force_reextract_document_ids`/new-filing-priority extraction fix,
+    1672 passed — plus the `.bat` scheduled-task path fix) is still an
+    ancestor of current HEAD; nothing in it was reverted. Clean except
     the same two pre-existing untracked files as always
     (`logs/EX002_timeout_fix_2026-11-02.patch`,
     `logs/manual_queue_remaining_probe_2026-11-02.csv`) — do not
-    touch. `211222d` = merge of PR #12 (`d5b4c8c`: durable
-    `OCR_REQUIRED`/bounded-retry/`force_reextract_document_ids`/
-    new-filing-priority extraction fix, reviewed clean, 1672 passed
-    full suite) plus one follow-on commit pointing the 5 scheduled
-    `.bat` scripts at the new isolated release worktree (below).
-  - **New: `C:\SPARS-release\backendtest`** — a detached-HEAD git
-    worktree of the same `backendtest` repo, pinned to `211222d`
-    (verified clean, correct deps, correct credential/DB/log paths).
-    This is now the sole execution source for 4 of the 5
-    production-affecting Windows Scheduled Tasks (see item 12).
-    Promotion to a new approved commit is only ever
-    `git -C C:\SPARS-release\backendtest fetch && git -C
-    C:\SPARS-release\backendtest checkout <sha>` — never a side
-    effect of dev work in the main checkout.
+    touch.
+  - **`C:\SPARS-release\backendtest`** — detached-HEAD worktree, sole
+    execution source for 4 of 5 production Windows Scheduled Tasks.
+    **Superseded by §5 above: now pinned to `1993751`, not `211222d`**
+    (promoted once, during the P0 release; 9 commits behind current
+    main HEAD as of this pause — see §5 for exactly what it's missing).
+    Promotion to a new commit is only ever `git -C
+    C:\SPARS-release\backendtest fetch && git -C
+    C:\SPARS-release\backendtest checkout <sha>` — never a side effect
+    of dev work in the main checkout.
   - **New: `C:\SPA\cloudrun_fixed_v7_5_dev_2026-11-02`** — the SPA
     ingestion-worker source (previously had *no* version control at
     all) is now a git repo. `master` @ `78c0b49`, tagged
@@ -123,16 +356,10 @@ test evidence are authoritative over this note if they ever disagree
     `feature/bse-rss-intraday-polling` @ `3ed75cb`, branched from that
     baseline — reviewed, tested (9 new tests + 96/96 relevant subset
     passed), **not merged, not built, not deployed**.
-  - `feature/autonomous-research-pipeline` main checkout
-    (`C:\GitHub\backendtest`) now @ `d023c6c` (not pushed): absorbed
-    `feature/phase3-5b-pat-scope-correction` @ `18422ab` and
-    `feature/phase3-5c-corroborating-evidence-link` @ `eba8501` (both
-    merged, see EX-018), then `feature/phase3-5b-factification-gap`
-    @ `72b5842` (merged `b78c6cc`), then three further local commits:
-    `d59a0a7` (extract-method refactor, no behavior change), `b504355`
-    (idempotency fix, Rule F-6), `2194b06` (live-wrapper sys.path fix),
-    `d023c6c` (docs). Working tree clean except the same two
-    pre-existing untracked files as always.
+  - `feature/autonomous-research-pipeline` main checkout commit
+    history: **see §5 above for the exact, current, fully-reconciled
+    chain through `5edc122`** — not re-duplicated here to avoid two
+    sources of truth drifting apart.
   - `feature/phase3-5b-ten-company-stress-test` @ `ee1a663`,
     `feature/phase3-5b-banking-spec` @ `1480d06`,
     `feature/phase3-5b-integration-verification` @ `040c740`,
@@ -375,13 +602,19 @@ test evidence are authoritative over this note if they ever disagree
      AXISCADES (one company per authorization, same pattern as
      Chemplast) -- see item 13's coverage caveat and Rule F-7 before
      treating either as a "complete statement."
-- **Exact next action:** Chemplast Sanmar's live backfill is complete
-  and verified (item 13). A read-only Financial Reconciliation Audit
-  (Screener Excel workbook coverage across all six real companies) is
-  in progress this sub-session -- no DB writes. Do not merge or deploy
-  any other unmerged branch, execute the EID Parry/AXISCADES backfill,
+- **Exact next action:** **Phase 3.5B is PAUSED (2026-11-03), not
+  completed** — the owner is starting Direct Event Extractor Pipeline
+  development next. When Phase 3.5B resumes, the first task is EID
+  Parry's controlled isolated-copy gate (see the "Phase 3.5B
+  Preservation & Recovery Checkpoint" §6, step 4 above) — do not skip
+  straight to a live write. Until then: do not merge or deploy any
+  unmerged branch, execute the EID Parry/AXISCADES backfill, promote
+  the release worktree, push `feature/autonomous-research-pipeline`,
   build/push the BSE-RSS pilot image, or act on any blocker above
-  without explicit instruction.
+  without explicit instruction. The new Direct Event Extractor work
+  must respect §7's architecture boundary (reuse canonical Fact/
+  Evidence/idempotency/promotion infrastructure, never a competing
+  implementation).
 - **Approval boundaries (unchanged by resuming):** no production DB
   writes, no merges to `master`, no deployments, no force pushes. A
   push authorization names specific branches explicitly — it never
