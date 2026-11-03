@@ -124,7 +124,8 @@ test evidence are authoritative over this note if they ever disagree
     baseline — reviewed, tested (9 new tests + 96/96 relevant subset
     passed), **not merged, not built, not deployed**.
   - `feature/phase3-5b-ten-company-stress-test` @ `ee1a663`,
-    `feature/phase3-5b-pat-scope-correction` @ `32aecc7`,
+    `feature/phase3-5b-pat-scope-correction` @ `18422ab` (updated this
+    sub-session, was `32aecc7`),
     `feature/phase3-5b-factification-gap` @ `72b5842`,
     `feature/phase3-5b-banking-spec` @ `1480d06`,
     `feature/phase3-5b-integration-verification` @ `040c740`,
@@ -198,6 +199,39 @@ test evidence are authoritative over this note if they ever disagree
       still-spec-only banking normalization work. No scraping, no
       fabricated/synthetic financial data, no live DB writes. Full
       detail recorded as an update to EX-017 in
+      `docs/SPARS_EXCEPTION_BACKLOG.md` (backendtest).
+  13. **(2026-11-03, later sub-session -- "Financial Integrity P0 Controls")**
+      Fixed the live `_current_fact()` scope-blindness bug (zero
+      `scope` filtering; was already returning the wrong-scope value
+      for UNO Minda Q1 FY2027 `fin.raw.pat`) -- all 27 call sites in
+      `financial_diagnostics_service.py` audited, explicit `scope`
+      kwarg added, 6 new regression tests. Added a pre-promotion
+      revenue/COGS comparability guard
+      (`RevenueComparabilityReviewRequiredError`, 409, never an
+      auto-rejection) so a legitimate segment/product revenue figure
+      can never be conflated with whole-company revenue -- 6 new
+      regression tests. Reviewed branch `eba8501`
+      (`attach_corroborating_evidence`) for merge-readiness: verdict
+      **merge-ready** (structural duplicate-link prevention, fact
+      values never touched, consistent decision semantics; its own
+      suite run in isolation: 1673 passed / 3 pre-existing-and-
+      unrelated `spa_bridge` failures). Audited for other identity-
+      blind query patterns; found one dormant (non-live) risk in
+      `FinancialNarrationService` (no fix applied -- no live bug, per
+      "avoid unrelated refactoring") and one clean full-listing method.
+      Committed `18422ab` on `feature/phase3-5b-pat-scope-correction`
+      (same branch as EX-016 step 2's `32aecc7`, a second fix layered
+      on top) -- **not pushed, not merged.** New canonical
+      `docs/phase3_5b/FINANCIAL_INTEGRITY_RULEBOOK.md`: every confirmed
+      financial-bookkeeping lesson tracked as DISCOVERED/DOCUMENTED/
+      IMPLEMENTED/TESTED/VERIFIED IN PRODUCTION -- only the UNO Minda
+      296-to-306.72 live correction (EX-016/017) is actually at
+      VERIFIED IN PRODUCTION; everything else in this item is at
+      TESTED, not enforced anywhere live yet. Full suite run
+      sequentially (after an accidental concurrent-run collision on a
+      shared pytest temp dir produced 1407 spurious errors, diagnosed
+      and discarded, not a real regression): **1683 passed, 0 failed,
+      0 errors.** Full detail recorded as EX-018 in
       `docs/SPARS_EXCEPTION_BACKLOG.md` (backendtest).
   12. **(2026-11-03, later sub-session — "SPARS Operational Safety and
       BSE Release" / "Final Infrastructure Stabilization Closure")**
@@ -289,13 +323,23 @@ test evidence are authoritative over this note if they ever disagree
      Bank, Reliance and SBI from scratch.
   6. Whether to enable `--stage-candidates` on the live scheduled
      extraction job (a production configuration change).
+  7. **(new, EX-018)** Whether/when to merge and deploy
+     `feature/phase3-5b-pat-scope-correction` @ `18422ab` -- this is
+     the actual fix for the `_current_fact()` scope-blindness bug
+     already confirmed to have produced at least one wrong live
+     diagnostic value; currently TESTED, not yet enforced anywhere
+     live.
+  8. **(new, EX-018)** Whether/when to merge `eba8501`
+     (`attach_corroborating_evidence`) -- reviewed and found
+     merge-ready.
 - **Exact next action:** none queued from the infrastructure track —
   it is explicitly closed pending item 1 above, which is the owner's
-  to act on. Control has been returned to Phase 3.5B financial-
-  intelligence development; await the owner's next task.txt directive
-  there. Do not merge or deploy any unmerged branch, build/push the
-  BSE-RSS pilot image, or act on any blocker above without explicit
-  instruction.
+  to act on. Phase 3.5B financial-intelligence development's P0
+  Controls task (EX-018) is also complete and awaiting the owner's
+  merge/deploy decision on items 7-8 above; await the owner's next
+  task.txt directive. Do not merge or deploy any unmerged branch,
+  build/push the BSE-RSS pilot image, or act on any blocker above
+  without explicit instruction.
 - **Approval boundaries (unchanged by resuming):** no production DB
   writes, no merges to `master`, no deployments, no force pushes. A
   push authorization names specific branches explicitly — it never
