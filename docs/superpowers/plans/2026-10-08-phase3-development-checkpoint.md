@@ -56,70 +56,86 @@ every new session here before it touches code. Git/worktree state and
 test evidence are authoritative over this note if they ever disagree
 — reconcile before acting, don't just trust the prose below.
 
-- **Active assignment:** none in progress — the Phase 3.5B Ten-Company
-  Normalization Stress Test (task.txt, 2026-11-03) completed this
-  session. See `docs/SPARS_EXCEPTION_BACKLOG.md` EX-015 for the full
-  record. Next assignment: whatever the owner directs via task.txt;
-  three required decisions are open (below) and nothing should be
-  assumed-resumed from them without an explicit instruction.
-- **Branch/commit state (as of 2026-11-03, end of session):**
+- **Active assignment:** "SPARS — Phase 3.5B Completion & Financial
+  Intelligence Hardening" (task.txt, 2026-11-03), issued immediately
+  after the ten-company stress test completed and its three decisions
+  were resolved into concrete execution directives. 8 steps: (1)
+  preserve + push the stress-test branch, (2) **CRITICAL** fix the
+  `fin.raw.pat` scope inconsistency, (3) close the Chemplast/EID
+  Parry/AXISCADES factification gap, (4) banking normalization spec
+  only, (5) Phase 3 integration verification, (6) testing/regression,
+  (7) this continuity section, (8) final report + hygiene. Steps 1-2
+  done; step 3 (factification gap) in progress next.
+- **Branch/commit state (as of 2026-11-03, mid-session):**
   - `backendtest` live checkout: `feature/autonomous-research-pipeline`
     @ `6d557b2`, clean except two pre-existing untracked files
     unrelated to this task (`logs/EX002_timeout_fix_2026-11-02.patch`,
     `logs/manual_queue_remaining_probe_2026-11-02.csv`) — do not touch.
-    Not pushed yet.
-  - Isolated worktree:
-    `backendtest/.claude/worktrees/phase35b-tencompany`, branch
-    `feature/phase3-5b-ten-company-stress-test`, branched from `09ec1d2`,
-    now at `ee1a663`. Clean. Not merged, not pushed.
+  - `feature/phase3-5b-ten-company-stress-test` @ `ee1a663` — **pushed**
+    to origin this session (step 1, explicitly authorized). Not merged.
+  - NEW isolated worktree:
+    `backendtest/.claude/worktrees/phase35b-pat-correction`, branch
+    `feature/phase3-5b-pat-scope-correction`, branched from `ee1a663`,
+    now at `32aecc7` (the PAT correction, step 2). **Not pushed** —
+    task.txt step 8 explicitly says the stress-test-branch push
+    authorization does not automatically extend to new implementation
+    branches; await a separate explicit push instruction.
   - `stock-price-alert` canonical (this repo):
-    `feature/investment-operating-system-m1` @ `2b5490b`, plus this
+    `feature/investment-operating-system-m1` @ `a497578`, plus this
     edit. Untracked and pre-existing, not created by this task, not
     touched: `docs/legal/`,
     `docs/superpowers/plans/2026-10-08-phase3-slice-b-revised-implementation-plan.md`,
-    `docs/superpowers/plans/task.txt`. Not pushed yet.
+    `docs/superpowers/plans/task.txt`.
   - Frontend mirror
     (`C:\Users\Home\Documents\GitHub\stock-price-alert`):
-    `feature/spars-smart-search-ui` @ `6781abd`, clean. Not pushed yet.
-- **Completed, this session:** full ten-company stress test — corpus-
-  coverage audit (6/10 registered, only Choice + UNO Minda ever
-  reconciled statutorily, 4 not in SPARS at all), Screener structural
-  audit (all 10 workbooks), UNO Minda statutory reconciliation (second
-  real company, auto-components manufacturing, real NCI), diagnostic-
-  applicability-per-sector validation, full regression (701 passed, 0
-  failed, re-run clean in the new worktree), final comparative matrix
-  and report. Also completed: the Session Continuity mechanism itself
-  (this section + the `CLAUDE.md` pointer), demonstrated with a
-  controlled simulated restart that correctly reconstructed the resume
-  point from this note + live git state alone.
-- **Pending:** nothing from this assignment. Three required decisions
-  are open for the owner (below) before any further Phase 3.5B work on
-  banking/NBFC coverage, the `fin.raw.pat` convention, or
-  Chemplast/EID Parry/AXISCADES factification.
-- **Last verified results:** full `tests/research/` suite — 701
-  passed, 0 failed, run twice this session (baseline at `09ec1d2`, and
-  again at `ee1a663` after the UNO Minda additions) — zero regressions.
+    `feature/spars-smart-search-ui` @ `b0d09b0`.
+- **Completed, this sub-session:** Step 1 (verified `ee1a663` diff —
+  5 files, no secrets/DB files/binaries; pushed as a new branch, no
+  remote divergence). Step 2 (CRITICAL PAT fix) — full audit found
+  only 4 real consumers of `fin.raw.pat` (all in
+  `financial_diagnostics_service.py`; forecast/valuation services have
+  **zero** connection to any raw fact at all, confirmed by grep).
+  Compatibility audit found 3 independent real signals (UNO Minda's
+  live fact, the LLM proposer's documented system prompt, Screener's
+  own convention) all already using owners-only PAT — the task's
+  stated "total" preference was the actual outlier and was never
+  persisted to any database, so correcting it cost zero live-DB
+  writes. Canonical contract now: `fin.raw.pat` = owners-only (slug
+  name/meaning unchanged for every real pre-existing consumer); NCI
+  share unchanged; total PAT derived via new `_total_pat()` helper,
+  never stored. Fixed the real bug (`_owners_pat()` was double-
+  subtracting NCI from an already-owners-only figure). ROE/ROCE/
+  debt-to-equity numerically unchanged for both companies; PAT margin/
+  accruals ratio for Choice now correctly use 217.66 instead of
+  237.89cr. Full detail: `docs/phase3_5b/PAT_SCOPE_CORRECTION_2026-11-03.md`.
+- **Pending:** Step 3 (Chemplast/EID Parry/AXISCADES factification —
+  root cause already found: `CandidateFinding` staging was simply
+  never run for any of the three; UNO Minda has 47 staged candidates,
+  these have 0), Step 4 (banking spec), Step 5 (Phase 3 integration
+  verification), Step 6 (final regression), Step 8 (final report).
+- **Last verified results:** full `tests/research/` suite — 704
+  passed, 0 failed (701 baseline + 3 new PAT-correction regression
+  tests), run in `phase35b-pat-correction` after the fix.
 - **Blockers / required decisions (open, for the owner):**
-  1. `fin.raw.pat` scope (owners-only vs. total-including-NCI) is not
-     uniformly defined across the corpus — UNO Minda's pre-existing
-     `pat` fact is owners-only; Choice's (this phase) is total.
-     `_owners_pat()` cannot be trusted blindly across NCI-bearing
-     companies until one convention is chosen corpus-wide.
-  2. TCS, HDFC Bank, Reliance Industries, SBI have zero SPARS corpus
-     presence. Is bringing a bank/mega-cap into SPARS actually wanted,
-     or is today's small/mid-cap scoping deliberate? If a bank is
-     wanted, new banking-specific `fin.raw.*` slugs (Deposits,
-     Advances, NII, NIM, NPA, CRAR) are the minimal addition required
-     — only once real statutory data exists to source them from.
-  3. Chemplast Sanmar / EID Parry / AXISCADES have real extracted
-     documents but zero `ExtractedFact` rows (a gap recorded since
-     2026-10-12, not introduced here). Worth its own scoped assignment
-     rather than folding into future Phase 3.5B work.
-- **Exact next action:** none queued. Await the owner's next task.txt
-  directive; do not start Phase 3.5C or any of the three decisions
-  above without explicit instruction.
+  1. Banking/NBFC coverage: still zero bank presence in SPARS. Step 4
+     will produce a spec only, per task.txt's explicit instruction not
+     to build an expansive banking engine before real statutory bank
+     filings exist.
+  2. Whatever Step 3's factification work finds as genuine gaps
+     (reported when that step completes).
+- **Exact next action:** Step 3 — investigate why `ExtractionPipelineService.
+  stage_conservative_candidates`/`stage_llm_candidates` were never run
+  for Chemplast Sanmar / EID Parry / AXISCADES (confirmed: 0
+  `CandidateFinding` rows for all three, vs. 47 for UNO Minda), then
+  reuse `ResearchCoverageService.promote_candidate_finding` (the
+  existing human-gated promotion path) plus one generic, parameterized
+  helper (not 3 company-specific importers) to produce real,
+  source-linked facts for whatever periods are genuinely available —
+  work in a new isolated worktree branched from `32aecc7`.
 - **Approval boundaries (unchanged by resuming):** no production DB
-  writes, no merges to `master`, no deployments, no force pushes.
+  writes, no merges to `master`, no deployments, no force pushes. The
+  stress-test-branch push authorization does not extend to any new
+  implementation branch; each needs its own explicit push instruction.
   Resuming this assignment in a new session never by itself authorizes
   any Level 2/3 action beyond what is already explicitly approved in
   this checkpoint and `docs/SPARS_EXCEPTION_BACKLOG.md`.
