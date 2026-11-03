@@ -323,23 +323,24 @@ test evidence are authoritative over this note if they ever disagree
      Bank, Reliance and SBI from scratch.
   6. Whether to enable `--stage-candidates` on the live scheduled
      extraction job (a production configuration change).
-  7. **(new, EX-018)** Whether/when to merge and deploy
-     `feature/phase3-5b-pat-scope-correction` @ `18422ab` -- this is
-     the actual fix for the `_current_fact()` scope-blindness bug
-     already confirmed to have produced at least one wrong live
-     diagnostic value; currently TESTED, not yet enforced anywhere
-     live.
-  8. **(new, EX-018)** Whether/when to merge `eba8501`
-     (`attach_corroborating_evidence`) -- reviewed and found
-     merge-ready.
-- **Exact next action:** none queued from the infrastructure track —
-  it is explicitly closed pending item 1 above, which is the owner's
-  to act on. Phase 3.5B financial-intelligence development's P0
-  Controls task (EX-018) is also complete and awaiting the owner's
-  merge/deploy decision on items 7-8 above; await the owner's next
-  task.txt directive. Do not merge or deploy any unmerged branch,
-  build/push the BSE-RSS pilot image, or act on any blocker above
-  without explicit instruction.
+  7. **(RESOLVED 2026-11-03, EX-018 "P0 Financial Integrity Release")**
+     `18422ab` + `eba8501` merged into
+     `feature/autonomous-research-pipeline` (`e2455e8`, `1993751`) and
+     promoted to the release worktree. Rules F-1/F-2 confirmed
+     `VERIFIED IN PRODUCTION` by direct read-only runtime check
+     against the live DB; Rule F-3 deployed but deliberately not yet
+     exercised against a real candidate. Not pushed. New tracked
+     observation (not fixed): all 23 currently-OPEN candidates have
+     `proposed_scope IS NULL`.
+  8. Whether/when to push `feature/autonomous-research-pipeline`
+     (now carries the merged P0 release, still local-only).
+- **Exact next action:** the P0 release is complete; control has moved
+  to the nine-company financial backfill (item 5 above) per the
+  owner's "Phase 3.5B Execution Acceleration" directive — prioritizing
+  one fully-reconciled company before the remaining available ones.
+  Do not merge or deploy any other unmerged branch, build/push the
+  BSE-RSS pilot image, or act on any blocker above without explicit
+  instruction.
 - **Approval boundaries (unchanged by resuming):** no production DB
   writes, no merges to `master`, no deployments, no force pushes. A
   push authorization names specific branches explicitly — it never
