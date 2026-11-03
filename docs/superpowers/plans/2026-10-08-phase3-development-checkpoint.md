@@ -102,9 +102,8 @@ test evidence are authoritative over this note if they ever disagree
     push these four existing isolated branches"). Not merged.
   - `feature/phase3-5b-excel-backfill` @ `dc5d214` (the new reusable
     Excel backfill utility, branched from the pushed `040c740`) —
-    **not pushed**. Task.txt step 10: "do not push new implementation
-    branches without approval" — this is a *new* branch, not one of
-    the four explicitly named for push.
+    **pushed to origin 2026-11-03**, explicit owner authorization
+    ("Push the excel-backfill branch, don't merge"). Still not merged.
   - `stock-price-alert` canonical (this repo):
     `feature/investment-operating-system-m1` @ `d685f0b`, plus this
     edit. Untracked and pre-existing, not created by this task, not
@@ -148,10 +147,39 @@ test evidence are authoritative over this note if they ever disagree
      regressions. One real bug found and fixed (document-reuse logic
      was unsafe on a `METADATA_MATCH`/different-content conflict).
   10. This checkpoint update + EX-017.
+  11. **(2026-11-03, later sub-session)** Pushed
+      `feature/phase3-5b-excel-backfill` per explicit owner
+      authorization (push only, no merge). Re-ran
+      `tests/research/test_screener_excel_import_service.py` fresh
+      against the pushed branch — **8/8 passed**, synthetic fixtures
+      only. Then ran a read-only, no-live-write query against the live
+      `instance/trading_app.db` to replace reasoning with direct
+      evidence on blocker 3 below, per company:
+      UNO Minda has 54 `extracted_fact` rows / 10 `fin.raw.*`+
+      `fin.norm.*` types — already fully real-backfilled, nothing
+      further needed. Chemplast Sanmar, AXISCADES and EID Parry each
+      have real annual-report/quarterly-results documents on file but
+      **zero** `extracted_fact` rows — not a data-availability gap but
+      the exact factification gap EX-016's unmerged
+      `feature/phase3-5b-factification-gap` @ `72b5842` already fixes
+      in isolation; only a deploy decision is pending. IKIO has real
+      documents and 16 facts, but stored under ad-hoc names
+      (`quarterly_total_revenue` etc.), not the `fin.raw.*` vocabulary
+      — a normalization/mapping gap needing new (not yet built) work,
+      not new data acquisition. TCS, HDFC Bank, Reliance and SBI have
+      **zero** presence in SPARS at all — no company row, no
+      documents — so backfill isn't applicable until each is onboarded
+      from scratch; HDFC/SBI are additionally blocked on the
+      still-spec-only banking normalization work. No scraping, no
+      fabricated/synthetic financial data, no live DB writes. Full
+      detail recorded as an update to EX-017 in
+      `docs/SPARS_EXCEPTION_BACKLOG.md` (backendtest).
 - **Pending:** nothing from this assignment. Blockers below are open
   decisions, not resumable work.
 - **Last verified results:** full `tests/research/` suite — **712
-  passed, 0 failed, 0 skipped** (704 prior + 8 new), zero regressions.
+  passed, 0 failed, 0 skipped** (704 prior + 8 new), zero regressions;
+  plus the 2026-11-03 re-run of `test_screener_excel_import_service.py`
+  alone (8/8 passed) against the pushed branch.
 - **Blockers / required decisions (open, for the owner):**
   1. Banking/NBFC coverage: still zero bank presence in SPARS (spec
      only exists; implementation needs company-universe expansion +
@@ -159,16 +187,21 @@ test evidence are authoritative over this note if they ever disagree
   2. EID Parry total-assets (0.14%) and AXISCADES finance-costs (~3%)
      cross-check gaps — informational, not blocking, no further
      explanation found.
-  3. Whether to physically run the Excel backfill utility against
-     the remaining nine companies' real workbooks, or accept the
-     EX-015/016-reasoned coverage as sufficient.
+  3. Nine-company backfill, now narrowed by direct evidence (see item
+     11 above): (a) whether to deploy the already-built, unmerged
+     `feature/phase3-5b-factification-gap` fix for Chemplast
+     Sanmar/AXISCADES/EID Parry (Level 3 — production DB write); (b)
+     whether to commission new mapping work to bring IKIO's existing
+     facts into the `fin.raw.*` vocabulary; (c) whether/when to onboard
+     TCS, HDFC Bank, Reliance and SBI from scratch. UNO Minda needs
+     nothing further. The original Screener-Excel-workbook route is no
+     longer the only or best path for the three companies already
+     covered by (a).
   4. Whether to enable `--stage-candidates` on the live scheduled
      extraction job (a production configuration change).
-  5. Whether/when to push `feature/phase3-5b-excel-backfill` (not
-     covered by this sub-session's push authorization).
 - **Exact next action:** none queued. Await the owner's next task.txt
-  directive; do not push the excel-backfill branch, start new scope,
-  or act on any blocker above without explicit instruction.
+  directive; do not merge or deploy any unmerged branch, start new
+  scope, or act on any blocker above without explicit instruction.
 - **Approval boundaries (unchanged by resuming):** no production DB
   writes, no merges to `master`, no deployments, no force pushes. A
   push authorization names specific branches explicitly — it never
