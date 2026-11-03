@@ -19,17 +19,29 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-03 (Phase 3.5B: ten-company normalization
-stress test completed — UNO Minda reconciled as a second real company
-in a different sector with real NCI, every diagnostic including
-Choice's ROE/ROCE/debt-to-equity generalized with zero company-specific
-code; corpus-coverage audit found only 6/10 target companies registered
-in SPARS and only 2 ever statutorily reconciled; Screener structural
-audit found banks get the same generic industrial template, mislabeling
-deposits as borrowings; three required owner decisions flagged, not
-silently resolved; see "Session Recovery State" above and EX-015. Also
-this session: the Session Continuity mechanism itself was implemented
-and demonstrated via a controlled simulated restart. Earlier the same
+**Last updated:** 2026-11-03 (Phase 3.5B Completion & Financial
+Intelligence Hardening, all 8 task.txt steps complete — the CRITICAL
+fin.raw.pat accounting-scope bug fixed (owners-only adopted as
+canonical after a compatibility audit found 3 independent real
+signals already agreed, against only Choice's same-session,
+never-persisted "total" choice); the Chemplast/EID Parry/AXISCADES
+factification gap closed with one reusable function (root cause:
+candidate-staging simply never ran for them); a banking normalization
+spec written (no code, zero bank presence in SPARS); Phase 3
+integration honestly verified (diagnostics work end to end for 5 real
+companies; forecast/valuation remain disconnected by design, no
+fabrication); full regression 704 passed / 0 failed / 0 skipped, run
+three times; see "Session Recovery State" above and EX-016. Earlier
+the same day: the ten-company normalization stress test completed —
+UNO Minda reconciled as a second real company in a different sector
+with real NCI, every diagnostic including Choice's ROE/ROCE/debt-to-
+equity generalized with zero company-specific code; corpus-coverage
+audit found only 6/10 target companies registered in SPARS and only 2
+ever statutorily reconciled; Screener structural audit found banks get
+the same generic industrial template, mislabeling deposits as
+borrowings; see EX-015. Also that session: the Session Continuity
+mechanism itself was implemented and demonstrated via a controlled
+simulated restart. Earlier the same
 day: Choice International normalized financial pilot —
 ROE/ROCE/leverage added to FinancialDiagnosticsService for the first
 time ever, audited Annual Report used as canonical with one real
@@ -56,82 +68,84 @@ every new session here before it touches code. Git/worktree state and
 test evidence are authoritative over this note if they ever disagree
 — reconcile before acting, don't just trust the prose below.
 
-- **Active assignment:** "SPARS — Phase 3.5B Completion & Financial
-  Intelligence Hardening" (task.txt, 2026-11-03), issued immediately
-  after the ten-company stress test completed and its three decisions
-  were resolved into concrete execution directives. 8 steps: (1)
-  preserve + push the stress-test branch, (2) **CRITICAL** fix the
-  `fin.raw.pat` scope inconsistency, (3) close the Chemplast/EID
-  Parry/AXISCADES factification gap, (4) banking normalization spec
-  only, (5) Phase 3 integration verification, (6) testing/regression,
-  (7) this continuity section, (8) final report + hygiene. Steps 1-2
-  done; step 3 (factification gap) in progress next.
-- **Branch/commit state (as of 2026-11-03, mid-session):**
+- **Active assignment:** none in progress — "SPARS — Phase 3.5B
+  Completion & Financial Intelligence Hardening" (task.txt,
+  2026-11-03) **completed, all 8 steps**. See
+  `docs/SPARS_EXCEPTION_BACKLOG.md` EX-016 for the full record. Next
+  assignment: whatever the owner directs via task.txt; the blockers
+  below are open decisions, not resumable work.
+- **Branch/commit state (as of 2026-11-03, end of sub-session):**
   - `backendtest` live checkout: `feature/autonomous-research-pipeline`
-    @ `6d557b2`, clean except two pre-existing untracked files
+    @ `72a4c55`, clean except two pre-existing untracked files
     unrelated to this task (`logs/EX002_timeout_fix_2026-11-02.patch`,
     `logs/manual_queue_remaining_probe_2026-11-02.csv`) — do not touch.
-  - `feature/phase3-5b-ten-company-stress-test` @ `ee1a663` — **pushed**
-    to origin this session (step 1, explicitly authorized). Not merged.
-  - NEW isolated worktree:
-    `backendtest/.claude/worktrees/phase35b-pat-correction`, branch
-    `feature/phase3-5b-pat-scope-correction`, branched from `ee1a663`,
-    now at `32aecc7` (the PAT correction, step 2). **Not pushed** —
-    task.txt step 8 explicitly says the stress-test-branch push
-    authorization does not automatically extend to new implementation
-    branches; await a separate explicit push instruction.
+  - `feature/phase3-5b-ten-company-stress-test` @ `ee1a663` —
+    **pushed** (step 1, explicitly authorized). Not merged.
+  - `feature/phase3-5b-pat-scope-correction` @ `32aecc7` (step 2,
+    CRITICAL fix) — **not pushed**.
+  - `feature/phase3-5b-factification-gap` @ `72b5842` (step 3) —
+    **not pushed**.
+  - `feature/phase3-5b-banking-spec` @ `1480d06` (step 4, docs only) —
+    **not pushed**.
+  - `feature/phase3-5b-integration-verification` @ `040c740` (steps
+    5+8, includes the final hardening report) — **not pushed**.
+  - None of steps 2-5's branches are pushed: task.txt step 8
+    explicitly says the stress-test-branch push authorization does not
+    extend to new implementation branches; await a separate explicit
+    push instruction before pushing any of them.
   - `stock-price-alert` canonical (this repo):
-    `feature/investment-operating-system-m1` @ `a497578`, plus this
+    `feature/investment-operating-system-m1` @ `e3ef705`, plus this
     edit. Untracked and pre-existing, not created by this task, not
     touched: `docs/legal/`,
     `docs/superpowers/plans/2026-10-08-phase3-slice-b-revised-implementation-plan.md`,
     `docs/superpowers/plans/task.txt`.
   - Frontend mirror
     (`C:\Users\Home\Documents\GitHub\stock-price-alert`):
-    `feature/spars-smart-search-ui` @ `b0d09b0`.
-- **Completed, this sub-session:** Step 1 (verified `ee1a663` diff —
-  5 files, no secrets/DB files/binaries; pushed as a new branch, no
-  remote divergence). Step 2 (CRITICAL PAT fix) — full audit found
-  only 4 real consumers of `fin.raw.pat` (all in
-  `financial_diagnostics_service.py`; forecast/valuation services have
-  **zero** connection to any raw fact at all, confirmed by grep).
-  Compatibility audit found 3 independent real signals (UNO Minda's
-  live fact, the LLM proposer's documented system prompt, Screener's
-  own convention) all already using owners-only PAT — the task's
-  stated "total" preference was the actual outlier and was never
-  persisted to any database, so correcting it cost zero live-DB
-  writes. Canonical contract now: `fin.raw.pat` = owners-only (slug
-  name/meaning unchanged for every real pre-existing consumer); NCI
-  share unchanged; total PAT derived via new `_total_pat()` helper,
-  never stored. Fixed the real bug (`_owners_pat()` was double-
-  subtracting NCI from an already-owners-only figure). ROE/ROCE/
-  debt-to-equity numerically unchanged for both companies; PAT margin/
-  accruals ratio for Choice now correctly use 217.66 instead of
-  237.89cr. Full detail: `docs/phase3_5b/PAT_SCOPE_CORRECTION_2026-11-03.md`.
-- **Pending:** Step 3 (Chemplast/EID Parry/AXISCADES factification —
-  root cause already found: `CandidateFinding` staging was simply
-  never run for any of the three; UNO Minda has 47 staged candidates,
-  these have 0), Step 4 (banking spec), Step 5 (Phase 3 integration
-  verification), Step 6 (final regression), Step 8 (final report).
-- **Last verified results:** full `tests/research/` suite — 704
-  passed, 0 failed (701 baseline + 3 new PAT-correction regression
-  tests), run in `phase35b-pat-correction` after the fix.
+    `feature/spars-smart-search-ui` @ `c00ff29`, plus this sync.
+- **Completed, this sub-session:** All 8 task.txt steps. (1) Verified
+  + pushed the ten-company stress-test branch. (2) **CRITICAL** fixed
+  the `fin.raw.pat` scope inconsistency -- audited all 4 real
+  consumers (forecast/valuation have zero connection to any raw fact,
+  confirmed by grep); adopted owners-only as canonical (3 independent
+  real signals already agreed; the task's stated "total" preference
+  was the actual, never-persisted outlier); fixed the real
+  double-subtraction bug in `_owners_pat()`; added `_total_pat()`.
+  (3) Closed the Chemplast/EID Parry/AXISCADES factification gap --
+  root cause confirmed (staging step never run for any of the three,
+  not a pipeline bug); one reusable `factify_company()` function
+  populated real, audited, evidence-cited FY2026/FY2025 facts for all
+  three, including EID Parry's large genuine NCI and AXISCADES'
+  small real NCI. (4) Banking normalization spec (HDFC Bank/SBI) --
+  documentation only, confirms zero bank presence in SPARS, proposes
+  minimal future slugs/diagnostics, states the approval boundary.
+  (5) Phase 3 integration verification -- confirms diagnostics +
+  Evidence/citation genuinely work end to end (5 real companies, 4
+  sectors); confirms forecast/valuation remain disconnected by design,
+  with the one existing live row self-labeled a placeholder; no
+  fabrication. (6) Full regression run three times, same result.
+  (8) Final report + EX-016 + this checkpoint update.
+- **Pending:** nothing from this assignment. Four open items for the
+  owner (below), none silently resolved.
+- **Last verified results:** full `tests/research/` suite — **704
+  passed, 0 failed, 0 skipped**, run three times across this
+  hardening pass (after step 2's fix, after step 3's factification
+  work, and a final confirmation on the full tip `03a83a9`) — identical
+  result every time, zero regressions.
 - **Blockers / required decisions (open, for the owner):**
-  1. Banking/NBFC coverage: still zero bank presence in SPARS. Step 4
-     will produce a spec only, per task.txt's explicit instruction not
-     to build an expansive banking engine before real statutory bank
-     filings exist.
-  2. Whatever Step 3's factification work finds as genuine gaps
-     (reported when that step completes).
-- **Exact next action:** Step 3 — investigate why `ExtractionPipelineService.
-  stage_conservative_candidates`/`stage_llm_candidates` were never run
-  for Chemplast Sanmar / EID Parry / AXISCADES (confirmed: 0
-  `CandidateFinding` rows for all three, vs. 47 for UNO Minda), then
-  reuse `ResearchCoverageService.promote_candidate_finding` (the
-  existing human-gated promotion path) plus one generic, parameterized
-  helper (not 3 company-specific importers) to produce real,
-  source-linked facts for whatever periods are genuinely available —
-  work in a new isolated worktree branched from `32aecc7`.
+  1. Banking/NBFC coverage: still zero bank presence in SPARS. A
+     specification exists; implementation requires expanding the
+     approved company universe plus production document ingestion --
+     an explicit decision, not an engineering default.
+  2. Two small, genuine, unresolved cross-check gaps: EID Parry's
+     total assets (audited vs. Screener, 0.14%) and AXISCADES'
+     finance costs (~3%) -- informational, not blocking.
+  3. Whether deeper historical-year factification for Chemplast/EID
+     Parry/AXISCADES (beyond the FY2026/FY2025 populated here) is
+     wanted.
+  4. Whether/when to push steps 2-5's four branches.
+- **Exact next action:** none queued. Await the owner's next task.txt
+  directive; do not push steps 2-5's branches, start new Phase 3.5B/C
+  scope, or act on any blocker above without explicit instruction.
 - **Approval boundaries (unchanged by resuming):** no production DB
   writes, no merges to `master`, no deployments, no force pushes. The
   stress-test-branch push authorization does not extend to any new
