@@ -110,23 +110,25 @@ test evidence are authoritative over this note if they ever disagree
   GP Eco 89/89 event-dense documents staged, Choice 114/114,
   Refex 159/159; zero remaining. (Un-staged remainder overall are
   scanned PDFs with no text layer.)
-  **Phase 1 of promotion** (owner-approved) is a full dry run on an
-  isolated copy — `instance/trading_app.db.scheduled-backup-20261104_204918.db`,
-  launched from
-  `logs/direct_event_extractor/phase1_full.json`. It may still be
-  running in the background: its output is buffered, so check
-  `phase1_full_console.log` and the JSON log before assuming a state.
+  **Phase 1 of promotion is COMPLETE** (owner-approved dry run on an
+  isolated copy `instance/trading_app.db.scheduled-backup-20261104_204918.db`).
+  Results: `logs/direct_event_extractor/phase1_full.json`, valid JSON,
+  **1,629 plans reconciled exactly** (1,629 unique IDs = 1,629 console
+  lines): AUTO_PROMOTE 218, AUTO_CORROBORATE 1, NEEDS_REVIEW 1,410.
+  Measured cause of the 86.6% review rate: keyword prefilter 426 (30%),
+  description-vs-quote mismatch 380 (27%), quote-does-not-establish-
+  category 362 (26%), other NOT_VERIFIED 239 (17%), financial conflicts 3.
+  **These are verifier-design faults, not candidate-quality faults** --
+  see LIVING_PLAN #29 for the two specific causes and the proposed fix.
   **No live canonical promotion has happened**; the live DB still has
   only its 115 pre-existing facts and 55 pre-existing decisions.
-  Early root cause of the ~89% review rate, to be quantified on
-  resumption: the semantic verifier compares the DESCRIPTION to the
-  single cited QUOTE, while the proposer summarises the whole page —
-  a systematic mismatch, plus a narrow keyword prefilter for
-  `capital_action` / `management_governance`. **Do not build a manual
+  Next action: decide on the verifier fix (pass full page text, soften
+  the prefilter), re-run on the copy to measure improvement, and only
+  then choose the auto-validatable categories. **Do not build a manual
   review queue before fixing these.**
-  Next action tomorrow: run `analyze_promotion_outcomes.py` on the
-  Phase 1 log, report company-wise eligibility/conflicts/duplicates,
-  then decide auto-validatable categories.
+  Also running overnight, separately: direct acquisition/extraction/
+  staging backfill for RIL/SBI/HDFC Bank on
+  `instance/trading_app.db.backfill_megacap.db` (never the live DB).
   RIL, SBI and HDFC Bank are registered in SPARS (commit `13be6c4`)
   and added to the live Cloud Run watchlist (owner-approved, verified
   from each execution's logs); **no historical discovery/backfill was
