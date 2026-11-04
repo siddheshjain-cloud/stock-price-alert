@@ -98,23 +98,39 @@ test evidence are authoritative over this note if they ever disagree
   controlled, not deployed; closed pending the one item in "Blockers"
   below (unrelated to this pause).
 
-- **Current workstream (2026-11-05): Direct Event Extractor.**
+- **Current workstream (2026-11-05, paused overnight at owner's
+  request): Direct Event Extractor.**
   Worktree `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD `5700f45`. Nothing merged,
+  `feature/direct-event-extractor`, HEAD `e478f63`. Nothing merged,
   pushed, or deployed. Living plan:
-  `docs/direct_event_extractor/LIVING_PLAN.md` in that worktree.
-  Verified state against live `instance/trading_app.db`:
-  event-dense document extraction complete for **GP Eco 89/93** and
-  **Choice 114/115** (remainder are scanned PDFs with no text layer)
-  and **Refex 159/160** (same cause); event staging running for GP
-  Eco (DeepSeek) and Choice (Groq) as separate OS processes; Refex
-  staging complete. **Promotion lane built and tested only against an
-  isolated database copy — it has never written to the live database**
-  and stays gated until separately approved. RIL, SBI and HDFC Bank
-  are registered in SPARS (commit `13be6c4`) and added to the live
-  Cloud Run watchlist (owner-approved, verified from execution logs);
-  **no historical discovery/backfill was run for them** — deliberate
-  owner decision.
+  `docs/direct_event_extractor/LIVING_PLAN.md` in that worktree
+  (Findings #23-25 are the current state).
+  Verified against live `instance/trading_app.db`:
+  **extraction and staging are COMPLETE for all three pilots** —
+  GP Eco 89/89 event-dense documents staged, Choice 114/114,
+  Refex 159/159; zero remaining. (Un-staged remainder overall are
+  scanned PDFs with no text layer.)
+  **Phase 1 of promotion** (owner-approved) is a full dry run on an
+  isolated copy — `instance/trading_app.db.scheduled-backup-20261104_204918.db`,
+  launched from
+  `logs/direct_event_extractor/phase1_full.json`. It may still be
+  running in the background: its output is buffered, so check
+  `phase1_full_console.log` and the JSON log before assuming a state.
+  **No live canonical promotion has happened**; the live DB still has
+  only its 115 pre-existing facts and 55 pre-existing decisions.
+  Early root cause of the ~89% review rate, to be quantified on
+  resumption: the semantic verifier compares the DESCRIPTION to the
+  single cited QUOTE, while the proposer summarises the whole page —
+  a systematic mismatch, plus a narrow keyword prefilter for
+  `capital_action` / `management_governance`. **Do not build a manual
+  review queue before fixing these.**
+  Next action tomorrow: run `analyze_promotion_outcomes.py` on the
+  Phase 1 log, report company-wise eligibility/conflicts/duplicates,
+  then decide auto-validatable categories.
+  RIL, SBI and HDFC Bank are registered in SPARS (commit `13be6c4`)
+  and added to the live Cloud Run watchlist (owner-approved, verified
+  from each execution's logs); **no historical discovery/backfill was
+  run for them** — deliberate owner decision.
 
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
