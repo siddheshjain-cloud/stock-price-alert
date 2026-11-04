@@ -98,6 +98,24 @@ test evidence are authoritative over this note if they ever disagree
   controlled, not deployed; closed pending the one item in "Blockers"
   below (unrelated to this pause).
 
+- **Current workstream (2026-11-05): Direct Event Extractor.**
+  Worktree `.claude/worktrees/direct-event-extractor`, branch
+  `feature/direct-event-extractor`, HEAD `5700f45`. Nothing merged,
+  pushed, or deployed. Living plan:
+  `docs/direct_event_extractor/LIVING_PLAN.md` in that worktree.
+  Verified state against live `instance/trading_app.db`:
+  event-dense document extraction complete for **GP Eco 89/93** and
+  **Choice 114/115** (remainder are scanned PDFs with no text layer)
+  and **Refex 159/160** (same cause); event staging running for GP
+  Eco (DeepSeek) and Choice (Groq) as separate OS processes; Refex
+  staging complete. **Promotion lane built and tested only against an
+  isolated database copy — it has never written to the live database**
+  and stays gated until separately approved. RIL, SBI and HDFC Bank
+  are registered in SPARS (commit `13be6c4`) and added to the live
+  Cloud Run watchlist (owner-approved, verified from execution logs);
+  **no historical discovery/backfill was run for them** — deliberate
+  owner decision.
+
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
