@@ -150,8 +150,10 @@ test evidence are authoritative over this note if they ever disagree
   incomparable periods instead of substituting metrics.
   Quarterly coverage: 9 of 10 periods; **FY2025Q2 and FY2027Q1 are not
   recoverable from the corpus** (mislabeled voting result / newspaper
-  notices) and need acquisition. Promotion preview: 86 ready, 52
-  already-live slots, 6 superseded, 2 blocked.
+  notices) and need acquisition. Those 86 facts were promoted 2026-11-06: Refex now has
+  140 facts (52 consolidated / 88 standalone, 80 quarterly), 0 without
+  evidence; SPARS total 322. Six superseded restatement originals and
+  two ebitda_v1 facts remain deliberately unpromoted (revision pending).
   **Awaiting owner approval:** the prepared live financial transaction
   (Refex only, pending `pat_continuing`), candidate promotion, and any
   deployment or scheduler change.
