@@ -98,10 +98,11 @@ test evidence are authoritative over this note if they ever disagree
   controlled, not deployed; closed pending the one item in "Blockers"
   below (unrelated to this pause).
 
-- **Current workstream (2026-11-05, checkpoint): Direct Event
+- **Current workstream (2026-11-06 recovery, checkpoint): Direct Event
   Extractor.** Worktree `.claude/worktrees/direct-event-extractor`,
-  branch `feature/direct-event-extractor`, HEAD `7409260`. Nothing
-  merged, pushed, or deployed. Full detail: LIVING_PLAN #23-51.
+  branch `feature/direct-event-extractor`, HEAD **`6a22e36`** (verified
+  2026-11-06). Nothing merged, pushed, or deployed. Full detail:
+  LIVING_PLAN #23-95.
   **Live SPARS verified state:** 149 canonical facts (**12 financial +
   22 event promoted today**, both owner-approved), 0 facts without
   evidence, integrity ok; 226 direct-acquired documents and 626 event
@@ -180,9 +181,33 @@ test evidence are authoritative over this note if they ever disagree
   events (14 governance, 6 pledge); SPARS total 448. Held: 3 undated
   pledge filings, the 45.99% derived ratio, and 27 qualitative guidance
   statements.
-  **Awaiting owner approval:** the prepared live financial transaction
-  (Refex only, pending `pat_continuing`), candidate promotion, and any
-  deployment or scheduler change.
+  **Recovery verification (2026-11-06, after a context-limit failure
+  following `e17d78f`):** live canonical **487 facts across 9
+  companies** (Refex 265, UNO Minda 62, GP Eco 61, Chemplast 37,
+  Choice 33, IKIO 19, Asian Energy 6, Cemindia 3, Bombay Dyeing 1),
+  **0 facts without evidence** -- matches `e17d78f`. The interrupted
+  session's UNO Minda work was **found preserved in isolation, never
+  promoted**: `.../fin_pilot/uno.db` holds 24 facts the live DB does
+  not (FY2026, FY2026Q1, FY2027Q1 reported standalone P&L, 8 metrics
+  each), every one evidence-linked to page 2 of the **live**
+  `UNOMINDA_RESULTS_Q1_FY2027` document. The requested Q1 FY2027
+  standalone revenue **₹4,029.39 cr** and PAT **₹244.43 cr** are among
+  them and were visually re-verified against the filing page. They are
+  preserved in
+  `logs/direct_event_extractor/uno_reported_standalone_manifest.json`
+  and `scripts/promote_uno_reported.py` (idempotent, dry-run default;
+  dry run against live = 24 NEW, 0 conflicts) so a temp-directory
+  cleanup cannot lose them. **No live write was made.** Also produced
+  this session: a read-only five-company completeness assessment
+  (`docs/direct_event_extractor/FIVE_COMPANY_COMPLETENESS_2026-11-06.md`)
+  and four preliminary evidence-grounded reports (GP Eco, UNO Minda,
+  Choice, Chemplast). Ledger finding recorded, not changed: the
+  coverage ledger counts only `fin.raw.*`, so Refex's 104 canonical
+  `fin.reported.*` quarterly facts read as SOURCE_MISSING.
+  **Awaiting owner approval:** (a) the prepared 24-fact UNO Minda
+  standalone promotion (live write), (b) any candidate promotion, and
+  (c) any deployment or scheduler change. Nothing else blocks
+  in-bounds work.
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
