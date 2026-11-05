@@ -98,42 +98,34 @@ test evidence are authoritative over this note if they ever disagree
   controlled, not deployed; closed pending the one item in "Blockers"
   below (unrelated to this pause).
 
-- **Current workstream (2026-11-05, paused overnight at owner's
-  request): Direct Event Extractor.**
-  Worktree `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD `e478f63`. Nothing merged,
-  pushed, or deployed. Living plan:
-  `docs/direct_event_extractor/LIVING_PLAN.md` in that worktree
-  (Findings #23-25 are the current state).
-  Verified against live `instance/trading_app.db`:
-  **extraction and staging are COMPLETE for all three pilots** —
-  GP Eco 89/89 event-dense documents staged, Choice 114/114,
-  Refex 159/159; zero remaining. (Un-staged remainder overall are
-  scanned PDFs with no text layer.)
-  **Phase 1 of promotion is COMPLETE** (owner-approved dry run on an
-  isolated copy `instance/trading_app.db.scheduled-backup-20261104_204918.db`).
-  Results: `logs/direct_event_extractor/phase1_full.json`, valid JSON,
-  **1,629 plans reconciled exactly** (1,629 unique IDs = 1,629 console
-  lines): AUTO_PROMOTE 218, AUTO_CORROBORATE 1, NEEDS_REVIEW 1,410.
-  Measured cause of the 86.6% review rate: keyword prefilter 426 (30%),
-  description-vs-quote mismatch 380 (27%), quote-does-not-establish-
-  category 362 (26%), other NOT_VERIFIED 239 (17%), financial conflicts 3.
-  **These are verifier-design faults, not candidate-quality faults** --
-  see LIVING_PLAN #29 for the two specific causes and the proposed fix.
-  **No live canonical promotion has happened**; the live DB still has
-  only its 115 pre-existing facts and 55 pre-existing decisions.
-  Next action: decide on the verifier fix (pass full page text, soften
-  the prefilter), re-run on the copy to measure improvement, and only
-  then choose the auto-validatable categories. **Do not build a manual
-  review queue before fixing these.**
-  Also running overnight, separately: direct acquisition/extraction/
-  staging backfill for RIL/SBI/HDFC Bank on
-  `instance/trading_app.db.backfill_megacap.db` (never the live DB).
-  RIL, SBI and HDFC Bank are registered in SPARS (commit `13be6c4`)
-  and added to the live Cloud Run watchlist (owner-approved, verified
-  from each execution's logs); **no historical discovery/backfill was
-  run for them** — deliberate owner decision.
-
+- **Current workstream (2026-11-05, checkpoint): Direct Event
+  Extractor.** Worktree `.claude/worktrees/direct-event-extractor`,
+  branch `feature/direct-event-extractor`, HEAD `7409260`. Nothing
+  merged, pushed, or deployed. Full detail: LIVING_PLAN #23-51.
+  **Live SPARS verified state:** 149 canonical facts (**12 financial +
+  22 event promoted today**, both owner-approved), 0 facts without
+  evidence, integrity ok; 226 direct-acquired documents and 626 event
+  candidates reconciled live; all 226 local evidence files verified
+  and archived to Drive (`SPARS Direct Evidence`,
+  id `14XoOlm6ya6aIqc_ZvHbWVpLG55xMIqRo`).
+  **Built and tested today:** direct BSE/NSE -> extraction -> staging
+  path (no Drive/bridge dependency); CWD-independent content-addressed
+  evidence storage; async Drive archival worker; materiality gate;
+  claim grounding; company attribution with verified alias matching;
+  intra-batch duplicate/conflict pre-pass; restartable semantic
+  revalidation (all 1,407 evaluated: 81.4% eligible); process locks.
+  Full suite: **1,847 passed, 1 skipped, 0 failed**.
+  **Fresh-sample evaluation (frozen rules): precision 100%, recall
+  ~70%** after attribution fixes; residual weakness is
+  disclosure-style events and abbreviation-only pages.
+  **Incident, resolved:** seven orphaned bash loops were respawning
+  backfills for hours and caused every OOM kill; all stopped. They
+  added data only to the isolated DB (**433 docs / 1,018 candidates**
+  vs 226 / 626 reconciled) -- **~207 documents remain unreconciled and
+  unapproved**.
+  **Awaiting owner approval:** promotion of the remaining candidates;
+  reconciliation of the ~207 isolated-only documents; any deployment
+  or scheduler change.
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
