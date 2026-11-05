@@ -173,8 +173,8 @@ test evidence are authoritative over this note if they ever disagree
   image-only documents read (no encumbrance in FY26; Mirae sold 0.01%;
   AMANSA acquired 0.60%). Canonical total reconciles exactly: 432 facts
   across 9 companies. Deterministic pass over 185 Refex candidates gave
-  46 eligible without any LLM cost. GP Eco still has ZERO financial
-  facts (22 event facts only); Choice/UNO/Chemplast lack quarterly or
+  46 eligible without any LLM cost. GP Eco has since had 39 restated consolidated financial facts
+  (FY2023-FY2025) promoted, so it is no longer financially blind; Choice/UNO/Chemplast lack quarterly or
   segment depth. Those approvals were granted and executed 2026-11-07: 16 facts promoted
   (10 governance + 6 pledge). Refex now 265 facts with 20 canonical
   events (14 governance, 6 pledge); SPARS total 448. Held: 3 undated
