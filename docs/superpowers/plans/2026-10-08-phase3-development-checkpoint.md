@@ -161,6 +161,12 @@ test evidence are authoritative over this note if they ever disagree
   incl. 55 promoter_pledge and 29 management_governance) remain
   undecided/unpromoted. UNO Minda generic-workflow test exposed a
   duplicate fact slot, NULL-scoped facts and non-normalized period labels.
+  **First canonical EVENT facts (2026-11-06):** 4 Refex governance
+  events promoted (SMP designations + three senior appointments) after
+  subject-of-event attribution fixes. Refex now 249 facts, SPARS total
+  432. 2 pledge candidates held (undated documents, period UNKNOWN).
+  Groq benchmark still fails precision (#18 routine regulatory);
+  DeepSeek 100% precision / 36% recall -- no mass validation authorised.
   **Awaiting owner approval:** the prepared live financial transaction
   (Refex only, pending `pat_continuing`), candidate promotion, and any
   deployment or scheduler change.
