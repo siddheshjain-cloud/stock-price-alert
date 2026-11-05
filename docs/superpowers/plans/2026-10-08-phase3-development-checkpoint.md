@@ -126,9 +126,20 @@ test evidence are authoritative over this note if they ever disagree
   references resolving, 0 dangling units, integrity ok**, canonical
   facts unchanged at 149. 75 isolated-only candidates remain (they sit
   under documents already live by SHA) and need triage.
-  **Awaiting owner approval:** promotion of the remaining candidates;
-  reconciliation of the ~207 isolated-only documents; any deployment
-  or scheduler change.
+  **Financial reconciliation (2026-11-06, LIVING_PLAN #59): Refex GO,
+  Choice NO-GO.** Refex isolated facts (22, FY2025-26 consolidated,
+  evidence-complete) reconcile to the audited statements; a
+  `pat_continuing` fact should be added before promotion. Choice
+  isolated facts (33) show two internal contradictions (stored ROE
+  -15.95 vs recomputed +68.22; console PAT margin 19.45% vs stored
+  6.09%) and must not be promoted until resolved.
+  Candidate pre-pass: 538 provisional -> **433 after intra-batch
+  dedup**, 105 blocked as duplicates; no promotion authorized.
+  Research universe is now FIVE companies (adds Chemplast Sanmar:
+  30 docs / 23 extracted / 37 facts).
+  **Awaiting owner approval:** the prepared live financial transaction
+  (Refex only, pending `pat_continuing`), candidate promotion, and any
+  deployment or scheduler change.
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
