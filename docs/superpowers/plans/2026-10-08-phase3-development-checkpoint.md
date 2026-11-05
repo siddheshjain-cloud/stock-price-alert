@@ -154,6 +154,13 @@ test evidence are authoritative over this note if they ever disagree
   140 facts (52 consolidated / 88 standalone, 80 quarterly), 0 without
   evidence; SPARS total 322. Six superseded restatement originals and
   two ebitda_v1 facts remain deliberately unpromoted (revision pending).
+  A further **103 facts** (64 segment, 6 capex, 33 quarterly incl. FY2025Q2
+  and FY2027Q1) were promoted 2026-11-06: Refex now has **245 facts**
+  (122 consolidated / 123 standalone), 76 segment, 113 quarterly, 0 without
+  evidence; SPARS total **427**. Refex event candidates (983 staged,
+  incl. 55 promoter_pledge and 29 management_governance) remain
+  undecided/unpromoted. UNO Minda generic-workflow test exposed a
+  duplicate fact slot, NULL-scoped facts and non-normalized period labels.
   **Awaiting owner approval:** the prepared live financial transaction
   (Refex only, pending `pat_continuing`), candidate promotion, and any
   deployment or scheduler change.
