@@ -126,13 +126,13 @@ test evidence are authoritative over this note if they ever disagree
   references resolving, 0 dangling units, integrity ok**, canonical
   facts unchanged at 149. 75 isolated-only candidates remain (they sit
   under documents already live by SHA) and need triage.
-  **Financial reconciliation (2026-11-06, LIVING_PLAN #59): Refex GO,
-  Choice NO-GO.** Refex isolated facts (22, FY2025-26 consolidated,
+  **Financial reconciliation (2026-11-06, LIVING_PLAN #59 corrected by
+  #62): Refex GO (executed, 24 facts live), Choice GO (verified).** Refex isolated facts (22, FY2025-26 consolidated,
   evidence-complete) reconcile to the audited statements; a
-  `pat_continuing` fact should be added before promotion. Choice
-  isolated facts (33) show two internal contradictions (stored ROE
-  -15.95 vs recomputed +68.22; console PAT margin 19.45% vs stored
-  6.09%) and must not be promoted until resolved.
+  `pat_continuing` added and promoted. The earlier Choice "NO-GO" was
+  a defect in my verification query (no company_id filter); every Choice
+  ratio now reproduces exactly, so Choice is GO for its 33 isolated
+  facts subject to owner approval.
   Candidate pre-pass: 538 provisional -> **433 after intra-batch
   dedup**, 105 blocked as duplicates; no promotion authorized.
   Research universe is now FIVE companies (adds Chemplast Sanmar:
