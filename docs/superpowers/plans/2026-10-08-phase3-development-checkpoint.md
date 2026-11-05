@@ -140,6 +140,18 @@ test evidence are authoritative over this note if they ever disagree
   dedup**, 105 blocked as duplicates; no promotion authorized.
   Research universe is now FIVE companies (adds Chemplast Sanmar:
   30 docs / 23 extracted / 37 facts).
+  **Refex financial intelligence (2026-11-06):** EBITDA methodology
+  corrected to v2 (PBT + finance + D&A - other income) which reconciles
+  to reported 350.02/207.78; the two live ebitda_v1 facts are flagged
+  for supersession, not overwrite. Q4FY26 "in Rs Lakhs" header proven
+  wrong (values are crore). Q4FY25 PAT restatement (57.09 vs 56.16)
+  preserved with a revision chain. Like-for-like trend gate implemented
+  (`app/services/financial_trends.py`, 3 tests) that suppresses
+  incomparable periods instead of substituting metrics.
+  Quarterly coverage: 9 of 10 periods; **FY2025Q2 and FY2027Q1 are not
+  recoverable from the corpus** (mislabeled voting result / newspaper
+  notices) and need acquisition. Promotion preview: 86 ready, 52
+  already-live slots, 6 superseded, 2 blocked.
   **Awaiting owner approval:** the prepared live financial transaction
   (Refex only, pending `pat_continuing`), candidate promotion, and any
   deployment or scheduler change.
