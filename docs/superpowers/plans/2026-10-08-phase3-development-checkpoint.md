@@ -175,8 +175,11 @@ test evidence are authoritative over this note if they ever disagree
   across 9 companies. Deterministic pass over 185 Refex candidates gave
   46 eligible without any LLM cost. GP Eco still has ZERO financial
   facts (22 event facts only); Choice/UNO/Chemplast lack quarterly or
-  segment depth. Approvals outstanding: 1 pledge event (FY2027Q2) and a
-  staged sub-batch of the 46 deterministic-eligible candidates.
+  segment depth. Those approvals were granted and executed 2026-11-07: 16 facts promoted
+  (10 governance + 6 pledge). Refex now 265 facts with 20 canonical
+  events (14 governance, 6 pledge); SPARS total 448. Held: 3 undated
+  pledge filings, the 45.99% derived ratio, and 27 qualitative guidance
+  statements.
   **Awaiting owner approval:** the prepared live financial transaction
   (Refex only, pending `pat_continuing`), candidate promotion, and any
   deployment or scheduler change.
