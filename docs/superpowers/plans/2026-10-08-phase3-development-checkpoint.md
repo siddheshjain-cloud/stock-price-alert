@@ -119,10 +119,13 @@ test evidence are authoritative over this note if they ever disagree
   ~70%** after attribution fixes; residual weakness is
   disclosure-style events and abbreviation-only pages.
   **Incident, resolved:** seven orphaned bash loops were respawning
-  backfills for hours and caused every OOM kill; all stopped. They
-  added data only to the isolated DB (**433 docs / 1,018 candidates**
-  vs 226 / 626 reconciled) -- **~207 documents remain unreconciled and
-  unapproved**.
+  backfills for hours and caused every OOM kill; all stopped.
+  **Second reconciliation executed and verified (LIVING_PLAN #52):**
+  207 documents / 1,301 units / 317 event candidates imported; live now
+  **433 direct documents, 943 direct candidates, 433/433 evidence
+  references resolving, 0 dangling units, integrity ok**, canonical
+  facts unchanged at 149. 75 isolated-only candidates remain (they sit
+  under documents already live by SHA) and need triage.
   **Awaiting owner approval:** promotion of the remaining candidates;
   reconciliation of the ~207 isolated-only documents; any deployment
   or scheduler change.
