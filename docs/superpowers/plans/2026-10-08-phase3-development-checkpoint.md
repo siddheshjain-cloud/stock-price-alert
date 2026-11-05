@@ -167,6 +167,16 @@ test evidence are authoritative over this note if they ever disagree
   432. 2 pledge candidates held (undated documents, period UNKNOWN).
   Groq benchmark still fails precision (#18 routine regulatory);
   DeepSeek 100% precision / 36% recall -- no mass validation authorised.
+  **Overnight 2026-11-06/07:** both pending Refex pledge candidates traced
+  to one Reg-31(1) disclosure dated 16-Sep-2026 (FY2027Q2); the "45.99%"
+  candidate is a derived ratio of the same event. Chemplast's three
+  image-only documents read (no encumbrance in FY26; Mirae sold 0.01%;
+  AMANSA acquired 0.60%). Canonical total reconciles exactly: 432 facts
+  across 9 companies. Deterministic pass over 185 Refex candidates gave
+  46 eligible without any LLM cost. GP Eco still has ZERO financial
+  facts (22 event facts only); Choice/UNO/Chemplast lack quarterly or
+  segment depth. Approvals outstanding: 1 pledge event (FY2027Q2) and a
+  staged sub-batch of the 46 deterministic-eligible candidates.
   **Awaiting owner approval:** the prepared live financial transaction
   (Refex only, pending `pat_continuing`), candidate promotion, and any
   deployment or scheduler change.
