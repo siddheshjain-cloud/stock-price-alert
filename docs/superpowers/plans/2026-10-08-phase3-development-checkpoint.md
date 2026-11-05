@@ -131,8 +131,8 @@ test evidence are authoritative over this note if they ever disagree
   evidence-complete) reconcile to the audited statements; a
   `pat_continuing` added and promoted. The earlier Choice "NO-GO" was
   a defect in my verification query (no company_id filter); every Choice
-  ratio now reproduces exactly, so Choice is GO for its 33 isolated
-  facts subject to owner approval.
+  ratio now reproduces exactly, so Choice is GO, approved and EXECUTED: 33 facts live (FY2025 13,
+  FY2026 20), 0 without evidence. SPARS total facts 206.
   Candidate pre-pass: 538 provisional -> **433 after intra-batch
   dedup**, 105 blocked as duplicates; no promotion authorized.
   Research universe is now FIVE companies (adds Chemplast Sanmar:
