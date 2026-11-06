@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 (APPROVED WRITES EXECUTED: GP Eco FY2026 audited AR registered and normalized (17 facts + 8 metrics; revenue 414.38 cr, PBT 53.96, total PAT 42.74, receivables 171.9 days, D/E 1.02x) through the issuer gate; two recovered Refex documents archived to Drive and SHA-verified; historical market data located in Drive (1,786,077 daily rows, 62,420,320 minute rows verified read-only with DuckDB; 2.85 GB NIFTY-500 archive still verifying) correcting the earlier no-store claim; research scorecard added. Live 882 facts, 0 without evidence; 426 tests passed this session; no deployment. Earlier: NEXT PRIORITIES: issuer-identity gate implemented and enforced at acquisition + canonical promotion (10 tests, verified on the live GP Eco/Chemkart pair; EX-020 control gap closed); coverage ledger now recognises raw/reported on a consistent basis and never counts derived/normalized as source — Refex and Choice show all six quarters VERIFIED; market-data trace completed (no history store exists; feed unpopulated, no change); six-company report audited with 12 findings corrected; two Refex evidence files recovered by exact SHA; GP Eco audited FY2026 annual report recovered and preserved pending registration (revenue 414.38 cr, PAT 42.74 cr). Live 856 facts unchanged, 0 without evidence; 1,870 tests passed; no deployment. Earlier: SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
+**Last updated:** 2026-11-07 (WATCHLIST DATA DELIVERED: all 95 Universe companies downloaded daily OHLCV 2015→2026-11-06 (112,979 rows, 0 violations), reconciled with the Drive archives at 5,936 overlapping dates with zero mismatches, stored in C:\SPARS_marketdata\daily; the three minute archives secured with SHA-256 (210,748,427 verified rows, 89% of ~237M; further minute download stopped on instruction); valuation now uses local closes. Live 882 facts unchanged, 0 without evidence; no deployment. Earlier: APPROVED WRITES EXECUTED: GP Eco FY2026 audited AR registered and normalized (17 facts + 8 metrics; revenue 414.38 cr, PBT 53.96, total PAT 42.74, receivables 171.9 days, D/E 1.02x) through the issuer gate; two recovered Refex documents archived to Drive and SHA-verified; historical market data located in Drive (1,786,077 daily rows, 62,420,320 minute rows verified read-only with DuckDB; 2.85 GB NIFTY-500 archive still verifying) correcting the earlier no-store claim; research scorecard added. Live 882 facts, 0 without evidence; 426 tests passed this session; no deployment. Earlier: NEXT PRIORITIES: issuer-identity gate implemented and enforced at acquisition + canonical promotion (10 tests, verified on the live GP Eco/Chemkart pair; EX-020 control gap closed); coverage ledger now recognises raw/reported on a consistent basis and never counts derived/normalized as source — Refex and Choice show all six quarters VERIFIED; market-data trace completed (no history store exists; feed unpopulated, no change); six-company report audited with 12 findings corrected; two Refex evidence files recovered by exact SHA; GP Eco audited FY2026 annual report recovered and preserved pending registration (revenue 414.38 cr, PAT 42.74 cr). Live 856 facts unchanged, 0 without evidence; 1,870 tests passed; no deployment. Earlier: SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
 readiness session: four promotion-ready batches prepared — Choice
 quarterly 59, UNO Minda 84, Chemplast 58, Refex pledge 3 — and a CRITICAL
 data-integrity correction: GP Eco's 39 live financial facts are Chemkart
@@ -105,50 +105,42 @@ test evidence are authoritative over this note if they ever disagree
   controlled, not deployed; closed pending the one item in "Blockers"
   below (unrelated to this pause).
 
-- **Current workstream (2026-11-07, next execution — approved writes
-  executed): Direct Event Extractor.** Worktree
+- **Current workstream (2026-11-07, watchlist data + research):
+  Direct Event Extractor.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`60256e9`**. Nothing merged,
+  `feature/direct-event-extractor`, HEAD **`944ef0c`**. Nothing merged,
   pushed, or deployed.
   **Live SPARS state: 882 canonical facts across 10 companies, 0
-  without evidence, integrity ok.**
-  **1. GP Eco FY2026 annual report registered and normalized.** Document
-  `e2ed0515-a6b4-4043-88d3-61db43dea6f0` (`GPECO_AR_FY2026`, SHA
-  `a2f88760…`, 106 pp) created through `DocumentLibraryService`; the
-  issuer gate verified it (name on 67/69 substantive pages). Deterministic
-  page-text extraction units (pages 80–81, no LLM). 17 reconciled
-  consolidated facts: revenue 414.38 cr (+68.2%), PBT 53.96 cr, total
-  PAT 42.74 cr (recorded as `fin.reported.net_profit_continuing` because
-  the AR does not split owners/NCI; `fin.raw.pat` deliberately not
-  written), total assets 441.34, borrowings 108.97, receivables 195.11,
-  CFO 29.33, capex 61.70 (PPE 53.57 + capital WIP 8.13; the initial
-  53.57 fact was superseded). Diagnostics: gross margin 21.19%,
-  receivable days 171.9, inventory 63.3, payable 156.9, CCC 78.2,
-  D/E 1.02x, ROCE 28.0%. Research report updated; the earlier "falling
-  margins" conclusion is reversed — the risk is working capital and
-  leverage.
-  **2. Two recovered Refex documents archived to Drive.** Both verified
-  by SHA-256 from Drive: `aa57a65b…` at `1kw0d1uz…` (already present),
-  `e9435da5…` newly uploaded at `1YDmib5c…`. One BSE attachment
-  (`c10bd7c2…`) remains permanently 404.
-  **3. Historical market-data repositories located and verified
-  (read-only).** The earlier "no historical store" claim was wrong: the
-  operational DB has no history, but Drive holds Parquet backfills.
-  Verified with DuckDB in an isolated target: **1,786,077 distinct daily
-  rows** across four archives (matches the ~1.82M figure) and
-  **62,420,320 minute rows** across two archives; a 2.85 GB NIFTY-500
-  gap archive was still downloading at handover. Six-company retrieval
-  tested: REFEX/CHOICEIN/UNOMINDA present, CHEMPLASTS partial (2021–22),
-  GPECO/CHEMKART absent. No import, no Kite change.
-  **4. Research readiness:** six-company report now carries an
-  investment-readiness scorecard (evidence grade, key unverified claim,
-  falsification test) and the canonical GP Eco FY2026 figures.
-  Verification this session: issuer-gate + documents suites **426
-  passed**; earlier full suite 1,870 passed / 2 skipped / 0 failed.
-  **Awaiting approval:** a read-only DuckDB market-data service over the
-  Parquet archives (no DB import); GP Eco quarterly filings (absent);
-  Refex BSE attachment. **Next action:** finish the NIFTY-500 archive
-  count and then scope the read-only market-data service.
+  without evidence, integrity ok** (unchanged by the market-data work —
+  no SPARS database writes).
+  **Watchlist daily history downloaded and verified (owner-directed).**
+  All **95 companies** in the Universe tab resolved (including NSE
+  `-SM`/`-BE` SME symbols) and fetched from the Kite historical API,
+  2015-01-01 → 2026-11-06; each series starts at its own listing.
+  **112,979 daily bars, zero OHLC violations.** Stored as CSV + Parquet
+  under `C:\SPARS_marketdata\daily` with a per-symbol SHA-256
+  manifest. **Reconciliation against the Drive daily archives: 5,936
+  overlapping symbol-dates, zero close-price mismatches.**
+  **Minute data secured:** the three downloaded archives
+  (`kite_nifty500_2019gap`, `kite_minute_oct2026`, `kite_index_minute`)
+  now live at `C:\SPARS_marketdata\minute` with `SHA256SUMS` and a
+  manifest; **210,748,427 verified rows** (148,328,107 + 56,067,102 +
+  6,353,218), 89% of the stated ~237M. The remaining consolidated store
+  (`canonical_v2_Stocks`, 578 minute Parquet files) was deliberately not
+  downloaded per the owner's stop instruction.
+  **Valuation is now local:** the six-company report uses 2026-11-06
+  closes and filing-derived share counts (e.g. GP Eco ₹367.10 × 1.183 cr
+  = ₹434 cr; P/E 10.2x on FY2026 total PAT), replacing external
+  snapshots.
+  Prior same-day work retained in this session: GP Eco FY2026 audited AR
+  registered (`GPECO_AR_FY2026`, issuer-verified 67/69 pages, 17 facts +
+  8 normalized metrics); two recovered Refex documents archived to Drive
+  and SHA-verified; issuer-identity gate and basis-aware coverage ledger
+  shipped (426 tests); EX-020 resolved.
+  **Awaiting approval:** a read-only DuckDB market-data service over
+  `C:\SPARS_marketdata` (no DB import); any deployment. **Next action:**
+  scope the read-only price service and wire it into Research
+  Intelligence.
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
