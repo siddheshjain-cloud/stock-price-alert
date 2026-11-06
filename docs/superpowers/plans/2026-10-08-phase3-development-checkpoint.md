@@ -108,8 +108,9 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`59caf51`** (benchmark FP/FN case appendix; `004614d`
-  governance addendum evidence tightening and
+  `feature/direct-event-extractor`, HEAD **`80865f9`** (benchmark gate
+  fixes and re-score; `59caf51` benchmark FP/FN case appendix;
+  `004614d` governance addendum evidence tightening and
   Refex pledge trend; earlier `a55609e` capex/supersession check and
   fact-count basis, `addf3bd` LIVING_PLAN entry 97, `8f11585` benchmark
   artifacts, `37bae00` promotion-batch reconciliation, `ac030a2`
@@ -131,24 +132,37 @@ test evidence are authoritative over this note if they ever disagree
   consecutive weekday 18:30 `SPARS_MarketDataDailyRefresh` runs, one
   after token expiry, to close the exception's verification criteria.
 
-  **Event-validation benchmark -- GATES FAIL (2026-11-06).**
+  **Event-validation benchmark -- GATES NOW PASS (2026-11-06, second
+  iteration; `80865f9`).**
   `docs/direct_event_extractor/EVENT_BENCHMARK_RESULTS_2026-11-06.md`
-  (protocol `EVENT_BENCHMARK_PROTOCOL_2026-11-06.md`). 137 blind cases
-  (60 ready, 40 deterministic-reject, 27 frozen, 10 blind duplicates),
-  labels frozen before any model call; Groq free tier only; DeepSeek
-  historical 27-case comparison only (no new spend); Gemini has no key
-  and no backend. End-to-end n=127: **precision 0.768, recall 0.457**
-  -> G1 and G4 FAIL; 11/13 FPs `not_material` -> G3 FAIL; zero
-  wrong-company FPs -> G2 PASS. Semantic layer: precision 0.768,
-  recall 0.827. **42 of 51 FNs are deterministic rejections:** 20
-  valid events rejected because the company's own annexure never
-  prints the legal name (attribution), 17 on Indian number formatting
-  (`3,47,250` vs `347,250`, grounding), 4 materiality, 1 correct
-  duplicate block. Reliability: blind duplicate agreement 8/10;
-  frozen-label agreement 25/27. **Decision: `ALLOW_EVENT_AUTO_PROMOTION`
-  stays `False`; no mass validation.** Next: Indian-number
-  normalisation, document-link attribution, materiality exclusion
-  pre-checks, then re-score on the same benchmark.
+  (protocol `EVENT_BENCHMARK_PROTOCOL_2026-11-06.md`). Same 137 blind
+  cases, same frozen labels, Groq free tier only; DeepSeek historical
+  27-case comparison only (no new spend); Gemini has no key and no
+  backend. The first iteration scored precision 0.768 / recall 0.457
+  (G1, G3, G4 FAIL; G2 PASS). Deterministic fixes followed:
+  value-based number grounding (Indian/Western grouping,
+  lakh/crore/million); a dead verbatim word rule removed after
+  measuring that restoring it would reject 79 of 94 valid events; OCR
+  ligature, non-breaking hyphen, fiscal-year and regulation-acronym
+  normalisation; quote quality narrowed to date/label-only quotes;
+  meeting/record-date materiality yielding to a named material
+  action; nine narrow exclusions (typo addenda, Reg 31(4), Section
+  185, proceeds-for-stated-purposes, unquantified RPT, post-issue
+  shareholding, proposed re-appointment, historical IPO, Reg 36
+  supporting information); a brand-only page guard requiring a
+  company-side actor in the description (closes the client-deal
+  tombstone wrong-company case); and a verifier-prompt calibration on
+  category and subject.
+  **Final run (n=127): precision 0.9651, recall 0.8830 (TP 83, FP 3,
+  FN 11) -> G1, G2, G3, G4 all PASS;** duplicate consistency 10/10;
+  high-confidence view 0.984 / 0.875. The three residual FPs are
+  semantic-verifier failures (none materiality or attribution). Label
+  noise recorded: two identical-description planted duplicates carry
+  opposite labels, and two near-identical warrant/re-appointment pairs
+  likewise. **Decision: `ALLOW_EVENT_AUTO_PROMOTION` stays `False`;
+  no canonical writes, no mass validation.** Next evidence step: a
+  second independent sample or a second adjudication, plus a
+  verifier-variance measurement, before any policy change.
 
   **CandidateFinding backlog reconciled (2026-11-06, read-only):**
   `docs/direct_event_extractor/BACKLOG_RECONCILIATION_2026-11-06.md`.
