@@ -118,17 +118,41 @@ test evidence are authoritative over this note if they ever disagree
   `trading_app.db.scheduled-backup-20261106_082638.db`.
   **Live data unchanged:** 882 facts, 0 without evidence, integrity ok;
   daily store and minute archives untouched.
-  **Two open items:**
+  **Open items:**
   1. **No web application launcher exists** on this machine (no
      service, no running `main.py`, no scheduled task). The code is
      deployed for the scheduled-task runtime and for the next app
      start, but no web process was started. The owner must say how the
      app is launched before a restart can be performed.
-  2. **`SPARS_MarketDataDailyRefresh` was not created.** A bare
-     "go ahead" to a multi-item plan was correctly treated as not
-     selecting this optional persistent task; it needs explicit
-     approval. Until then, refresh is manual and quotes go `stale`
-     after 3 days.
+  2. **`SPARS_MarketDataDailyRefresh` — CLOSED (2026-11-06, machine
+     clock).** Created after explicit owner approval: batch wrapper
+     `scripts/scheduled/run_market_data_refresh.bat` in the release
+     clone, weekdays 18:30 IST, principal `Home`/Interactive/Limited,
+     StartWhenAvailable, IgnoreNew, 2 h limit. End-to-end verification
+     run: **95/95 symbols ok, 0 failed**, manifest
+     `2026-11-06T14:28:21`, task result 0, freshness `FRESH` at the
+     2026-11-06 close. The first verification attempt failed with
+     "Kite session unavailable" and an immediate re-run succeeded with
+     the same token — recorded as **EX-021** (no retry, opaque failure)
+     for an owner-approved retry fix.
+  **CandidateFinding backlog reconciled (2026-11-06, read-only):**
+  `docs/direct_event_extractor/BACKLOG_RECONCILIATION_2026-11-06.md`
+  (script `scripts/direct_event_extractor/reconcile_backlog_20261106.py`,
+  run against a sqlite backup copy with a fake semantic verifier — no
+  LLM spend). Of **1,568 open** in the six-company scope: **646 pass
+  every deterministic check**, **481 survive the intra-batch pre-pass**
+  (Refex 279, GP Eco 129, Choice 73), **165 are intra-batch
+  duplicates/conflicts**, **921 rejected** (attribution 493, grounding
+  307, materiality 116, near-duplicate 2, UNO conflicts 3). No event is
+  promotable today: semantic verification remains the unmet gate.
+  A real defect was found and fixed in `names_other_company` (committees,
+  courts, departments, agencies, dates and people were treated as
+  "another company", blocking 100 real events); +46 mechanical passes,
+  `tests/pipeline` **222 passed, 2 skipped**. UNO Minda's four open
+  financials were adjudicated (segment revenue mislabel; PAT-attributable
+  mislabel; ₹1-crore rounding of canonical 5,556.85; EBITDA corroborate).
+  The four prepared batches from the prior session remain the
+  owner-facing queue.
   A release-blocking defect was found and fixed during deployment: the
   downloader resolved `kite.json` only inside its own repo, so the
   refresh failed closed from the release worktree; it now honours
