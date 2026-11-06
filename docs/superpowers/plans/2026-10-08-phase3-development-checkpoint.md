@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 (SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
+**Last updated:** 2026-11-07 (NEXT PRIORITIES: issuer-identity gate implemented and enforced at acquisition + canonical promotion (10 tests, verified on the live GP Eco/Chemkart pair; EX-020 control gap closed); coverage ledger now recognises raw/reported on a consistent basis and never counts derived/normalized as source — Refex and Choice show all six quarters VERIFIED; market-data trace completed (no history store exists; feed unpopulated, no change); six-company report audited with 12 findings corrected; two Refex evidence files recovered by exact SHA; GP Eco audited FY2026 annual report recovered and preserved pending registration (revenue 414.38 cr, PAT 42.74 cr). Live 856 facts unchanged, 0 without evidence; 1,870 tests passed; no deployment. Earlier: SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
 readiness session: four promotion-ready batches prepared — Choice
 quarterly 59, UNO Minda 84, Chemplast 58, Refex pledge 3 — and a CRITICAL
 data-integrity correction: GP Eco's 39 live financial facts are Chemkart
@@ -105,52 +105,62 @@ test evidence are authoritative over this note if they ever disagree
   controlled, not deployed; closed pending the one item in "Blockers"
   below (unrelated to this pause).
 
-- **Current workstream (2026-11-07, six-company research mandate):
+- **Current workstream (2026-11-07, next execution priorities):
   Direct Event Extractor.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`bb21f67`** (updated after
-  commit). Nothing merged, pushed, or deployed.
-  **Live SPARS verified state (2026-11-07, post-mandate):** **856
-  canonical facts across 10 companies, 0 without evidence,
-  `PRAGMA integrity_check` = ok.** Per company: Refex 268, UNO Minda 164,
-  GP Eco 121, Chemplast 95, Choice 92, Chemkart 87 (new), IKIO 19,
-  Asian Energy 6, Cemindia 3, Bombay Dyeing 1.
-  **Executed under the owner's 2026-11-07 six-company mandate:**
-  - **P0 GP Eco correction (EX-020):** the 39 facts that cited Chemkart
-    India's prospectus were corrected. 26 FY2024/FY2025 facts
-    superseded with GP Eco's audited consolidated figures (FY2025
-    revenue 246.43 cr, PAT 10.36 cr); 13 FY2023 consolidated identities
-    superseded by explicit TEXT RETRACTION records (append-only, none
-    deleted) because no valid GP Eco FY2023 consolidated source exists;
-    genuine FY2022/FY2023 standalone snapshot facts added. All 13 now
-    resolve to RETRACTED from `_current_fact`.
-  - **P1 Chemkart onboarding:** registered (BSE SME, symbol CHEMKART,
-    scrip 544442, ISIN INE0VWL01017, CIN U51220MH2020PLC338631);
-    document `bcdecb12…` re-attributed from GP Eco to Chemkart with
-    `COMPANY_LINKS_CHANGED` audit rows; 54 restated-consolidated
-    FY2023-FY2025 facts + 3 corporate-action events recorded; 30
-    normalized metrics computed through `FinancialDiagnosticsService`.
-    No quarterly or segment data exists in the prospectus (documented
-    gap).
-  - **P2 promotions executed:** Choice +59, Chemplast +58, Refex +3,
-    UNO Minda +90 (plus 30 normalized metrics). Four existing rounded
-    UNO FY2026 values deliberately left untouched.
-  - **P3 six-company research:** `SIX_COMPANY_RESEARCH_INTELLIGENCE_2026-11-07.md`,
-    `SIX_COMPANY_COMPLETENESS_2026-11-07.md`. Market data path
-    (`Ticker.last_price` → `MarketPriceService`) is present but
-    **unpopulated** (all zero); valuation is therefore indicative and
-    externally sourced only, not canonical.
-  **New open items:** (a) issuer-name/CIN check on acquisition (root
-  cause of EX-020) not built; (b) coverage ledger still requires
-  `fin.raw.*`, so quarterly `fin.reported.*` facts read as
-  missing/partial — mapping fix proposed, not applied; (c) three Drive
-  files still 404 (two Refex, one GP Eco); (d) market-data feed not
-  populated (Kite session/price import needs approval).
-  Verification: focused regression **120 passed / 1 skipped / 0 failed**;
-  financial query guard **0 violations**; live backup taken before
-  writes (`trading_app.db.scheduled-backup-20261106_013319.db`).
-  **Awaiting owner approval:** market-data price import; ledger
-  vocabulary fix; new issuer-identity safeguard.
+  `feature/direct-event-extractor`, HEAD **`103f281`** (updated
+  after commit). Nothing merged, pushed, or deployed.
+  **Live SPARS state:** **856 canonical facts across 10 companies, 0
+  without evidence, integrity ok** — unchanged by this session, which
+  delivered code, tests and documentation only (no fact writes).
+  **Delivered:**
+  1. **Issuer-identity gate** (`app/services/issuer_identity_gate.py`):
+     enforced at `DocumentLibraryService.create_document`,
+     `add_company_link` and `ResearchBrainService.record_fact` (the
+     single canonical write path). Hard blocks on: evidence document
+     linked to another company, open blocking identity flag, CIN
+     contradiction, or zero name hits with substantive text.
+     Image-only documents are UNVERIFIABLE and allowed; low name
+     presence (multi-company filings) is allowed with a warning. 10 new
+     tests; verified against the real pair (GP Eco -> MISMATCH,
+     Chemkart -> VERIFIED 69/429 pages). EX-020 item 5 closed.
+  2. **Coverage-ledger recognition fix**: `fin.reported.*` now counts
+     alongside `fin.raw.*`; VERIFIED requires a revenue+PAT pair on a
+     *consistent* basis; a mixed raw/reported pair is PARTIAL with the
+     basis stated; `fin.derived.*`/`fin.norm.*` are listed but never
+     satisfy source coverage. 5 new tests. Refex and Choice now show all
+     six required quarters VERIFIED; UNO Minda and Chemplast show their
+     true partial coverage.
+  3. **Market-data trace** (investigation only):
+     `docs/direct_event_extractor/MARKET_DATA_TRACE_2026-11-07.md`.
+     `live/websocket.py` is the only writer of `Ticker.last_price`; it
+     is an unscheduled market-hours Kite process. **No historical price
+     store exists** (candles are in-memory only). 71/73 tickers are 0.0;
+     IKIO 123.45 is a seeded demo value; GRAUWEIL 81.86 is a stale
+     2026-10-06 tick. `kite/kite.json` exists in the main checkout, not
+     this worktree. The only valuation row (UNO, human-authored) records
+     that no market cap could be computed. No change made.
+  4. **Six-company report audit** (`SIX_COMPANY_REPORT_AUDIT_2026-11-07.md`):
+     12 findings. Corrected: Choice owners-vs-total PAT basis mixing,
+     ten (not nine) quarters, Q2 revenue-vs-total-income label, stale
+     ledger table, Chemplast market-cap range, valuation basis/source
+     note. Verified arithmetic and evidence completeness.
+  5. **Document recovery** (`DOCUMENT_RECOVERY_2026-11-07.md`): two Refex
+     evidence files recovered with exact SHA-256 and restored to
+     `instance/direct_evidence`; one BSE attachment (Refex
+     `c10bd7c2…`) remains 404. The GP Eco source URL was found to now
+     serve GP Eco's **audited Annual Report 2025-26** (106 pp, 91 MB,
+     SHA `a2f88760…`), preserved in the evidence store. Its FY2026
+     consolidated figures (revenue 414.38 cr, PBT 53.96 cr, PAT 42.74
+     cr, EBITDA margin ~14.3%, borrowings 108.97 cr, receivables
+     195.11 cr) were added to the research report as recovered but
+     **not registered**.
+  **Awaiting owner approval:** (a) register GP Eco AR 2025-26 and
+  promote its FY2026 facts; (b) upload the two recovered Refex files to
+  Drive / re-attach storage; (c) market-price snapshot import (Option B
+  in the trace) or a Kite session; (d) any deployment.
+  Verification: full regression run this session (result recorded in the
+  session report); financial query guard 0 violations.
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
