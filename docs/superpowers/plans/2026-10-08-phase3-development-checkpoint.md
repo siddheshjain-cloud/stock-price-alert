@@ -108,13 +108,15 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`80865f9`** (benchmark gate
-  fixes and re-score; `59caf51` benchmark FP/FN case appendix;
-  `004614d` governance addendum evidence tightening and
-  Refex pledge trend; earlier `a55609e` capex/supersession check and
-  fact-count basis, `addf3bd` LIVING_PLAN entry 97, `8f11585` benchmark
-  artifacts, `37bae00` promotion-batch reconciliation, `ac030a2`
-  EX-021 retry, from `484181a`).
+  `feature/direct-event-extractor`, HEAD **`0645dc6`** (v2 result and
+  v3 fix plan; `a1662ea` v1 fresh-sample record and v2 tooling;
+  `597d7b3` fresh-benchmark gate fixes; `80865f9` benchmark gate fixes
+  and re-score; `59caf51` benchmark FP/FN case appendix; `004614d`
+  governance addendum evidence tightening and Refex pledge trend;
+  earlier `a55609e` capex/supersession check and fact-count basis,
+  `addf3bd` LIVING_PLAN entry 97, `8f11585` benchmark artifacts,
+  `37bae00` promotion-batch reconciliation, `ac030a2` EX-021 retry,
+  from `484181a`).
   **Release deployed to `C:\SPARS-release\backendtest`** on branch
   `release/market-data-service` (5 commits on `f9e9ad4`: `184a431`,
   `637a713`, `e0c2773`, `33d2386`, `fa51c6e`). Dependency
@@ -160,9 +162,80 @@ test evidence are authoritative over this note if they ever disagree
   noise recorded: two identical-description planted duplicates carry
   opposite labels, and two near-identical warrant/re-appointment pairs
   likewise. **Decision: `ALLOW_EVENT_AUTO_PROMOTION` stays `False`;
-  no canonical writes, no mass validation.** Next evidence step: a
-  second independent sample or a second adjudication, plus a
-  verifier-variance measurement, before any policy change.
+  no canonical writes, no mass validation.**
+
+  **Fresh blind sample v1 (seed 20261107, 127 assignments / 115
+  primary) -- INCONCLUSIVE, not a pass (2026-11-06).** Protocol
+  `EVENT_BENCHMARK_FRESH_PROTOCOL_2026-11-06.md`; result recorded in
+  `EVENT_BENCHMARK_FRESH_RESULT_2026-11-06.md`. Groq run 1 (pre-fix
+  code) scored precision 0.8442 / recall 0.7738 (TP 65 / FP 12 /
+  FN 19): G1 and G3 failed, G2 and G4 passed; model duplicate
+  consistency 12/12. The decisive failure was **label reliability**:
+  two fully independent blind passes agreed on only 10/12 duplicate
+  pairs in *each* pass and on 114/127 cases (0.8976) -- below the
+  pre-registered 11/12 rule. All 13 cross-pass disagreements were on
+  the materiality boundary (transcripts, monitoring tables,
+  court-convened meeting proceedings, typo addenda, vague management
+  remarks, a policy adoption). Under the protocol this is "gates do
+  not pass consistently: fix the failing class and retest"; no
+  consensus labels were written and nothing was promoted. The FNs were
+  mostly grounding false rejects (sentence-initial words, OCR slips,
+  rounded/derived amounts, unspaced dates).
+
+  Fixes committed in `597d7b3` (worktree HEAD): grounding
+  normalisation/tolerances, four named routine-materiality classes, a
+  hardened verifier prompt ("concrete particulars"), a bounded
+  `--commit` lane requiring `--only-events`/`--verifier-provider`/
+  `--max-promotions`, and a scorer fix so any
+  `ready_open_blind_dup*` stratum is excluded from the primary set.
+  Full `tests/pipeline`: **297 passed, 2 skipped**.
+
+  **v2 retest -- COMPLETE, INCONCLUSIVE (2026-11-08; worktree
+  `direct-event-extractor` HEAD `0645dc6`).**
+  Protocol `EVENT_BENCHMARK_V2_PROTOCOL_2026-11-08.md`; result
+  `docs/direct_event_extractor/EVENT_BENCHMARK_V2_RESULT_2026-11-08.md`;
+  sample `logs/direct_event_extractor/event_benchmark_v2_20261108/`
+  (seed 20261108, 95 assignments / 85 primary, 10 blind duplicates,
+  disjoint from the 137-case benchmark, the 27-case frozen set and v1;
+  ids `ev-g…`). **R1 FAILED -- duplicate agreement 5/10 in pass A and
+  7/10 in pass B (threshold 9/10)**; R2 met (87/95 = 0.9158); R3 met
+  (8/8 third-adjudicated). No gate was decided, so under the
+  pre-registered rule the outcome is "fix the failing classes, draw a
+  new disjoint sample, retest" -- **no canonical write, no
+  promotion, `ALLOW_EVENT_AUTO_PROMOTION` stays `False`.**
+
+  R1's failure decomposes into reproducible batch-level strictness
+  variance (three duplicate pairs labelled *oppositely* by their two
+  batches, same direction in both passes) plus one genuine rubric
+  ambiguity (Choice "Confirming Party" execution). Diagnostic Groq
+  pass (95/95, 0 errors, one run; a second run not assessed because
+  quota was throttled and R1 had already failed) scored against
+  lead-corrected consensus labels: **TP 25 / FP 23 / FN 5, precision
+  0.5208, recall 0.8333; G1 FAIL, G2 pass (0 wrong-company), G3 FAIL
+  (20 non-material FPs), G4 pass;** model duplicate consistency 10/10.
+  Lead re-adjudication corrected one label (`ev-gf7bd1be45530`, Refex
+  final dividend declared in AGM voting results -- a label error,
+  originals preserved in `labels_lead_corrected.json`). Full
+  `tests/pipeline` with the benchmark idle: **297 passed, 2 skipped,
+  0 failed** (an earlier 1-failure run was free-tier quota contention
+  on the real-network staging test).
+
+  **v3 fixes -- NEXT (pre-registration draft written, no code yet).**
+  `docs/direct_event_extractor/EVENT_PIPELINE_FIX_PLAN_V3_2026-11-08.md`
+  names five pipeline classes: a page-level routine-document gate in
+  `event_materiality.py` (with a carve-out for a completed material
+  action reported inside a routine document), proposed/pending-action
+  patterns, a checklist-first verifier prompt plus verifier-rationale
+  observability on AUTO_PROMOTE, two-party award attribution, and
+  acronym/amount-in-words grounding. The labelling fix is a 3-vote
+  panel adjudication with duplicate and pairwise agreement. Validation
+  before v3 is drawn: ~15-20 unit tests with negative controls, full
+  suite green, and a live Groq re-run of the 127-case benchmark
+  required to hold 0.9651 / 0.8830. v3 protocol is pre-registered
+  before any v3 label exists; only a full pass of the six conditions
+  authorises the bounded promotion policy (one company, events only,
+  dry-run first, cap 25, append-only, halt on any wrong-company or
+  non-material finding).
 
   **CandidateFinding backlog reconciled (2026-11-06, read-only):**
   `docs/direct_event_extractor/BACKLOG_RECONCILIATION_2026-11-06.md`.
