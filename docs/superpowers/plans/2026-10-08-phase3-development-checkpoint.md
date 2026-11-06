@@ -19,7 +19,14 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-03 (Phase 3.5B: Financial Data Backfill &
+**Last updated:** 2026-11-07 (overnight five-company research
+readiness session: four promotion-ready batches prepared — Choice
+quarterly 59, UNO Minda 84, Chemplast 58, Refex pledge 3 — and a CRITICAL
+data-integrity correction: GP Eco's 39 live financial facts are Chemkart
+India's, correction batch ready, EX-020; read-only issuer-identity sweep
+found no other company affected; focused regression 120 passed / 0
+failed; no live writes, deployments or paid API spend. Earlier:
+2026-11-03 (Phase 3.5B: Financial Data Backfill &
 Continuity — the four pending hardening branches verified and pushed;
 a reusable, idempotent Screener Excel backfill utility built (one
 importer, not ten, staging CandidateFindings so "provisional until
@@ -98,116 +105,51 @@ test evidence are authoritative over this note if they ever disagree
   controlled, not deployed; closed pending the one item in "Blockers"
   below (unrelated to this pause).
 
-- **Current workstream (2026-11-06 recovery, checkpoint): Direct Event
-  Extractor.** Worktree `.claude/worktrees/direct-event-extractor`,
-  branch `feature/direct-event-extractor`, HEAD **`6a22e36`** (verified
-  2026-11-06). Nothing merged, pushed, or deployed. Full detail:
-  LIVING_PLAN #23-95.
-  **Live SPARS verified state:** 149 canonical facts (**12 financial +
-  22 event promoted today**, both owner-approved), 0 facts without
-  evidence, integrity ok; 226 direct-acquired documents and 626 event
-  candidates reconciled live; all 226 local evidence files verified
-  and archived to Drive (`SPARS Direct Evidence`,
-  id `14XoOlm6ya6aIqc_ZvHbWVpLG55xMIqRo`).
-  **Built and tested today:** direct BSE/NSE -> extraction -> staging
-  path (no Drive/bridge dependency); CWD-independent content-addressed
-  evidence storage; async Drive archival worker; materiality gate;
-  claim grounding; company attribution with verified alias matching;
-  intra-batch duplicate/conflict pre-pass; restartable semantic
-  revalidation (all 1,407 evaluated: 81.4% eligible); process locks.
-  Full suite: **1,847 passed, 1 skipped, 0 failed**.
-  **Fresh-sample evaluation (frozen rules): precision 100%, recall
-  ~70%** after attribution fixes; residual weakness is
-  disclosure-style events and abbreviation-only pages.
-  **Incident, resolved:** seven orphaned bash loops were respawning
-  backfills for hours and caused every OOM kill; all stopped.
-  **Second reconciliation executed and verified (LIVING_PLAN #52):**
-  207 documents / 1,301 units / 317 event candidates imported; live now
-  **433 direct documents, 943 direct candidates, 433/433 evidence
-  references resolving, 0 dangling units, integrity ok**, canonical
-  facts unchanged at 149. 75 isolated-only candidates remain (they sit
-  under documents already live by SHA) and need triage.
-  **Financial reconciliation (2026-11-06, LIVING_PLAN #59 corrected by
-  #62): Refex GO (executed, 24 facts live), Choice GO (verified).** Refex isolated facts (22, FY2025-26 consolidated,
-  evidence-complete) reconcile to the audited statements; a
-  `pat_continuing` added and promoted. The earlier Choice "NO-GO" was
-  a defect in my verification query (no company_id filter); every Choice
-  ratio now reproduces exactly, Choice is GO, approved and EXECUTED: 33 facts live. Refex standalone
-  FY2025/26 (30 facts, gates passed) also promoted 2026-11-06. SPARS
-  total facts 236. Refex historical quarterly corpus acquired (8-quarter
-  series FY2025Q1-FY2027Q2); quarterly normalization, segments and
-  cash-conversion diagnostics are the next work items.
-  Candidate pre-pass: 538 provisional -> **433 after intra-batch
-  dedup**, 105 blocked as duplicates; no promotion authorized.
-  Research universe is now FIVE companies (adds Chemplast Sanmar:
-  30 docs / 23 extracted / 37 facts).
-  **Refex financial intelligence (2026-11-06):** EBITDA methodology
-  corrected to v2 (PBT + finance + D&A - other income) which reconciles
-  to reported 350.02/207.78; the two live ebitda_v1 facts are flagged
-  for supersession, not overwrite. Q4FY26 "in Rs Lakhs" header proven
-  wrong (values are crore). Q4FY25 PAT restatement (57.09 vs 56.16)
-  preserved with a revision chain. Like-for-like trend gate implemented
-  (`app/services/financial_trends.py`, 3 tests) that suppresses
-  incomparable periods instead of substituting metrics.
-  Quarterly coverage: 9 of 10 periods; **FY2025Q2 and FY2027Q1 are not
-  recoverable from the corpus** (mislabeled voting result / newspaper
-  notices) and need acquisition. Those 86 facts were promoted 2026-11-06: Refex now has
-  140 facts (52 consolidated / 88 standalone, 80 quarterly), 0 without
-  evidence; SPARS total 322. Six superseded restatement originals and
-  two ebitda_v1 facts remain deliberately unpromoted (revision pending).
-  A further **103 facts** (64 segment, 6 capex, 33 quarterly incl. FY2025Q2
-  and FY2027Q1) were promoted 2026-11-06: Refex now has **245 facts**
-  (122 consolidated / 123 standalone), 76 segment, 113 quarterly, 0 without
-  evidence; SPARS total **427**. Refex event candidates (983 staged,
-  incl. 55 promoter_pledge and 29 management_governance) remain
-  undecided/unpromoted. UNO Minda generic-workflow test exposed a
-  duplicate fact slot, NULL-scoped facts and non-normalized period labels.
-  **First canonical EVENT facts (2026-11-06):** 4 Refex governance
-  events promoted (SMP designations + three senior appointments) after
-  subject-of-event attribution fixes. Refex now 249 facts, SPARS total
-  432. 2 pledge candidates held (undated documents, period UNKNOWN).
-  Groq benchmark still fails precision (#18 routine regulatory);
-  DeepSeek 100% precision / 36% recall -- no mass validation authorised.
-  **Overnight 2026-11-06/07:** both pending Refex pledge candidates traced
-  to one Reg-31(1) disclosure dated 16-Sep-2026 (FY2027Q2); the "45.99%"
-  candidate is a derived ratio of the same event. Chemplast's three
-  image-only documents read (no encumbrance in FY26; Mirae sold 0.01%;
-  AMANSA acquired 0.60%). Canonical total reconciles exactly: 432 facts
-  across 9 companies. Deterministic pass over 185 Refex candidates gave
-  46 eligible without any LLM cost. GP Eco has since had 39 restated consolidated financial facts
-  (FY2023-FY2025) promoted, so it is no longer financially blind; Choice/UNO/Chemplast lack quarterly or
-  segment depth. Those approvals were granted and executed 2026-11-07: 16 facts promoted
-  (10 governance + 6 pledge). Refex now 265 facts with 20 canonical
-  events (14 governance, 6 pledge); SPARS total 448. Held: 3 undated
-  pledge filings, the 45.99% derived ratio, and 27 qualitative guidance
-  statements.
-  **Recovery verification (2026-11-06, after a context-limit failure
-  following `e17d78f`):** live canonical **487 facts across 9
-  companies** (Refex 265, UNO Minda 62, GP Eco 61, Chemplast 37,
-  Choice 33, IKIO 19, Asian Energy 6, Cemindia 3, Bombay Dyeing 1),
-  **0 facts without evidence** -- matches `e17d78f`. The interrupted
-  session's UNO Minda work was **found preserved in isolation, never
-  promoted**: `.../fin_pilot/uno.db` holds 24 facts the live DB does
-  not (FY2026, FY2026Q1, FY2027Q1 reported standalone P&L, 8 metrics
-  each), every one evidence-linked to page 2 of the **live**
-  `UNOMINDA_RESULTS_Q1_FY2027` document. The requested Q1 FY2027
-  standalone revenue **₹4,029.39 cr** and PAT **₹244.43 cr** are among
-  them and were visually re-verified against the filing page. They are
-  preserved in
-  `logs/direct_event_extractor/uno_reported_standalone_manifest.json`
-  and `scripts/promote_uno_reported.py` (idempotent, dry-run default;
-  dry run against live = 24 NEW, 0 conflicts) so a temp-directory
-  cleanup cannot lose them. **No live write was made.** Also produced
-  this session: a read-only five-company completeness assessment
-  (`docs/direct_event_extractor/FIVE_COMPANY_COMPLETENESS_2026-11-06.md`)
-  and four preliminary evidence-grounded reports (GP Eco, UNO Minda,
-  Choice, Chemplast). Ledger finding recorded, not changed: the
-  coverage ledger counts only `fin.raw.*`, so Refex's 104 canonical
-  `fin.reported.*` quarterly facts read as SOURCE_MISSING.
-  **Awaiting owner approval:** (a) the prepared 24-fact UNO Minda
-  standalone promotion (live write), (b) any candidate promotion, and
-  (c) any deployment or scheduler change. Nothing else blocks
-  in-bounds work.
+- **Current workstream (2026-11-07 overnight, five-company research
+  readiness): Direct Event Extractor.** Worktree
+  `.claude/worktrees/direct-event-extractor`, branch
+  `feature/direct-event-extractor`, HEAD **`8340489`** (verified).
+  Nothing merged, pushed, or deployed.
+  **Live SPARS verified state (2026-11-07):** 487 canonical facts across
+  9 companies, 0 without evidence, integrity ok. **However, GP Eco's 39
+  financial facts are Chemkart India Limited's, not GP Eco's** — see
+  EX-020 and `docs/direct_event_extractor/GPECO_DOCUMENT_IDENTITY_DEFECT_2026-11-06.md`.
+  Do not use any GP Eco financial figure from the live corpus until the
+  correction batch runs. The 22 GP Eco event facts are unaffected.
+  **A read-only issuer-identity sweep across every company with `fin.*`
+  facts found GP Eco is the only failure.** Two Refex financial-evidence
+  documents and one GP Eco annual report are missing from Drive (404).
+  **Overnight deliverable (all prepared, nothing written):**
+  - Choice: 59 quarterly consolidated facts (FY2025Q1–FY2027Q2),
+    reconciled exactly to the audited annual and 9-month filings.
+    `promote_choice_quarterly.py`, dry run 59 NEW / 0 conflicts.
+  - UNO Minda: 84 facts (24 standalone reported + FY2025/FY2026 raw +
+    geographic and product segment coverage). Full normalization
+    preview in an isolated copy computes ROE 17.53%, ROCE 18.41%,
+    D/E 0.37x; all ten existing FY2026 ratios reproduce
+    bit-identically. Four existing rounded FY2026 values deliberately
+    left untouched. `promote_uno_completion.py`.
+  - Chemplast: 58 quarterly + statutory segment facts; three
+    image-only Reg. 31/29(2) documents read (no FY2026 encumbrance;
+    Mirae -0.01%; AMANSA +0.60%). `promote_chemplast_quarterly_segment.py`.
+  - Refex: 3-fact promoter-encumbrance timeline (30 Jun / 10 Aug /
+    16 Sep 2026). Pledge rose 10.37% → **45.99% of promoter holding**
+    in four quarters; the 45.99% is a stated figure, not derived.
+    `promote_refex_pledge_timeline.py`.
+  - GP Eco correction: 26 supersessions + 13 inserts.
+    `promote_gpeco_corrected_financials.py`.
+  Reports: `MORNING_REPORT_2026-11-06.md`,
+  `FIVE_COMPANY_RESEARCH_AUDIT_2026-11-06.md`,
+  `REFEX_ADJUDICATION_2026-11-06.md`,
+  `UNO_MINDA_PERIOD_SCOPE_MAPPING_2026-11-06.md`.
+  Verification: focused regression **120 passed / 1 skipped / 0 failed**;
+  financial query guard **0 violations**; all batches dry-run only.
+  **Awaiting owner approval:** (a) the GP Eco correction batch (highest
+  priority — live facts are wrong), (b) deletion/retraction decision for
+  the 13 FY2023 GP Eco facts, (c) the four promotion batches, (d) any
+  deployment or scheduler change. New capabilities to surface before
+  building: issuer-name/CIN check on acquisition; tolerant-period
+  read path for UNO's `Q1 FY2027` labels.
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
