@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 (MARKET-DATA SERVICE RELEASED: five commits cherry-picked onto f9e9ad4 in C:\\SPARS-release\\backendtest on branch release/market-data-service; duckdb installed; 40 release-tree tests pass; all six companies quote from the local store at 2026-11-06; 882 facts and archives unchanged; backup taken. Open: no web-app launcher exists (restart pending owner input) and the daily refresh task needs explicit approval. Earlier: RELEASE PREPARED, NOT DEPLOYED: service commits 2461651/597604b cherry-picked cleanly onto release baseline f9e9ad4 (docs conflict only); 40 tests pass on the release tree and all six companies resolve local quotes; a release-blocking ticker-suffix defect (GPECO vs GPECO-SM) found and fixed; freshness/Kite-failure/corporate-action/restart/integrity checks all pass; 882 facts and archives unchanged. Deployment blocked on the owner confirming how the web app is started. Earlier: MARKET-DATA SERVICE DELIVERED: read-only DuckDB service over C:\SPARS_marketdata\daily with quotes, history, MAs/returns/volatility/liquidity/drawdowns/relative strength, identity resolution and on-demand retrieval, and valuation from verified share counts; Research Intelligence now falls back to it when the Ticker feed is empty; 10 new tests, research 764 + API 134 passed; five demonstrations recorded; duckdb added to requirements; no deployment. Earlier: WATCHLIST DATA DELIVERED: all 95 Universe companies downloaded daily OHLCV 2015→2026-11-06 (112,979 rows, 0 violations), reconciled with the Drive archives at 5,936 overlapping dates with zero mismatches, stored in C:\SPARS_marketdata\daily; the three minute archives secured with SHA-256 (210,748,427 verified rows, 89% of ~237M; further minute download stopped on instruction); valuation now uses local closes. Live 882 facts unchanged, 0 without evidence; no deployment. Earlier: APPROVED WRITES EXECUTED: GP Eco FY2026 audited AR registered and normalized (17 facts + 8 metrics; revenue 414.38 cr, PBT 53.96, total PAT 42.74, receivables 171.9 days, D/E 1.02x) through the issuer gate; two recovered Refex documents archived to Drive and SHA-verified; historical market data located in Drive (1,786,077 daily rows, 62,420,320 minute rows verified read-only with DuckDB; 2.85 GB NIFTY-500 archive still verifying) correcting the earlier no-store claim; research scorecard added. Live 882 facts, 0 without evidence; 426 tests passed this session; no deployment. Earlier: NEXT PRIORITIES: issuer-identity gate implemented and enforced at acquisition + canonical promotion (10 tests, verified on the live GP Eco/Chemkart pair; EX-020 control gap closed); coverage ledger now recognises raw/reported on a consistent basis and never counts derived/normalized as source — Refex and Choice show all six quarters VERIFIED; market-data trace completed (no history store exists; feed unpopulated, no change); six-company report audited with 12 findings corrected; two Refex evidence files recovered by exact SHA; GP Eco audited FY2026 annual report recovered and preserved pending registration (revenue 414.38 cr, PAT 42.74 cr). Live 856 facts unchanged, 0 without evidence; 1,870 tests passed; no deployment. Earlier: SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
+**Last updated:** 2026-11-06 (EVENT BENCHMARK FAILED ITS GATES: 137 blind cases; end-to-end precision 0.768 and recall 0.457; ALLOW_EVENT_AUTO_PROMOTION stays False; 42/51 false negatives are deterministic-gate rejections on unnamed annexures and Indian number formatting; EX-021 retry deployed, awaiting three weekday runs; six-company governance/commitments addendum written. Earlier: MARKET-DATA SERVICE RELEASED: five commits cherry-picked onto f9e9ad4 in C:\\SPARS-release\\backendtest on branch release/market-data-service; duckdb installed; 40 release-tree tests pass; all six companies quote from the local store at 2026-11-06; 882 facts and archives unchanged; backup taken. Open: no web-app launcher exists (restart pending owner input) and the daily refresh task needs explicit approval. Earlier: RELEASE PREPARED, NOT DEPLOYED: service commits 2461651/597604b cherry-picked cleanly onto release baseline f9e9ad4 (docs conflict only); 40 tests pass on the release tree and all six companies resolve local quotes; a release-blocking ticker-suffix defect (GPECO vs GPECO-SM) found and fixed; freshness/Kite-failure/corporate-action/restart/integrity checks all pass; 882 facts and archives unchanged. Deployment blocked on the owner confirming how the web app is started. Earlier: MARKET-DATA SERVICE DELIVERED: read-only DuckDB service over C:\SPARS_marketdata\daily with quotes, history, MAs/returns/volatility/liquidity/drawdowns/relative strength, identity resolution and on-demand retrieval, and valuation from verified share counts; Research Intelligence now falls back to it when the Ticker feed is empty; 10 new tests, research 764 + API 134 passed; five demonstrations recorded; duckdb added to requirements; no deployment. Earlier: WATCHLIST DATA DELIVERED: all 95 Universe companies downloaded daily OHLCV 2015→2026-11-06 (112,979 rows, 0 violations), reconciled with the Drive archives at 5,936 overlapping dates with zero mismatches, stored in C:\SPARS_marketdata\daily; the three minute archives secured with SHA-256 (210,748,427 verified rows, 89% of ~237M; further minute download stopped on instruction); valuation now uses local closes. Live 882 facts unchanged, 0 without evidence; no deployment. Earlier: APPROVED WRITES EXECUTED: GP Eco FY2026 audited AR registered and normalized (17 facts + 8 metrics; revenue 414.38 cr, PBT 53.96, total PAT 42.74, receivables 171.9 days, D/E 1.02x) through the issuer gate; two recovered Refex documents archived to Drive and SHA-verified; historical market data located in Drive (1,786,077 daily rows, 62,420,320 minute rows verified read-only with DuckDB; 2.85 GB NIFTY-500 archive still verifying) correcting the earlier no-store claim; research scorecard added. Live 882 facts, 0 without evidence; 426 tests passed this session; no deployment. Earlier: NEXT PRIORITIES: issuer-identity gate implemented and enforced at acquisition + canonical promotion (10 tests, verified on the live GP Eco/Chemkart pair; EX-020 control gap closed); coverage ledger now recognises raw/reported on a consistent basis and never counts derived/normalized as source — Refex and Choice show all six quarters VERIFIED; market-data trace completed (no history store exists; feed unpopulated, no change); six-company report audited with 12 findings corrected; two Refex evidence files recovered by exact SHA; GP Eco audited FY2026 annual report recovered and preserved pending registration (revenue 414.38 cr, PAT 42.74 cr). Live 856 facts unchanged, 0 without evidence; 1,870 tests passed; no deployment. Earlier: SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
 readiness session: four promotion-ready batches prepared — Choice
 quarterly 59, UNO Minda 84, Chemplast 58, Refex pledge 3 — and a CRITICAL
 data-integrity correction: GP Eco's 39 live financial facts are Chemkart
@@ -105,12 +105,13 @@ test evidence are authoritative over this note if they ever disagree
   controlled, not deployed; closed pending the one item in "Blockers"
   below (unrelated to this pause).
 
-- **Current workstream (2026-11-07, market-data service RELEASED):
-  Direct Event Extractor.** Worktree
+- **Current workstream (2026-11-06): Direct Event Extractor; market-data
+  service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`484181a`** (backlog
-  reconciliation, attribution fix, filing-cadence addendum; previously
-  `fae7ed6`).
+  `feature/direct-event-extractor`, HEAD **`addf3bd`** (LIVING_PLAN entry
+  97 and the 137-case benchmark report; earlier this session `8f11585`
+  benchmark artifacts, `37bae00` promotion-batch reconciliation,
+  `ac030a2` EX-021 retry, from `484181a`).
   **Release deployed to `C:\SPARS-release\backendtest`** on branch
   `release/market-data-service` (5 commits on `f9e9ad4`: `184a431`,
   `637a713`, `e0c2773`, `33d2386`, `fa51c6e`). Dependency
@@ -120,54 +121,56 @@ test evidence are authoritative over this note if they ever disagree
   `trading_app.db.scheduled-backup-20261106_082638.db`.
   **Live data unchanged:** 882 facts, 0 without evidence, integrity ok;
   daily store and minute archives untouched.
-  **Open items:**
-  1. **No web application launcher exists** on this machine (no
-     service, no running `main.py`, no scheduled task). The code is
-     deployed for the scheduled-task runtime and for the next app
-     start, but no web process was started. The owner must say how the
-     app is launched before a restart can be performed.
-  2. **`SPARS_MarketDataDailyRefresh` — CLOSED (2026-11-06, machine
-     clock).** Created after explicit owner approval: batch wrapper
-     `scripts/scheduled/run_market_data_refresh.bat` in the release
-     clone, weekdays 18:30 IST, principal `Home`/Interactive/Limited,
-     StartWhenAvailable, IgnoreNew, 2 h limit. End-to-end verification
-     run: **95/95 symbols ok, 0 failed**, manifest
-     `2026-11-06T14:28:21`, task result 0, freshness `FRESH` at the
-     2026-11-06 close. The first verification attempt failed with
-     "Kite session unavailable" and an immediate re-run succeeded with
-     the same token — recorded as **EX-021** (no retry, opaque failure)
-     for an owner-approved retry fix.
+
+  **EX-021 (refresh retry) resolved in code and deployed** (`ac030a2`,
+  release `a04c4ad`): up to three attempts with 10s/30s backoff,
+  `last_error` class+message recorded (never credentials), config
+  errors fail fast; 8 new retry tests pass. **Still pending:** three
+  consecutive weekday 18:30 `SPARS_MarketDataDailyRefresh` runs, one
+  after token expiry, to close the exception's verification criteria.
+
+  **Event-validation benchmark -- GATES FAIL (2026-11-06).**
+  `docs/direct_event_extractor/EVENT_BENCHMARK_RESULTS_2026-11-06.md`
+  (protocol `EVENT_BENCHMARK_PROTOCOL_2026-11-06.md`). 137 blind cases
+  (60 ready, 40 deterministic-reject, 27 frozen, 10 blind duplicates),
+  labels frozen before any model call; Groq free tier only; DeepSeek
+  historical 27-case comparison only (no new spend); Gemini has no key
+  and no backend. End-to-end n=127: **precision 0.768, recall 0.457**
+  -> G1 and G4 FAIL; 11/13 FPs `not_material` -> G3 FAIL; zero
+  wrong-company FPs -> G2 PASS. Semantic layer: precision 0.768,
+  recall 0.827. **42 of 51 FNs are deterministic rejections:** 20
+  valid events rejected because the company's own annexure never
+  prints the legal name (attribution), 17 on Indian number formatting
+  (`3,47,250` vs `347,250`, grounding), 4 materiality, 1 correct
+  duplicate block. Reliability: blind duplicate agreement 8/10;
+  frozen-label agreement 25/27. **Decision: `ALLOW_EVENT_AUTO_PROMOTION`
+  stays `False`; no mass validation.** Next: Indian-number
+  normalisation, document-link attribution, materiality exclusion
+  pre-checks, then re-score on the same benchmark.
+
   **CandidateFinding backlog reconciled (2026-11-06, read-only):**
-  `docs/direct_event_extractor/BACKLOG_RECONCILIATION_2026-11-06.md`
-  (script `scripts/direct_event_extractor/reconcile_backlog_20261106.py`,
-  run against a sqlite backup copy with a fake semantic verifier — no
-  LLM spend). Of **1,568 open** in the six-company scope: **646 pass
-  every deterministic check**, **481 survive the intra-batch pre-pass**
-  (Refex 279, GP Eco 129, Choice 73), **165 are intra-batch
-  duplicates/conflicts**, **921 rejected** (attribution 493, grounding
-  307, materiality 116, near-duplicate 2, UNO conflicts 3). No event is
-  promotable today: semantic verification remains the unmet gate.
-  A real defect was found and fixed in `names_other_company` (committees,
-  courts, departments, agencies, dates and people were treated as
-  "another company", blocking 100 real events); +46 mechanical passes,
-  `tests/pipeline` **222 passed, 2 skipped**. UNO Minda's four open
-  financials were adjudicated (segment revenue mislabel; PAT-attributable
-  mislabel; ₹1-crore rounding of canonical 5,556.85; EBITDA corroborate).
-  The four prepared batches from the prior session remain the
-  owner-facing queue.
-  A release-blocking defect was found and fixed during deployment: the
-  downloader resolved `kite.json` only inside its own repo, so the
-  refresh failed closed from the release worktree; it now honours
-  `SPA_KITE_SETTINGS` and falls back to the main checkout.
-  Rollback: `git checkout -f f9e9ad4` in the release clone (no DB or
-  archive action).
-  Research continued: `SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
-  (guidance-vs-outcome scorecard, governance table, preliminary
-  stances and falsifiers; §5 added 2026-11-06 qualifying the evidence
-  gaps by filing cadence — GP Eco/Chemkart are half-yearly SME issuers,
-  Chemplast Q3 is a future filing, UNO Q2 is registered-but-unextracted).
-  `tests/pipeline`: **222 passed, 2 skipped**; financial-query guard 0
-  violations. Live data still **882 facts, 0 without evidence**.
+  `docs/direct_event_extractor/BACKLOG_RECONCILIATION_2026-11-06.md`.
+  Of **1,568 open** in scope: **481 ready after the intra-batch
+  pre-pass** (Refex 279, GP Eco 129, Choice 73), **165 duplicates/
+  conflicts**, **921 deterministically rejected** (attribution 493,
+  grounding 307, materiality 116, near-duplicate 2, UNO conflicts 3).
+  The four prepared promotion batches were reconciled against the live
+  882 facts (`37bae00`); completed work was not re-promoted. The four
+  owner-facing batches remain the queue; the 481-event pool is a
+  fifth, not authorised.
+
+  Research: `SIX_COMPANY_GOVERNANCE_COMMITMENTS_2026-11-06.md` adds a
+  governance scorecard, a sourced management-commitments tracker, a
+  conservative research stance per company, change triggers and an
+  evidence-completeness table; `SIX_COMPANY_RESEARCH_INTELLIGENCE_2026-11-07.md`
+  cross-references it. **Not investment advice.**
+
+  **Open item (unchanged):** no web application launcher exists on
+  this machine (no service, no running `main.py`, no scheduled task);
+  the owner must say how the app is launched before a restart.
+  Rollback for the release: `git checkout -f f9e9ad4` in the release
+  clone (no DB or archive action).
+
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
