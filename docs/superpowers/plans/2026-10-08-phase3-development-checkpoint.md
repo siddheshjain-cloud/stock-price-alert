@@ -108,7 +108,9 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-07, market-data service RELEASED):
   Direct Event Extractor.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`fae7ed6`**.
+  `feature/direct-event-extractor`, HEAD **`484181a`** (backlog
+  reconciliation, attribution fix, filing-cadence addendum; previously
+  `fae7ed6`).
   **Release deployed to `C:\SPARS-release\backendtest`** on branch
   `release/market-data-service` (5 commits on `f9e9ad4`: `184a431`,
   `637a713`, `e0c2773`, `33d2386`, `fa51c6e`). Dependency
@@ -161,7 +163,11 @@ test evidence are authoritative over this note if they ever disagree
   archive action).
   Research continued: `SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
   (guidance-vs-outcome scorecard, governance table, preliminary
-  stances and falsifiers). Research suite: **772 passed, 0 failed**.
+  stances and falsifiers; §5 added 2026-11-06 qualifying the evidence
+  gaps by filing cadence — GP Eco/Chemkart are half-yearly SME issuers,
+  Chemplast Q3 is a future filing, UNO Q2 is registered-but-unextracted).
+  `tests/pipeline`: **222 passed, 2 skipped**; financial-query guard 0
+  violations. Live data still **882 facts, 0 without evidence**.
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
