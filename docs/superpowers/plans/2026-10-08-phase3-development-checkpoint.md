@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 (overnight five-company research
+**Last updated:** 2026-11-07 (SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
 readiness session: four promotion-ready batches prepared — Choice
 quarterly 59, UNO Minda 84, Chemplast 58, Refex pledge 3 — and a CRITICAL
 data-integrity correction: GP Eco's 39 live financial facts are Chemkart
@@ -105,51 +105,52 @@ test evidence are authoritative over this note if they ever disagree
   controlled, not deployed; closed pending the one item in "Blockers"
   below (unrelated to this pause).
 
-- **Current workstream (2026-11-07 overnight, five-company research
-  readiness): Direct Event Extractor.** Worktree
+- **Current workstream (2026-11-07, six-company research mandate):
+  Direct Event Extractor.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`b219967`** (verified).
-  Nothing merged, pushed, or deployed.
-  **Live SPARS verified state (2026-11-07):** 487 canonical facts across
-  9 companies, 0 without evidence, integrity ok. **However, GP Eco's 39
-  financial facts are Chemkart India Limited's, not GP Eco's** — see
-  EX-020 and `docs/direct_event_extractor/GPECO_DOCUMENT_IDENTITY_DEFECT_2026-11-06.md`.
-  Do not use any GP Eco financial figure from the live corpus until the
-  correction batch runs. The 22 GP Eco event facts are unaffected.
-  **A read-only issuer-identity sweep across every company with `fin.*`
-  facts found GP Eco is the only failure.** Two Refex financial-evidence
-  documents and one GP Eco annual report are missing from Drive (404).
-  **Overnight deliverable (all prepared, nothing written):**
-  - Choice: 59 quarterly consolidated facts (FY2025Q1–FY2027Q2),
-    reconciled exactly to the audited annual and 9-month filings.
-    `promote_choice_quarterly.py`, dry run 59 NEW / 0 conflicts.
-  - UNO Minda: 84 facts (24 standalone reported + FY2025/FY2026 raw +
-    geographic and product segment coverage). Full normalization
-    preview in an isolated copy computes ROE 17.53%, ROCE 18.41%,
-    D/E 0.37x; all ten existing FY2026 ratios reproduce
-    bit-identically. Four existing rounded FY2026 values deliberately
-    left untouched. `promote_uno_completion.py`.
-  - Chemplast: 58 quarterly + statutory segment facts; three
-    image-only Reg. 31/29(2) documents read (no FY2026 encumbrance;
-    Mirae -0.01%; AMANSA +0.60%). `promote_chemplast_quarterly_segment.py`.
-  - Refex: 3-fact promoter-encumbrance timeline (30 Jun / 10 Aug /
-    16 Sep 2026). Pledge rose 10.37% → **45.99% of promoter holding**
-    in four quarters; the 45.99% is a stated figure, not derived.
-    `promote_refex_pledge_timeline.py`.
-  - GP Eco correction: 26 supersessions + 13 inserts.
-    `promote_gpeco_corrected_financials.py`.
-  Reports: `MORNING_REPORT_2026-11-06.md`,
-  `FIVE_COMPANY_RESEARCH_AUDIT_2026-11-06.md`,
-  `REFEX_ADJUDICATION_2026-11-06.md`,
-  `UNO_MINDA_PERIOD_SCOPE_MAPPING_2026-11-06.md`.
+  `feature/direct-event-extractor`, HEAD **`bb21f67`** (updated after
+  commit). Nothing merged, pushed, or deployed.
+  **Live SPARS verified state (2026-11-07, post-mandate):** **856
+  canonical facts across 10 companies, 0 without evidence,
+  `PRAGMA integrity_check` = ok.** Per company: Refex 268, UNO Minda 164,
+  GP Eco 121, Chemplast 95, Choice 92, Chemkart 87 (new), IKIO 19,
+  Asian Energy 6, Cemindia 3, Bombay Dyeing 1.
+  **Executed under the owner's 2026-11-07 six-company mandate:**
+  - **P0 GP Eco correction (EX-020):** the 39 facts that cited Chemkart
+    India's prospectus were corrected. 26 FY2024/FY2025 facts
+    superseded with GP Eco's audited consolidated figures (FY2025
+    revenue 246.43 cr, PAT 10.36 cr); 13 FY2023 consolidated identities
+    superseded by explicit TEXT RETRACTION records (append-only, none
+    deleted) because no valid GP Eco FY2023 consolidated source exists;
+    genuine FY2022/FY2023 standalone snapshot facts added. All 13 now
+    resolve to RETRACTED from `_current_fact`.
+  - **P1 Chemkart onboarding:** registered (BSE SME, symbol CHEMKART,
+    scrip 544442, ISIN INE0VWL01017, CIN U51220MH2020PLC338631);
+    document `bcdecb12…` re-attributed from GP Eco to Chemkart with
+    `COMPANY_LINKS_CHANGED` audit rows; 54 restated-consolidated
+    FY2023-FY2025 facts + 3 corporate-action events recorded; 30
+    normalized metrics computed through `FinancialDiagnosticsService`.
+    No quarterly or segment data exists in the prospectus (documented
+    gap).
+  - **P2 promotions executed:** Choice +59, Chemplast +58, Refex +3,
+    UNO Minda +90 (plus 30 normalized metrics). Four existing rounded
+    UNO FY2026 values deliberately left untouched.
+  - **P3 six-company research:** `SIX_COMPANY_RESEARCH_INTELLIGENCE_2026-11-07.md`,
+    `SIX_COMPANY_COMPLETENESS_2026-11-07.md`. Market data path
+    (`Ticker.last_price` → `MarketPriceService`) is present but
+    **unpopulated** (all zero); valuation is therefore indicative and
+    externally sourced only, not canonical.
+  **New open items:** (a) issuer-name/CIN check on acquisition (root
+  cause of EX-020) not built; (b) coverage ledger still requires
+  `fin.raw.*`, so quarterly `fin.reported.*` facts read as
+  missing/partial — mapping fix proposed, not applied; (c) three Drive
+  files still 404 (two Refex, one GP Eco); (d) market-data feed not
+  populated (Kite session/price import needs approval).
   Verification: focused regression **120 passed / 1 skipped / 0 failed**;
-  financial query guard **0 violations**; all batches dry-run only.
-  **Awaiting owner approval:** (a) the GP Eco correction batch (highest
-  priority — live facts are wrong), (b) deletion/retraction decision for
-  the 13 FY2023 GP Eco facts, (c) the four promotion batches, (d) any
-  deployment or scheduler change. New capabilities to surface before
-  building: issuer-name/CIN check on acquisition; tolerant-period
-  read path for UNO's `Q1 FY2027` labels.
+  financial query guard **0 violations**; live backup taken before
+  writes (`trading_app.db.scheduled-backup-20261106_013319.db`).
+  **Awaiting owner approval:** market-data price import; ledger
+  vocabulary fix; new issuer-identity safeguard.
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
