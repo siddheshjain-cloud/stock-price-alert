@@ -108,7 +108,8 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`004614d`** (governance addendum evidence tightening and
+  `feature/direct-event-extractor`, HEAD **`59caf51`** (benchmark FP/FN case appendix; `004614d`
+  governance addendum evidence tightening and
   Refex pledge trend; earlier `a55609e` capex/supersession check and
   fact-count basis, `addf3bd` LIVING_PLAN entry 97, `8f11585` benchmark
   artifacts, `37bae00` promotion-batch reconciliation, `ac030a2`
