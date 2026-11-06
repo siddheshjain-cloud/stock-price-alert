@@ -108,11 +108,11 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`40152c1`** (`60b5362` v3
+  `feature/direct-event-extractor`, HEAD **`0400f15`** (`60b5362` v3
   fixes and tests; `174636c` pre-v3fix benchmark evidence preserved;
   `008038a` call-titled-page fix; `9617fb3` v3 protocol and final fix
   plan; `d5ac009` UNO Minda Q2 FY2027 research; `40152c1` unextracted-
-  document gap; earlier `0645dc6` v2 result and v3 fix plan;
+  document gap; `0400f15` EX-021 first post-change run; earlier `0645dc6` v2 result and v3 fix plan;
   `a1662ea` v1 fresh-sample record and v2 tooling;
   `597d7b3` fresh-benchmark gate fixes; `80865f9` benchmark gate fixes
   and re-score; `59caf51` benchmark FP/FN case appendix; `004614d`
