@@ -108,7 +108,7 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-07 overnight, five-company research
   readiness): Direct Event Extractor.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`8340489`** (verified).
+  `feature/direct-event-extractor`, HEAD **`b219967`** (verified).
   Nothing merged, pushed, or deployed.
   **Live SPARS verified state (2026-11-07):** 487 canonical facts across
   9 companies, 0 without evidence, integrity ok. **However, GP Eco's 39
