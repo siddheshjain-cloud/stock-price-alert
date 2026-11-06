@@ -108,7 +108,7 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-07, market-data release preparation):
   Direct Event Extractor.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`b9eda9c`** plus docs.
+  `feature/direct-event-extractor`, HEAD **`2a5d3bf`**.
   Nothing deployed.
   **Live SPARS state: 882 canonical facts, 0 without evidence,
   integrity ok** — unchanged; the release is code-only.
@@ -141,7 +141,10 @@ test evidence are authoritative over this note if they ever disagree
   owner confirming how the web process is started** (no service or
   running `main.py` found), (d) optional daily-refresh scheduled task.
   `MARKET_DATA_TRACE`, `MARKET_DATA_STORE` and the research report
-  remain the supporting record.
+  remain the supporting record. Research continued with
+  `SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md` (guidance-vs-outcome
+  scorecard, governance table, preliminary stances and falsifiers).
+  Research suite after release hardening: **772 passed, 0 failed**.
 ### Phase 3.5B Preservation & Recovery Checkpoint (2026-11-03)
 
 **1. Program status:** PAUSED, not completed. 3 of 10 companies have
