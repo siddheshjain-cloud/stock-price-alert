@@ -108,10 +108,11 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`addf3bd`** (LIVING_PLAN entry
-  97 and the 137-case benchmark report; earlier this session `8f11585`
-  benchmark artifacts, `37bae00` promotion-batch reconciliation,
-  `ac030a2` EX-021 retry, from `484181a`).
+  `feature/direct-event-extractor`, HEAD **`004614d`** (governance addendum evidence tightening and
+  Refex pledge trend; earlier `a55609e` capex/supersession check and
+  fact-count basis, `addf3bd` LIVING_PLAN entry 97, `8f11585` benchmark
+  artifacts, `37bae00` promotion-batch reconciliation, `ac030a2`
+  EX-021 retry, from `484181a`).
   **Release deployed to `C:\SPARS-release\backendtest`** on branch
   `release/market-data-service` (5 commits on `f9e9ad4`: `184a431`,
   `637a713`, `e0c2773`, `33d2386`, `fa51c6e`). Dependency
