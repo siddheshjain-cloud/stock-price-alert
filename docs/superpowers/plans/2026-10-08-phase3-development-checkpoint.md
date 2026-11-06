@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (V3 FIXES IMPLEMENTED AND TESTED: all five v2 failure classes plus a staging-dedup idempotency gap and a call-titled-page rule, 26 new tests with negative controls, tests/pipeline 323 passed/2 skipped; the v3 protocol is pre-registered before any v3 case exists -- seed 20261109, ev-h ids, 3-vote panel with majority labels and lead-resolved 2-1 splits; the 127-case live Groq regression is running on the final code, required to hold 0.9651/0.8830 (it reached 113/137, was killed by a system low-memory event, and resumed with --resume on unchanged code); UNO Minda Q2 FY2027 results incorporated (margin 11.0%, revenue +38%, 16-project Rs 5,287 cr capex tracker) and a new unextracted-document gap recorded; ALLOW_EVENT_AUTO_PROMOTION stays False, no canonical write. Earlier 2026-11-06: EVENT BENCHMARK FAILED ITS GATES: 137 blind cases; end-to-end precision 0.768 and recall 0.457; ALLOW_EVENT_AUTO_PROMOTION stays False; 42/51 false negatives are deterministic-gate rejections on unnamed annexures and Indian number formatting; EX-021 retry deployed, awaiting three weekday runs; six-company governance/commitments addendum written. Earlier: MARKET-DATA SERVICE RELEASED: five commits cherry-picked onto f9e9ad4 in C:\\SPARS-release\\backendtest on branch release/market-data-service; duckdb installed; 40 release-tree tests pass; all six companies quote from the local store at 2026-11-06; 882 facts and archives unchanged; backup taken. Open: no web-app launcher exists (restart pending owner input) and the daily refresh task needs explicit approval. Earlier: RELEASE PREPARED, NOT DEPLOYED: service commits 2461651/597604b cherry-picked cleanly onto release baseline f9e9ad4 (docs conflict only); 40 tests pass on the release tree and all six companies resolve local quotes; a release-blocking ticker-suffix defect (GPECO vs GPECO-SM) found and fixed; freshness/Kite-failure/corporate-action/restart/integrity checks all pass; 882 facts and archives unchanged. Deployment blocked on the owner confirming how the web app is started. Earlier: MARKET-DATA SERVICE DELIVERED: read-only DuckDB service over C:\SPARS_marketdata\daily with quotes, history, MAs/returns/volatility/liquidity/drawdowns/relative strength, identity resolution and on-demand retrieval, and valuation from verified share counts; Research Intelligence now falls back to it when the Ticker feed is empty; 10 new tests, research 764 + API 134 passed; five demonstrations recorded; duckdb added to requirements; no deployment. Earlier: WATCHLIST DATA DELIVERED: all 95 Universe companies downloaded daily OHLCV 2015→2026-11-06 (112,979 rows, 0 violations), reconciled with the Drive archives at 5,936 overlapping dates with zero mismatches, stored in C:\SPARS_marketdata\daily; the three minute archives secured with SHA-256 (210,748,427 verified rows, 89% of ~237M; further minute download stopped on instruction); valuation now uses local closes. Live 882 facts unchanged, 0 without evidence; no deployment. Earlier: APPROVED WRITES EXECUTED: GP Eco FY2026 audited AR registered and normalized (17 facts + 8 metrics; revenue 414.38 cr, PBT 53.96, total PAT 42.74, receivables 171.9 days, D/E 1.02x) through the issuer gate; two recovered Refex documents archived to Drive and SHA-verified; historical market data located in Drive (1,786,077 daily rows, 62,420,320 minute rows verified read-only with DuckDB; 2.85 GB NIFTY-500 archive still verifying) correcting the earlier no-store claim; research scorecard added. Live 882 facts, 0 without evidence; 426 tests passed this session; no deployment. Earlier: NEXT PRIORITIES: issuer-identity gate implemented and enforced at acquisition + canonical promotion (10 tests, verified on the live GP Eco/Chemkart pair; EX-020 control gap closed); coverage ledger now recognises raw/reported on a consistent basis and never counts derived/normalized as source — Refex and Choice show all six quarters VERIFIED; market-data trace completed (no history store exists; feed unpopulated, no change); six-company report audited with 12 findings corrected; two Refex evidence files recovered by exact SHA; GP Eco audited FY2026 annual report recovered and preserved pending registration (revenue 414.38 cr, PAT 42.74 cr). Live 856 facts unchanged, 0 without evidence; 1,870 tests passed; no deployment. Earlier: SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
+**Last updated:** 2026-11-08 (V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Earlier today: V3 FIXES IMPLEMENTED AND TESTED: all five v2 failure classes plus a staging-dedup idempotency gap and a call-titled-page rule, 26 new tests with negative controls, tests/pipeline 323 passed/2 skipped; the v3 protocol is pre-registered before any v3 case exists -- seed 20261109, ev-h ids, 3-vote panel with majority labels and lead-resolved 2-1 splits; UNO Minda Q2 FY2027 results incorporated (margin 11.0%, revenue +38%, 16-project Rs 5,287 cr capex tracker) and a new unextracted-document gap recorded; no canonical write. Earlier 2026-11-06: EVENT BENCHMARK FAILED ITS GATES: 137 blind cases; end-to-end precision 0.768 and recall 0.457; ALLOW_EVENT_AUTO_PROMOTION stays False; 42/51 false negatives are deterministic-gate rejections on unnamed annexures and Indian number formatting; EX-021 retry deployed, awaiting three weekday runs; six-company governance/commitments addendum written. Earlier: MARKET-DATA SERVICE RELEASED: five commits cherry-picked onto f9e9ad4 in C:\\SPARS-release\\backendtest on branch release/market-data-service; duckdb installed; 40 release-tree tests pass; all six companies quote from the local store at 2026-11-06; 882 facts and archives unchanged; backup taken. Open: no web-app launcher exists (restart pending owner input) and the daily refresh task needs explicit approval. Earlier: RELEASE PREPARED, NOT DEPLOYED: service commits 2461651/597604b cherry-picked cleanly onto release baseline f9e9ad4 (docs conflict only); 40 tests pass on the release tree and all six companies resolve local quotes; a release-blocking ticker-suffix defect (GPECO vs GPECO-SM) found and fixed; freshness/Kite-failure/corporate-action/restart/integrity checks all pass; 882 facts and archives unchanged. Deployment blocked on the owner confirming how the web app is started. Earlier: MARKET-DATA SERVICE DELIVERED: read-only DuckDB service over C:\SPARS_marketdata\daily with quotes, history, MAs/returns/volatility/liquidity/drawdowns/relative strength, identity resolution and on-demand retrieval, and valuation from verified share counts; Research Intelligence now falls back to it when the Ticker feed is empty; 10 new tests, research 764 + API 134 passed; five demonstrations recorded; duckdb added to requirements; no deployment. Earlier: WATCHLIST DATA DELIVERED: all 95 Universe companies downloaded daily OHLCV 2015→2026-11-06 (112,979 rows, 0 violations), reconciled with the Drive archives at 5,936 overlapping dates with zero mismatches, stored in C:\SPARS_marketdata\daily; the three minute archives secured with SHA-256 (210,748,427 verified rows, 89% of ~237M; further minute download stopped on instruction); valuation now uses local closes. Live 882 facts unchanged, 0 without evidence; no deployment. Earlier: APPROVED WRITES EXECUTED: GP Eco FY2026 audited AR registered and normalized (17 facts + 8 metrics; revenue 414.38 cr, PBT 53.96, total PAT 42.74, receivables 171.9 days, D/E 1.02x) through the issuer gate; two recovered Refex documents archived to Drive and SHA-verified; historical market data located in Drive (1,786,077 daily rows, 62,420,320 minute rows verified read-only with DuckDB; 2.85 GB NIFTY-500 archive still verifying) correcting the earlier no-store claim; research scorecard added. Live 882 facts, 0 without evidence; 426 tests passed this session; no deployment. Earlier: NEXT PRIORITIES: issuer-identity gate implemented and enforced at acquisition + canonical promotion (10 tests, verified on the live GP Eco/Chemkart pair; EX-020 control gap closed); coverage ledger now recognises raw/reported on a consistent basis and never counts derived/normalized as source — Refex and Choice show all six quarters VERIFIED; market-data trace completed (no history store exists; feed unpopulated, no change); six-company report audited with 12 findings corrected; two Refex evidence files recovered by exact SHA; GP Eco audited FY2026 annual report recovered and preserved pending registration (revenue 414.38 cr, PAT 42.74 cr). Live 856 facts unchanged, 0 without evidence; 1,870 tests passed; no deployment. Earlier: SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
 readiness session: four promotion-ready batches prepared — Choice
 quarterly 59, UNO Minda 84, Chemplast 58, Refex pledge 3 — and a CRITICAL
 data-integrity correction: GP Eco's 39 live financial facts are Chemkart
@@ -108,11 +108,13 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`0400f15`** (`60b5362` v3
-  fixes and tests; `174636c` pre-v3fix benchmark evidence preserved;
-  `008038a` call-titled-page fix; `9617fb3` v3 protocol and final fix
-  plan; `d5ac009` UNO Minda Q2 FY2027 research; `40152c1` unextracted-
-  document gap; `0400f15` EX-021 first post-change run; earlier `0645dc6` v2 result and v3 fix plan;
+  `feature/direct-event-extractor`, HEAD **`6ae0260`** (`6ae0260` v3
+  regression result and artifacts; `5bc43a9` table-header grounding and
+  completed-action carve-out fixes; `0400f15` EX-021 first post-change
+  run; `60b5362` v3 fixes and tests; `174636c` pre-v3fix benchmark
+  evidence preserved; `008038a` call-titled-page fix; `9617fb3` v3
+  protocol and final fix plan; `d5ac009` UNO Minda Q2 FY2027 research;
+  `40152c1` unextracted-document gap; earlier `0645dc6` v2 result and v3 fix plan;
   `a1662ea` v1 fresh-sample record and v2 tooling;
   `597d7b3` fresh-benchmark gate fixes; `80865f9` benchmark gate fixes
   and re-score; `59caf51` benchmark FP/FN case appendix; `004614d`
@@ -228,8 +230,9 @@ test evidence are authoritative over this note if they ever disagree
   0 failed** (an earlier 1-failure run was free-tier quota contention
   on the real-network staging test).
 
-  **v3 fixes -- IMPLEMENTED AND TESTED; live regression IN PROGRESS
-  (2026-11-08).** `docs/direct_event_extractor/EVENT_PIPELINE_FIX_PLAN_V3_2026-11-08.md`
+  **v3 fixes -- IMPLEMENTED AND TESTED; pre-draw regression FAILED;
+  owner decision required on the materiality standard (2026-11-08).**
+  `docs/direct_event_extractor/EVENT_PIPELINE_FIX_PLAN_V3_2026-11-08.md`
   is finalised. Five v2 classes fixed in `60b5362` -- page-level
   routine-document gate with a completed-action carve-out,
   proposed/pending-action patterns, checklist-first verifier prompt
@@ -240,10 +243,8 @@ test evidence are authoritative over this note if they ever disagree
   (`008038a`) came from the first case of the live regression: a page
   whose 400-character title block names a call ("H1 FY26 Earnings
   Conference Call", no "transcript" word, few speaker markers) is a
-  transcript page. **26 new tests with negative controls;
-  `tests/pipeline` 323 passed, 2 skipped** with the benchmark idle.
-  `docs/direct_event_extractor/EVENT_BENCHMARK_V3_PROTOCOL_2026-11-08.md`
-  is pre-registered before any v3 case is drawn: seed 20261109,
+  transcript page. `docs/direct_event_extractor/EVENT_BENCHMARK_V3_PROTOCOL_2026-11-08.md`
+  was pre-registered before any v3 case was drawn: seed 20261109,
   `ev-h...` ids disjoint from the 137-case benchmark / 27-case frozen
   set / v1 / v2; 85 primary + 10 blind duplicates; three independent
   votes per assignment, majority label, lead resolution of 2-1 splits;
@@ -251,23 +252,55 @@ test evidence are authoritative over this note if they ever disagree
   completeness; unchanged G1-G4; gate invariance across each vote, the
   majority and the unanimous subset; two-run repeatability; lead
   re-adjudication of every FP/FN; frozen-set and test-suite regression.
-  **Running now:** the 127-case benchmark re-scored live on Groq free
-  tier, required to hold **0.9651 / 0.8830** (TP 83 / FP 3 / FN 11);
-  pre-fix outcomes preserved as
-  `outcomes_groq_pre_v3fix_20261106.json`, and the three-case aborted
-  partial as `outcomes_groq_v3fix_aborted_titlefix_20261108.json`;
-  the final run writes `outcomes_groq.json` + `score_groq_v3fix.json`.
-  The run is slow (~130 s on semantic cases vs ~1.3 s on 2026-11-06).
-  It reached **113 of 137** cases, then the background process was
-  **killed by a system low-memory event** (not a code change; free RAM
-  ~1.5 GB of 7.9 GB on this machine). It was **resumed with
-  `--resume`** on unchanged code (last code commit `008038a`; `--resume`
-  keeps completed verdicts and re-evaluates only the remaining 24
-  cases — no case or verifier changed). Only a full pass of the six v3
-  conditions authorises the bounded promotion policy (one company,
+
+  **Regression result** (`EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md`,
+  artifacts committed in `6ae0260`; measurement on code `008038a`):
+  137 of 137 assignments scored, 0 errors, after two system low-memory
+  kills and a `--resume` on unchanged code. On the 127 primary cases:
+  **TP 59 / FP 3 / FN 35 / TN 30 -> precision 0.9516, recall 0.6277**,
+  against the recorded anchor 0.9651 / 0.8830 (TP 83 / FP 3 / FN 11).
+  G1 (0.9516 >= 0.95), G2 (0 wrong-company), G3 (0 routine) and G4
+  (0.6277 >= 0.50) all pass; **consistency condition 5 fails.** 35
+  verdicts changed: 31 demotions, every one frozen-PASS (14 transcript
+  page gate, 2 presentation page gate, 4 pending/proposed, 4 other
+  materiality, 6 semantic verifier, 1 grounding), and 4 recoveries,
+  also frozen-PASS. Model duplicate consistency 9/10.
+
+  **Diagnosis -- two materiality standards already on record, not
+  mostly code defects.** The frozen 2026-11-06 rubric excludes only
+  "vague guidance with no measurable commitment", so quantified
+  guidance (13-14% margin, segment revenue projections) and pending
+  items (demerger awaiting NOCs) are PASS. The v2/v3 rubric requires a
+  completed action and excludes transcripts/presentations and all
+  proposed/pending actions, so the same cases are FAIL. No code can
+  satisfy both. After two genuine fixes in `5bc43a9` (table-header unit
+  grounding, e.g. "(Rs. Cr.) 660.00" vs Rs 660 crore; a wider
+  completed-action carve-out for MW orders, counted branches, debt
+  increases and non-breaking hyphens; 8 new tests with negative
+  controls; `tests/pipeline` **331 passed, 2 skipped**), 23 of the 39
+  FN assignments clear both deterministic gates, and 16 still fail:
+  8 unique cases are the rubric conflict, 4 are completed actions whose
+  particular is not numeric (Noida facility, monsoon disruption, a
+  named new subsidiary), 2 are table layouts the header rule does not
+  cover ("Amount (Rs. Cr)" and "(INR) (In Crores)" columns). Even if
+  every semantic FN recovered, the v3 rubric's ceiling is 0.9639 /
+  0.8511 -- still below the anchor's 0.8830. `5bc43a9` is **not**
+  re-scored live: the 137-case run costs ~3 h of free quota and cannot
+  change condition 5 while the conflict stands.
+
+  **Decision required (owner), recorded in the result doc section 7:**
+  (A) keep the frozen standard and revert transcript / presentation /
+  pending strictness -- the anchor returns but the v2 false-positive
+  classes do too; (B) adopt the v3 standard and supersede the anchor
+  with a blind re-adjudication under it (or a v4 anchor); (C) hybrid --
+  one written rule keeping quantified, company-specific commitments
+  material while excluding unquantified forward-looking statements and
+  routine documents, with the frozen set re-labelled once. The session
+  recommends B or C, not A. **Until the owner decides: no v3 sample is
+  drawn, no promotion begins, and `ALLOW_EVENT_AUTO_PROMOTION` remains
+  `False` in the module.** The bounded promotion policy (one company,
   events only, dry-run first, cap 25, append-only, halt on any
-  wrong-company or non-material finding); `ALLOW_EVENT_AUTO_PROMOTION`
-  remains `False` in the module.
+  wrong-company or non-material finding) is not authorised.
 
   **CandidateFinding backlog reconciled (2026-11-06, read-only):**
   `docs/direct_event_extractor/BACKLOG_RECONCILIATION_2026-11-06.md`.
