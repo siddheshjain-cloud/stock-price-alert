@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 (session dates corrected from 2026-11-08 to the commit timestamps — see the dating note in Session Recovery State. Choice Q2 FY27 transcript read and every 4-6 Nov six-company filing classified (efb8969, read-only): three of four CONCALL rows are pointer letters, the transcript was read from the company's public URL, Chemplast published no Q2 transcript by 7 Nov (audio only), the call gives no NPA or provision figure and does not repeat the 5x ambition, and the NHIS CCPS conversion is stated as "after 3 years" with the ratio still undetermined; no stance change. GP Eco KMP/AR read (4373fa5, read-only): resignation letters read from the stored PDF and hash-matched (reasons given are formulas), the successor CFO is named with no appointment date anywhere in 93 GPECO documents, and the FY2026 annual report's own KMP table keeps the departed CFO, keeps a resigned director and omits the serving one, contradicting the 6 Aug Reg. 30 filing on Jain's designation and date. V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed); UNO Minda's ₹1,415 cr headline expansion reconciled as a subset of the ₹5,287 cr tracker (rows 12-15, sunroof row 16), with TGSIN Q4 FY2029 and Hosur Q1 FY2029 the longest-dated SOPs); UNO Minda's 5 Nov press release read hash-verified (H1 owners' PAT ₹716 cr; further ₹85 cr sunroof capex; no numeric guidance) and the Q1 FY2027 PAT row corrected to ₹296 cr; UNO Minda 5 Nov board outcomes read hash-verified — Nitesh Minda as CEO-Designate SCS (Giridharan's retirement date undisclosed), sunroof DPR ₹85 cr / 2,91,000 units p.a. debt-and-accrual funded, limited review unmodified; Refex preferential-issue record read (five CARE MA reports through 4 Nov 2026, the 7 May 2026 forfeiture disclosure, FY2026 AR Reg 32(7A) and the 24th AGM notice): Issue 2's ₹392.07 cr warrant balance was never paid and ₹130.69 cr was forfeited, the ₹85 cr capex object ended 4.1% spent while working capital absorbed ₹96 cr more than a pro-rata allocation, and the MA recorded twice that no approval for the consequent object-clause change had been shared — while Issue 1's much smaller ₹19.07 cr capex reallocation DID take a special resolution; ₹35 cr of Issue 1 proceeds sits in an 11% ICD with Rudra Securities; the SEBI ₹10 lakh UPSI penalty on Anil Jain and the Dec-2025 income-tax search are now in the Refex scorecard)
+**Last updated:** 2026-11-07 (fc3f308, read-only: concall intelligence from the only two Q2 FY2027 transcripts in the corpus with every commitment origin-tagged; the Refex "beaten margin" verdict withdrawn as a wind-segment vs stand-alone-company conflation; Choice's NHIS terms, PCR 24.73% and 5x ambition adjudicated in governance §16; six calls stated with falsification tests; Chemkart FY2026 accounts obtained at grade C — CFO −₹3 cr on ₹19.7 cr PAT, CCC 119 days, H1 FY2027 revenue ₹206 cr (+99%) — and two promotion sets validated (Choice 43, GP Eco 31) with live promotion and the 68-document extraction backlog both owner-blocked. Session dates corrected from 2026-11-08 to the commit timestamps — see the dating note in Session Recovery State. Choice Q2 FY27 transcript read and every 4-6 Nov six-company filing classified (efb8969, read-only): three of four CONCALL rows are pointer letters, the transcript was read from the company's public URL, Chemplast published no Q2 transcript by 7 Nov (audio only), the call gives no NPA or provision figure and does not repeat the 5x ambition, and the NHIS CCPS conversion is stated as "after 3 years" with the ratio still undetermined; no stance change. GP Eco KMP/AR read (4373fa5, read-only): resignation letters read from the stored PDF and hash-matched (reasons given are formulas), the successor CFO is named with no appointment date anywhere in 93 GPECO documents, and the FY2026 annual report's own KMP table keeps the departed CFO, keeps a resigned director and omits the serving one, contradicting the 6 Aug Reg. 30 filing on Jain's designation and date. V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed); UNO Minda's ₹1,415 cr headline expansion reconciled as a subset of the ₹5,287 cr tracker (rows 12-15, sunroof row 16), with TGSIN Q4 FY2029 and Hosur Q1 FY2029 the longest-dated SOPs); UNO Minda's 5 Nov press release read hash-verified (H1 owners' PAT ₹716 cr; further ₹85 cr sunroof capex; no numeric guidance) and the Q1 FY2027 PAT row corrected to ₹296 cr; UNO Minda 5 Nov board outcomes read hash-verified — Nitesh Minda as CEO-Designate SCS (Giridharan's retirement date undisclosed), sunroof DPR ₹85 cr / 2,91,000 units p.a. debt-and-accrual funded, limited review unmodified; Refex preferential-issue record read (five CARE MA reports through 4 Nov 2026, the 7 May 2026 forfeiture disclosure, FY2026 AR Reg 32(7A) and the 24th AGM notice): Issue 2's ₹392.07 cr warrant balance was never paid and ₹130.69 cr was forfeited, the ₹85 cr capex object ended 4.1% spent while working capital absorbed ₹96 cr more than a pro-rata allocation, and the MA recorded twice that no approval for the consequent object-clause change had been shared — while Issue 1's much smaller ₹19.07 cr capex reallocation DID take a special resolution; ₹35 cr of Issue 1 proceeds sits in an 11% ICD with Rudra Securities; the SEBI ₹10 lakh UPSI penalty on Anil Jain and the Dec-2025 income-tax search are now in the Refex scorecard)
 added read-only (pledge promise now dated: acquisition-linked
 ~Rs 400-450 cr in 3-5 months; NCLT demerger listed 11 Nov 2026; growth
 20-25%; GST demand Rs 29.32 cr vacated, income-tax addition remanded).
@@ -147,7 +147,31 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`e79fe2c`** (`e79fe2c`, 2026-11-07
+  `feature/direct-event-extractor`, HEAD **`fc3f308`** (`fc3f308`, 2026-11-07
+  concall intelligence, Choice adjudication, six calls and Chemkart
+  FY2026 — `CONCALL_INTELLIGENCE_2026-11-07.md` reads the only two Q2
+  FY2027 transcripts in the corpus (Refex 29 Oct, Choice 3 Nov) in full
+  and origin-tags every commitment (management-initiated vs
+  analyst-proposed-and-assented vs management-corrected), capturing 14
+  Refex and 9 Choice items with horizons and tests; the Refex "beaten
+  margin" tracker row is **withdrawn** because it compared the wind
+  segment band (4–5%) with the stand-alone company band (15–18%) — the
+  company is in line, the wind segment (5.6% in Q2) is at the bottom of
+  its own; the two RMC timing statements and the two pledge timelines on
+  the same call are recorded as unresolved. Choice's three open items
+  adjudicated (governance §16): NHIS terms partly closed with verified
+  arithmetic (42,25,350 × ₹2,130 = ₹8,99,99,95,500; conversion "after 3
+  years", ratio undetermined; 2.0× CEBPL book / 1.57× turnover; coupon,
+  put price and indemnity undisclosed), NBFC ratios shown internally
+  consistent (GNPA 3.22% / NNPA 2.44% / PCR 24.73% reconcile to 0.02 pp,
+  so the low cover is real), and the 5× treated as **unsupported** (one
+  press release, no metric, omitted at closing, in the deck and on the
+  call). Six calls stated with falsification tests (research §15). The
+  §11 Chemkart gap is answered from a **secondary source at grade C**
+  (BSE annual report blocked at 403/404; attachment ids recorded): FY2026
+  CFO **−₹3 cr** against ₹19.7 cr PAT, CCC 119 days, ROCE 28%, and H1
+  FY2027 revenue **₹206 cr (+99%)** with borrowings ₹5 cr → ₹22 cr —
+  a period wholly absent from the corpus; `e79fe2c`, 2026-11-07
   Choice Q2 FY27 transcript read from the company's own URL and every
   4–6 Nov six-company filing classified — three of four CONCALL rows are
   pointer letters, Chemplast published no Q2 transcript as of 7 Nov, a
@@ -208,6 +232,36 @@ uses the true date.
   `addf3bd` LIVING_PLAN entry 97, `8f11585` benchmark artifacts,
   `37bae00` promotion-batch reconciliation, `ac030a2` EX-021 retry,
   from `484181a`).
+
+  **Canonical-promotion position at HEAD `fc3f308` (2026-11-07).** Two
+  companies have completed the full chain — dry-run → ruleset triage →
+  manual id-level review → final disposition:
+  **Choice PROMOTE 43 / QUARANTINE 62** (`final_choice_20261107.json`)
+  and **GP Eco PROMOTE 31 / QUARANTINE 88** (`final_gpeco_20261107.json`),
+  every quarantine carrying a stated reason; **Refex part 2 running**
+  (213 remaining ids, `promotion_dryrun_refex_part2_20261107.json`),
+  triage pending. No live canonical write has been made —
+  `ALLOW_EVENT_AUTO_PROMOTION` is still `False` in the module, and the
+  harness denies every command that names the live DB
+  (`instance/trading_app.db`) with "[Modify Shared Resources]", so both
+  the promotion commit and the 68-document 4–6 Nov extraction backlog
+  remain owner-action items. The read-only copy
+  `instance/promotion_pool_copy_20261107.db` was verified identical to
+  live (2,272 documents, same 5–6 Nov distribution), so the dry-runs are
+  running against a faithful snapshot. The lane takes a **plain JSON id
+  list**, not the disposition object, so the approved ids are emitted
+  separately: `commit_ids_choice_20261107.json` (43) and
+  `commit_ids_gpeco_20261107.json` (31). Exact owner command for the
+  first bounded batch (cap 25, events only, one company):
+  `DATABASE_URL="sqlite:///C:/GitHub/backendtest/instance/trading_app.db"
+  PYTHONPATH=. python
+  scripts/direct_event_extractor/run_promotion_lane.py --company-name
+  "Choice" --only-events --allow-event-auto-promotion
+  --verifier-provider groq --only-candidate-ids
+  logs/direct_event_extractor/commit_ids_choice_20261107.json --commit
+  --max-promotions 25 --checkpoint-every 5 --log-path
+  logs/direct_event_extractor/commit_choice_20261107.json`
+
   **Release deployed to `C:\SPARS-release\backendtest`** on branch
   `release/market-data-service` (5 commits on `f9e9ad4`: `184a431`,
   `637a713`, `e0c2773`, `33d2386`, `fa51c6e`). Dependency
