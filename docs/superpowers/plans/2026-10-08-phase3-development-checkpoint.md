@@ -117,7 +117,8 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`8bf5a2b`** (`8bf5a2b`
+  `feature/direct-event-extractor`, HEAD **`f6c1ad6`** (`f6c1ad6`
+  Refex Q2 FY2027 business-level revenue; `8bf5a2b`
   GP Eco / Chemplast / Choice Q2-H1 FY2027 research update; `f0e7305`
   Refex Q2 FY2027 governance/commitment update; `6ae0260` v3
   regression result and artifacts; `5bc43a9` table-header grounding and
@@ -387,6 +388,18 @@ test evidence are authoritative over this note if they ever disagree
   contain no cash-flow statement, so the FY2026 CFO −₹267 cr question
   remains open. **No stance changes**; no canonical write, no
   promotion, `ALLOW_EVENT_AUTO_PROMOTION` still `False`.
+
+  **Also 2026-11-08 (`f6c1ad6`, read-only): Refex Q2 FY2027
+  business-level revenue** (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
+  §10, from the 28 Oct press release). Standalone H1 FY2027 revenue
+  ₹1,178.8 cr (+54.7%), EBITDA ₹195.9 cr (+71.8%), PAT ₹133.2 cr
+  (+55.4%); Q2 revenue ₹559.5 cr (+36.1%), EBITDA ₹90.5 cr (+21.7%),
+  PAT ₹59.5 cr (+13.1%). Business-level: **wind ₹201 cr in Q2 / ₹499 cr
+  in H1** — 2.1× FY2026's full-year wind revenue (₹237.5 cr); mobility
+  ₹36 cr / ₹69 cr; **ash & coal still not separately disclosed**, so
+  that guidance remains unscorable. The segment-split gap is partially
+  closed; Q2 EBITDA margin fell 190 bps YoY and Q2 PAT growth lagged
+  revenue by 23 points.
 
   **Open item (unchanged):** no web application launcher exists on
   this machine (no service, no running `main.py`, no scheduled task);
