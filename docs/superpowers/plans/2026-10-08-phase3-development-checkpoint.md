@@ -23,6 +23,11 @@ frontend implementation begins.
 added read-only (pledge promise now dated: acquisition-linked
 ~Rs 400-450 cr in 3-5 months; NCLT demerger listed 11 Nov 2026; growth
 20-25%; GST demand Rs 29.32 cr vacated, income-tax addition remanded).
+GP Eco / Chemplast / Choice Q2-H1 FY2027 updates also added read-only
+(8bf5a2b): GP Eco H1 revenue Rs 234.4 cr +93% but consolidated net CFO
+-Rs 36.9 cr as payables fell Rs 107.8 cr; Chemplast Q2 EBITDA Rs 111 cr
+vs -Rs 115 cr in Q1 (H1 still -Rs 3 cr) with H1 CFO +Rs 220 cr; Choice
+loan book Rs 9.36 bn and CRAR 37.36% but still no cash-flow statement.
 Earlier today: V3 FIXES IMPLEMENTED AND TESTED: all five v2 failure classes plus a staging-dedup idempotency gap and a call-titled-page rule, 26 new tests with negative controls, tests/pipeline 323 passed/2 skipped; the v3 protocol is pre-registered before any v3 case exists -- seed 20261109, ev-h ids, 3-vote panel with majority labels and lead-resolved 2-1 splits; UNO Minda Q2 FY2027 results incorporated (margin 11.0%, revenue +38%, 16-project Rs 5,287 cr capex tracker) and a new unextracted-document gap recorded; no canonical write. Earlier 2026-11-06: EVENT BENCHMARK FAILED ITS GATES: 137 blind cases; end-to-end precision 0.768 and recall 0.457; ALLOW_EVENT_AUTO_PROMOTION stays False; 42/51 false negatives are deterministic-gate rejections on unnamed annexures and Indian number formatting; EX-021 retry deployed, awaiting three weekday runs; six-company governance/commitments addendum written. Earlier: MARKET-DATA SERVICE RELEASED: five commits cherry-picked onto f9e9ad4 in C:\\SPARS-release\\backendtest on branch release/market-data-service; duckdb installed; 40 release-tree tests pass; all six companies quote from the local store at 2026-11-06; 882 facts and archives unchanged; backup taken. Open: no web-app launcher exists (restart pending owner input) and the daily refresh task needs explicit approval. Earlier: RELEASE PREPARED, NOT DEPLOYED: service commits 2461651/597604b cherry-picked cleanly onto release baseline f9e9ad4 (docs conflict only); 40 tests pass on the release tree and all six companies resolve local quotes; a release-blocking ticker-suffix defect (GPECO vs GPECO-SM) found and fixed; freshness/Kite-failure/corporate-action/restart/integrity checks all pass; 882 facts and archives unchanged. Deployment blocked on the owner confirming how the web app is started. Earlier: MARKET-DATA SERVICE DELIVERED: read-only DuckDB service over C:\SPARS_marketdata\daily with quotes, history, MAs/returns/volatility/liquidity/drawdowns/relative strength, identity resolution and on-demand retrieval, and valuation from verified share counts; Research Intelligence now falls back to it when the Ticker feed is empty; 10 new tests, research 764 + API 134 passed; five demonstrations recorded; duckdb added to requirements; no deployment. Earlier: WATCHLIST DATA DELIVERED: all 95 Universe companies downloaded daily OHLCV 2015→2026-11-06 (112,979 rows, 0 violations), reconciled with the Drive archives at 5,936 overlapping dates with zero mismatches, stored in C:\SPARS_marketdata\daily; the three minute archives secured with SHA-256 (210,748,427 verified rows, 89% of ~237M; further minute download stopped on instruction); valuation now uses local closes. Live 882 facts unchanged, 0 without evidence; no deployment. Earlier: APPROVED WRITES EXECUTED: GP Eco FY2026 audited AR registered and normalized (17 facts + 8 metrics; revenue 414.38 cr, PBT 53.96, total PAT 42.74, receivables 171.9 days, D/E 1.02x) through the issuer gate; two recovered Refex documents archived to Drive and SHA-verified; historical market data located in Drive (1,786,077 daily rows, 62,420,320 minute rows verified read-only with DuckDB; 2.85 GB NIFTY-500 archive still verifying) correcting the earlier no-store claim; research scorecard added. Live 882 facts, 0 without evidence; 426 tests passed this session; no deployment. Earlier: NEXT PRIORITIES: issuer-identity gate implemented and enforced at acquisition + canonical promotion (10 tests, verified on the live GP Eco/Chemkart pair; EX-020 control gap closed); coverage ledger now recognises raw/reported on a consistent basis and never counts derived/normalized as source — Refex and Choice show all six quarters VERIFIED; market-data trace completed (no history store exists; feed unpopulated, no change); six-company report audited with 12 findings corrected; two Refex evidence files recovered by exact SHA; GP Eco audited FY2026 annual report recovered and preserved pending registration (revenue 414.38 cr, PAT 42.74 cr). Live 856 facts unchanged, 0 without evidence; 1,870 tests passed; no deployment. Earlier: SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
 readiness session: four promotion-ready batches prepared — Choice
 quarterly 59, UNO Minda 84, Chemplast 58, Refex pledge 3 — and a CRITICAL
@@ -112,7 +117,8 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`f0e7305`** (`f0e7305`
+  `feature/direct-event-extractor`, HEAD **`8bf5a2b`** (`8bf5a2b`
+  GP Eco / Chemplast / Choice Q2-H1 FY2027 research update; `f0e7305`
   Refex Q2 FY2027 governance/commitment update; `6ae0260` v3
   regression result and artifacts; `5bc43a9` table-header grounding and
   completed-action carve-out fixes; `0400f15` EX-021 first post-change
@@ -355,6 +361,32 @@ test evidence are authoritative over this note if they ever disagree
   full (₹29.32 cr demand vacated) and the income-tax appeal partly
   allowed (₹17.48 cr capital-gains addition remanded). Stance
   unchanged — high on operations, low on the governance outcome.
+
+  **Later on 2026-11-08 (`8bf5a2b`, read-only): GP Eco, Chemplast and
+  Choice Q2/H1 FY2027 updates** (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
+  §9). **GP Eco** (SME, half-yearly; consolidated): H1 FY2027 revenue
+  ₹234.4 cr (+93% YoY; H2 FY2026 ₹292.9 cr), PBT ₹31.9 cr (+151%), PAT
+  ₹23.6 cr (+155%, 10.1% margin). The finding is the cash flow: net CFO
+  **−₹36.9 cr vs +₹2.4 cr** in H1 FY2026, because trade payables fell
+  ₹107.8 cr and short-term borrowings rose ₹90.4 cr while receivables
+  fell ₹52.3 cr; FY2026's +₹29.3 cr had been flattered by ₹140 cr of
+  year-end payables. Receivable days ≈111 annualised (172 at FY2026,
+  but ≈99 on the same H1 basis a year earlier). Reaching the 2–3×
+  guidance needs H2 ≈₹594 cr (≈2.0× H2 FY2026). Column order in the
+  half-yearly statement was verified against exact identities
+  (H1+H2 = FY2026; reserves reconcile to the paisa) before use. Reg. 32
+  monitoring report: no delay/deviation, proceeds per objects.
+  **Chemplast** consolidated Q2 FY2027: revenue ₹1,323 cr (+28% YoY,
+  +18% QoQ), EBITDA ₹111 cr (8%) vs −₹115 cr in Q1 and ₹43 cr a year
+  earlier, PAT −₹5 cr (vs −₹176 cr / −₹51 cr); H1 EBITDA still −₹3 cr
+  and PAT −₹181 cr, so the turn is one quarter old; standalone H1 CFO
+  **+₹220 cr vs −₹138 cr**; Madras High Court provisional assessment of
+  EU/Japan paste PVC imports since mid-Sep 2026. **Choice**: loan book
+  ₹9.36 bn (retail ₹6.09 bn), CRAR 37.36%, NNPA 2.44%, order book
+  ₹62.1 bn, 24+ IPO mandates; the extracted quarterly results still
+  contain no cash-flow statement, so the FY2026 CFO −₹267 cr question
+  remains open. **No stance changes**; no canonical write, no
+  promotion, `ALLOW_EVENT_AUTO_PROMOTION` still `False`.
 
   **Open item (unchanged):** no web application launcher exists on
   this machine (no service, no running `main.py`, no scheduled task);
