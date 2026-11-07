@@ -134,7 +134,16 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`398bc08`** (`398bc08`
+  `feature/direct-event-extractor`, HEAD **`6991804`** (`6991804`
+  Chemplast and Choice Q2 FY2027 reviews (§13–§14) — Chemplast's H1
+  ₹458 cr cash turn is ₹460 cr of trade payables, the revenue turn is
+  price/mix, and the Karaikal fire is unquantified; Choice's deck has
+  no guidance beyond two 2030 NBFC AUM targets, the ₹900 cr NHIS CCPS
+  closed 27 Oct with undisclosed coupon/conversion/put terms, the
+  use-of-proceeds list widened across three documents, the July "5x in
+  three years" ambition was not repeated at closing, and the advisory
+  order book (₹7.10 bn) is corrected from the conflation with ₹62.1 bn
+  of IB tentative fund raising; §4 gaps updated; `398bc08`
   GP Eco preferential-issue review (§12) — ₹123.76 cr headline vs
   ₹44.07 cr of cash (35.6%), ₹77.72 cr due on warrants by Jan 2028,
   a 2.2%-of-capital warrant mandate, post-EGM allottee churn, CFO and
@@ -594,11 +603,74 @@ test evidence are authoritative over this note if they ever disagree
   No canonical write, no promotion, `ALLOW_EVENT_AUTO_PROMOTION`
   still `False`.
 
-  **Next research step:** Chemplast Q2 FY2027 presentation (38 units)
-  for capex and guidance and the Karaikal fire impact, then Choice Q2
-  FY2027 presentation (45 units) for AUM and asset-quality guidance,
-  then the two GP Eco gaps (reason for the CFO resignation; successor
-  appointment date — §12.7).
+  **Then on 2026-11-08 (`6991804`, read-only): Chemplast Q2 FY2027
+  presentation — the cash turn is payables, Karaikal is unquantified**
+  (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md` §13). Consolidated
+  H1 FY2027 CFO **+₹458.3 cr vs +₹126.4 cr** decomposes into pre-working-
+  capital operating profit of only **₹13.7 cr** and a **₹460.3 cr
+  trade-payables stretch** (₹53.2 cr a year earlier); payables rose
+  **₹1,624.9 → ₹2,151.9 cr (+32.4%)**, the current ratio is **0.44×**,
+  and net debt fell ₹1,418.9 → ₹1,212.7 cr but is still **6.1× FY2026
+  EBITDA and 5.5× annualised Q2 EBITDA** (Q2 EBITDA covers finance cost
+  1.6×). The same is true standalone (+₹201.9 cr of payables against
+  ₹65.5 cr pre-WC profit). **The revenue turn is price/mix**: Q2 volume
+  −0.8% but revenue +28%, specialty realisation **+69%** on CMCD mix,
+  S-PVC **+22.6%**, VAC **−15%**; specialty volume was already −13.2%
+  in Q1, before the fire. **Karaikal**: fire 17 July 2026 in the EDC
+  plant, restart **25 Sep 2026** (~10 weeks), the Reg. 30 annexure says
+  the quantum is "in the process of ascertaining" and the damage
+  "adequately covered"; no claim recovery in H1, **no rupee figure in
+  any filing**, and the MD message omits the fire.
+  **Capex deferred not cancelled**: H1 ₹146.7 cr vs ₹201.1 cr, CWIP
+  ₹301.3 vs ₹341.4 cr; R-32 2,000 mtpa commercial May 2026, CMCD
+  5,410 mtpa in four blocks, paste PVC Cuddalore 41 ktpa at 100%; no
+  numeric FY2027 guidance. Statutory segment note: the commodity
+  subsidiary swung **−₹166.4 → +₹6.6 cr** in one quarter; PBT
+  (₹232.3) → (₹8.5) cr; materials plus inventory change 75.3% → 66.0%
+  of revenue. §3's Q3 FY2027 PBT test is unchanged; §13 adds a
+  cash-quality condition (Q3 CFO excluding payables) and an
+  insurance-recognition event condition.
+
+  **Then on 2026-11-08 (`6991804`, read-only): Choice Q2 FY2027
+  presentation and the ₹900 cr NHIS infusion** (§14, same document).
+  The 45-unit deck was read in full: **no cash-flow statement, no
+  FY2027 numeric guidance and no asset-quality target**; the only dated
+  commitments are **MSME finance AUM ₹25 bn and green finance AUM
+  ₹10 bn by 2030** against ₹9.36 bn now (3.7× if additive; overlap
+  unresolved). NBFC NIM fell for **three consecutive quarters**,
+  12.25% → 10.76% (−49 bps YoY). The **₹900.00 cr NHIS CCPS** closed
+  **27 Oct 2026** (42,25,350 CCPS at ₹2,130; SSA/SHA 9 Jul 2026), into
+  CEBPL — which was **51% of CIL's FY2026 turnover** (₹573.26 of
+  ₹1,119.13 cr) and 25% of group net worth. The SHA discloses board
+  composition, senior-management appointment, **reserved matters
+  requiring investor consent, a put option**, transfer restrictions and
+  **joint and several CIL/CEBPL indemnities**, all **unquantified**;
+  conversion ratio, coupon, put price and post-conversion stake are
+  **undisclosed**, so a ₹900 cr instrument (2.0× CEBPL's net worth)
+  cannot be priced from the filings. The **use-of-proceeds list widened
+  across the July release, the October closing release and the deck**,
+  with no allocation; the July release's **"5x growth in three years"**
+  ambition was **not repeated** at closing or in the deck.
+  **Correction:** the earlier "₹62.1 bn order book" conflated two lines
+  — the advisory order book is **₹7.10 bn** (₹6.66 bn a year earlier,
+  **−8.6% QoQ** from ₹7.77 bn), while ₹62.1 bn is the **tentative fund
+  raising across 24 live IPO mandates**; 5 IPOs were executed in Q2 for
+  ₹6,805 mn. Broking ADTO rose 50% but segment revenue only 5.1% —
+  revenue per trade fell sharply. Also recorded: the **Feedback Infra
+  resolution-plan LOI** to CCSPL (no price/funding/completion), and the
+  4 Nov Reg. 30 token acquisitions (Truestock and Quanthm, ₹10,000
+  each, both negative net worth) plus the **₹1.275 cr sale of SKP
+  Green** at 1.25× book. Stance unchanged — Choice remains on hold.
+
+  **Next research step:** the two GP Eco gaps (reason for the CFO
+  resignation; successor appointment date — §12.7), then re-check the
+  corpus for filings dated after 5 Nov 2026. The 3 Nov Choice call
+  transcript would be the natural place to test whether the 5x
+  commitment and the NHIS put terms resurface, but 71 documents dated
+  since 1 Nov still have no extraction unit and extracting them is a
+  live-DB write requiring owner approval — do not read it by extraction
+  without that approval; the PDF can be read read-only from Drive if it
+  is located.
 
   **Open item (unchanged):** no web application launcher exists on
   this machine (no service, no running `main.py`, no scheduled task);
