@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed)
+**Last updated:** 2026-11-08 (V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed); UNO Minda's ₹1,415 cr headline expansion reconciled as a subset of the ₹5,287 cr tracker (rows 12-15, sunroof row 16), with TGSIN Q4 FY2029 and Hosur Q1 FY2029 the longest-dated SOPs)
 added read-only (pledge promise now dated: acquisition-linked
 ~Rs 400-450 cr in 3-5 months; NCLT demerger listed 11 Nov 2026; growth
 20-25%; GST demand Rs 29.32 cr vacated, income-tax addition remanded).
@@ -134,7 +134,9 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`0fba951`** (`0fba951`
+  `feature/direct-event-extractor`, HEAD **`f0c6e6f`** (`f0c6e6f`
+  UNO Minda ₹1,415 cr headline reconciled to the capex tracker and Q2
+  operating records; `0fba951`
   GP Eco board-vs-auditor ICFR contradiction; `07d5914`
   Chemkart evidence chain and EX-020 re-verification (25533bcc holds
   ITD Cementation's AR); `48a2228`
@@ -486,6 +488,21 @@ test evidence are authoritative over this note if they ever disagree
   410 documents created in the same acquisition window found no other
   wrong-issuer document. The Chemkart post-listing-disclosure gap is
   **structural** (BSE SME; no CHEMKART-titled document in the corpus).
+
+  **Then on 2026-11-08 (`f0c6e6f`, read-only): UNO Minda headline
+  reconciled.** The Q2 FY2027 presentation's "four strategic expansion
+  … Rs 1,415 Cr" is exactly tracker rows 12–15 (Hosur 510 + Kharkhoda
+  AW2W 155 + Moulding 80 + TGSIN 670), and the ₹85 cr Bawal sunroof is
+  row 16 — so the new commitments are a subset of the already-counted
+  ₹5,287 cr programme, not an additional ₹1,415 cr. Longest-dated SOPs
+  are TGSIN Q4 FY2029 and Hosur greenfield Q1 FY2029 (existing Hosur
+  relocated by Q1 FY2030), so the return test on this tranche extends
+  past the decade. Operating records added: record casting sales (AW4W
+  +64%, aluminium die-casting +65%), Bawal HPDC AW2W commissioned with
+  4 of 6 lines (1.0 Mn wheel capacity), e-2W/e-3W EV systems ₹291 cr
+  (+53%, ≈4.4% of consolidated revenue). Correction to §7: the seven
+  newly announced projects carry ₹1 cr incurred (Seating), not nil.
+  Stance unchanged.
 
   **Also 2026-11-08 (`f6c1ad6`, read-only): Refex Q2 FY2027
   business-level revenue** (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
