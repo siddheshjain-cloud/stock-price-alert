@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed); UNO Minda's ₹1,415 cr headline expansion reconciled as a subset of the ₹5,287 cr tracker (rows 12-15, sunroof row 16), with TGSIN Q4 FY2029 and Hosur Q1 FY2029 the longest-dated SOPs)
+**Last updated:** 2026-11-08 (V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed); UNO Minda's ₹1,415 cr headline expansion reconciled as a subset of the ₹5,287 cr tracker (rows 12-15, sunroof row 16), with TGSIN Q4 FY2029 and Hosur Q1 FY2029 the longest-dated SOPs); UNO Minda's 5 Nov press release read hash-verified (H1 owners' PAT ₹716 cr; further ₹85 cr sunroof capex; no numeric guidance) and the Q1 FY2027 PAT row corrected to ₹296 cr)
 added read-only (pledge promise now dated: acquisition-linked
 ~Rs 400-450 cr in 3-5 months; NCLT demerger listed 11 Nov 2026; growth
 20-25%; GST demand Rs 29.32 cr vacated, income-tax addition remanded).
@@ -134,7 +134,9 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`f0c6e6f`** (`f0c6e6f`
+  `feature/direct-event-extractor`, HEAD **`d41087b`** (`d41087b`
+  UNO Minda 5 Nov press release read (hash-verified) and the Q1 FY2027
+  PAT row corrected to ₹296 cr; `f0c6e6f`
   UNO Minda ₹1,415 cr headline reconciled to the capex tracker and Q2
   operating records; `0fba951`
   GP Eco board-vs-auditor ICFR contradiction; `07d5914`
@@ -503,6 +505,20 @@ test evidence are authoritative over this note if they ever disagree
   (+53%, ≈4.4% of consolidated revenue). Correction to §7: the seven
   newly announced projects carry ₹1 cr incurred (Seating), not nil.
   Stance unchanged.
+
+  **Then on 2026-11-08 (`d41087b`, read-only): UNO Minda 5 Nov press
+  release and a table correction.** The press release was downloaded
+  from its NSE URL and its SHA-256 (`ffb0af4a…`) and byte size
+  (2,957,987) match the stored, unextracted content record, so it is the
+  document SPARS already holds. It adds H1 FY2027 owners' PAT **₹716 cr
+  (+32% vs normalised ₹543 cr)** and the board's further **₹85 cr**
+  Bawal sunroof approval (commissioning **Q2 FY2028**; first sunroof
+  plant commercial by **end-FY2027**). Management commentary is entirely
+  qualitative — no numeric FY2027 guidance; the only numeric commitment
+  remains the 11% ±50 bps margin band, which Q2 met. Reading page 19 in
+  full corrected §7's Q1 FY2027 PAT row from ₹355 cr to **₹296 cr**
+  (₹355 cr is PBT before the JV share); 296 + 420 = ₹716 cr ties the
+  quarters to the half-year, and Q1 QoQ is +42%, not +18%.
 
   **Also 2026-11-08 (`f6c1ad6`, read-only): Refex Q2 FY2027
   business-level revenue** (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
