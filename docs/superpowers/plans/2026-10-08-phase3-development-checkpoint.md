@@ -28,6 +28,18 @@ GP Eco / Chemplast / Choice Q2-H1 FY2027 updates also added read-only
 -Rs 36.9 cr as payables fell Rs 107.8 cr; Chemplast Q2 EBITDA Rs 111 cr
 vs -Rs 115 cr in Q1 (H1 still -Rs 3 cr) with H1 CFO +Rs 220 cr; Choice
 loan book Rs 9.36 bn and CRAR 37.36% but still no cash-flow statement.
+Choice cash flow then CLOSED read-only (ea815a1): the 2 Nov Reg. 30
+filing does carry cash-flow statements (p4 consolidated, p12 standalone;
+PDF read via Drive with SHA-256 match against the stored content hash,
+OCR garbled); H1 FY2027 consolidated net CFO -Rs 281.2 cr vs -Rs 66.5 cr,
+net borrowing +Rs 304.8 cr, group borrowings Rs 883.8 -> 1,188.6 cr;
+ex-loan-book and trading-book operating cash +Rs 312.4 cr; the deck's
+"Rs 9.36 bn loan book" is Choice Finserv AUM (Rs 800.02 cr at Mar-26 ->
+Rs 936 cr, +17.0%), not flat; the FY2026 annual report's promise to
+rebuild provision coverage before growing the book was reversed (PCR
+32.04% -> 24.73%, GNPA 2.74% -> 3.22%). The only stance change in the
+six-company set: Choice moves to "momentum intact, cash and credit
+quality both negative".
 Earlier today: V3 FIXES IMPLEMENTED AND TESTED: all five v2 failure classes plus a staging-dedup idempotency gap and a call-titled-page rule, 26 new tests with negative controls, tests/pipeline 323 passed/2 skipped; the v3 protocol is pre-registered before any v3 case exists -- seed 20261109, ev-h ids, 3-vote panel with majority labels and lead-resolved 2-1 splits; UNO Minda Q2 FY2027 results incorporated (margin 11.0%, revenue +38%, 16-project Rs 5,287 cr capex tracker) and a new unextracted-document gap recorded; no canonical write. Earlier 2026-11-06: EVENT BENCHMARK FAILED ITS GATES: 137 blind cases; end-to-end precision 0.768 and recall 0.457; ALLOW_EVENT_AUTO_PROMOTION stays False; 42/51 false negatives are deterministic-gate rejections on unnamed annexures and Indian number formatting; EX-021 retry deployed, awaiting three weekday runs; six-company governance/commitments addendum written. Earlier: MARKET-DATA SERVICE RELEASED: five commits cherry-picked onto f9e9ad4 in C:\\SPARS-release\\backendtest on branch release/market-data-service; duckdb installed; 40 release-tree tests pass; all six companies quote from the local store at 2026-11-06; 882 facts and archives unchanged; backup taken. Open: no web-app launcher exists (restart pending owner input) and the daily refresh task needs explicit approval. Earlier: RELEASE PREPARED, NOT DEPLOYED: service commits 2461651/597604b cherry-picked cleanly onto release baseline f9e9ad4 (docs conflict only); 40 tests pass on the release tree and all six companies resolve local quotes; a release-blocking ticker-suffix defect (GPECO vs GPECO-SM) found and fixed; freshness/Kite-failure/corporate-action/restart/integrity checks all pass; 882 facts and archives unchanged. Deployment blocked on the owner confirming how the web app is started. Earlier: MARKET-DATA SERVICE DELIVERED: read-only DuckDB service over C:\SPARS_marketdata\daily with quotes, history, MAs/returns/volatility/liquidity/drawdowns/relative strength, identity resolution and on-demand retrieval, and valuation from verified share counts; Research Intelligence now falls back to it when the Ticker feed is empty; 10 new tests, research 764 + API 134 passed; five demonstrations recorded; duckdb added to requirements; no deployment. Earlier: WATCHLIST DATA DELIVERED: all 95 Universe companies downloaded daily OHLCV 2015→2026-11-06 (112,979 rows, 0 violations), reconciled with the Drive archives at 5,936 overlapping dates with zero mismatches, stored in C:\SPARS_marketdata\daily; the three minute archives secured with SHA-256 (210,748,427 verified rows, 89% of ~237M; further minute download stopped on instruction); valuation now uses local closes. Live 882 facts unchanged, 0 without evidence; no deployment. Earlier: APPROVED WRITES EXECUTED: GP Eco FY2026 audited AR registered and normalized (17 facts + 8 metrics; revenue 414.38 cr, PBT 53.96, total PAT 42.74, receivables 171.9 days, D/E 1.02x) through the issuer gate; two recovered Refex documents archived to Drive and SHA-verified; historical market data located in Drive (1,786,077 daily rows, 62,420,320 minute rows verified read-only with DuckDB; 2.85 GB NIFTY-500 archive still verifying) correcting the earlier no-store claim; research scorecard added. Live 882 facts, 0 without evidence; 426 tests passed this session; no deployment. Earlier: NEXT PRIORITIES: issuer-identity gate implemented and enforced at acquisition + canonical promotion (10 tests, verified on the live GP Eco/Chemkart pair; EX-020 control gap closed); coverage ledger now recognises raw/reported on a consistent basis and never counts derived/normalized as source — Refex and Choice show all six quarters VERIFIED; market-data trace completed (no history store exists; feed unpopulated, no change); six-company report audited with 12 findings corrected; two Refex evidence files recovered by exact SHA; GP Eco audited FY2026 annual report recovered and preserved pending registration (revenue 414.38 cr, PAT 42.74 cr). Live 856 facts unchanged, 0 without evidence; 1,870 tests passed; no deployment. Earlier: SIX-COMPANY MANDATE EXECUTED: GP Ecos 39 Chemkart-sourced facts corrected and FY2023 retracted without deletion (EX-020 resolved); Chemkart India registered, its prospectus re-attributed and normalized; four approved batches promoted (Choice 59, Chemplast 58, Refex 3, UNO Minda 90 + 30 norms); six-company research report and completeness assessment written; live 856 facts, 0 without evidence, integrity ok; 120 focused tests passed; market data path present but unpopulated; no deployment. Earlier: overnight five-company research
 readiness session: four promotion-ready batches prepared — Choice
 quarterly 59, UNO Minda 84, Chemplast 58, Refex pledge 3 — and a CRITICAL
@@ -117,7 +129,8 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`f6c1ad6`** (`f6c1ad6`
+  `feature/direct-event-extractor`, HEAD **`ea815a1`** (`ea815a1`
+  Choice H1 FY2027 cash flow and NBFC asset quality; `f6c1ad6`
   Refex Q2 FY2027 business-level revenue; `8bf5a2b`
   GP Eco / Chemplast / Choice Q2-H1 FY2027 research update; `f0e7305`
   Refex Q2 FY2027 governance/commitment update; `6ae0260` v3
@@ -384,10 +397,35 @@ test evidence are authoritative over this note if they ever disagree
   **+₹220 cr vs −₹138 cr**; Madras High Court provisional assessment of
   EU/Japan paste PVC imports since mid-Sep 2026. **Choice**: loan book
   ₹9.36 bn (retail ₹6.09 bn), CRAR 37.36%, NNPA 2.44%, order book
-  ₹62.1 bn, 24+ IPO mandates; the extracted quarterly results still
-  contain no cash-flow statement, so the FY2026 CFO −₹267 cr question
-  remains open. **No stance changes**; no canonical write, no
+  ₹62.1 bn, 24+ IPO mandates; the extracted quarterly results (OCR)
+  contained no usable cash-flow statement, so the FY2026 CFO −₹267 cr
+  question was still open at that point — **closed in the `ea815a1`
+  paragraph below**. **No other stance change**; no canonical write, no
   promotion, `ALLOW_EVENT_AUTO_PROMOTION` still `False`.
+
+  **Then on 2026-11-08 (`ea815a1`, read-only): Choice H1 FY2027 cash
+  flow and NBFC asset quality** (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
+  §9.3). The 2 Nov Reg. 30 filing **does** carry cash-flow statements
+  (consolidated p4, standalone p12); the pipeline OCR is garbled, so the
+  PDF was downloaded read-only from Drive (SHA-256 matches the stored
+  content hash `c9bb45f7…ef8f`) and read from its own text layer by word
+  coordinates, with every subtotal tied to an independent identity.
+  Consolidated H1 FY2027 **net CFO −₹281.2 cr vs −₹66.5 cr** in H1
+  FY2026; net borrowing proceeds +₹304.8 cr; group borrowings **₹883.8 →
+  ₹1,188.6 cr** (+34.5%); closing cash ₹320.5 cr. The outflow is the
+  loan book (₹261.1 cr) plus the trading book (₹332.5 cr); excluding
+  both, operating cash was +₹312.4 cr vs +₹192.6 cr. Standalone CFO
+  −₹14.1 cr (no equity raised in the half). **Scope correction**: the
+  deck's "₹9.36 bn loan book" is Choice Finserv's AUM — ₹800.02 cr at
+  Mar-26 (annual report p72), so ₹936 cr at Sep-26 is **+17.0% in six
+  months** after +4.18% for FY2026, not "flat". **Commitment reversed**:
+  the FY2026 annual report (filed 4 Sep 2026, p73) said provision
+  coverage would be rebuilt "before the book is grown materially"; H1
+  FY2027 took PCR **32.04% → 24.73%**, GNPA **2.74% → 3.22%** and NNPA
+  **1.86% → 2.44%**. Choice is therefore the only **stance change** in
+  the set: §3 moves to "momentum intact, cash and credit quality both
+  negative"; the positive case is on hold, not broken. Still no
+  canonical write and no promotion.
 
   **Also 2026-11-08 (`f6c1ad6`, read-only): Refex Q2 FY2027
   business-level revenue** (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
