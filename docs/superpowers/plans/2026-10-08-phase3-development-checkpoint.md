@@ -129,7 +129,8 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`ea815a1`** (`ea815a1`
+  `feature/direct-event-extractor`, HEAD **`48a2228`** (`48a2228`
+  UNO Minda statutory segment note and audit-trail status; `ea815a1`
   Choice H1 FY2027 cash flow and NBFC asset quality; `f6c1ad6`
   Refex Q2 FY2027 business-level revenue; `8bf5a2b`
   GP Eco / Chemplast / Choice Q2-H1 FY2027 research update; `f0e7305`
@@ -426,6 +427,22 @@ test evidence are authoritative over this note if they ever disagree
   the set: §3 moves to "momentum intact, cash and credit quality both
   negative"; the positive case is on hold, not broken. Still no
   canonical write and no promotion.
+
+  **Then on 2026-11-08 (`48a2228`, read-only): UNO Minda statutory
+  segment note and audit-trail status** (`UNOMINDA_AR_FY2026`, audited
+  FY2026 annual report). **Note 32 (consolidated, p569)** declares a
+  **single reportable segment** under Ind AS 108 and discloses geography
+  only: FY2026 consolidated revenue **₹19,657.59 cr** (₹17,482.58 cr
+  India, ₹2,175.01 cr outside), matching the FY2026 revenue in the §6
+  table. The six-way product split in the Q2 deck is therefore
+  **voluntary and unaudited**; the §7/§4 "audited statutory segment
+  note" gap is **closed as not obtainable by design**, not as missing
+  evidence. **Notes 45/46 (p601/p474)** repeat the audit-trail
+  qualification for the whole of FY2025-26 — the second accounting
+  software at the parent, one JV and one JV subsidiary had no audit
+  trail — and the report contains **no remediation statement**, so the
+  Dec-2025 partial fix was the only one delivered. No stance change
+  (constructive on operations, cautious on ~63x owners' earnings).
 
   **Also 2026-11-08 (`f6c1ad6`, read-only): Refex Q2 FY2027
   business-level revenue** (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
