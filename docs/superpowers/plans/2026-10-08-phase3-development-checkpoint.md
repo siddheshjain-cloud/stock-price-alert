@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 late evening (`019009e` in the research
+**Last updated:** 2026-11-07 late evening (`b677598` in the research
 worktree, read-only). **The Refex validation chain is complete.** The
 part-2 dry-run finished (213 candidates, 152 AUTO_PROMOTE, 61
 NEEDS_REVIEW); combined with the 275-plan first run the Refex pool is
@@ -244,7 +244,7 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`019009e`** (2026-11-07
+  `feature/direct-event-extractor`, HEAD **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
   manual review of the 91 part-2 rows, one wrong-issuer record caught;
