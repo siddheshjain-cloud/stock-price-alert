@@ -19,7 +19,42 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 evening (`fe90f62` in the research
+**Last updated:** 2026-11-07 late evening (`d36e6df` in the research
+worktree, read-only). **The Chemkart evidence gap is closed, and the
+company's stance moved on the evidence.** The BSE-only collector holds no
+Chemkart document after 20 September 2026 — three records said so — but
+the issuer publishes its own filings at `chemkart.com/quarterly-half-yearly-filings/`.
+The **FY2026 audited results** (filed 18-05-2026, 28 pp) and the **H1
+FY2027 reviewed results** (filed 30-10-2026, 21 pp) were retrieved and
+read; the CIN, directors and auditor's UDIN match the prospectus record,
+and the half-year is signed by the statutory auditor (R. K. Bothra &
+Associates). Numbers (₹ lakh): FY2026 revenue 21,482.91, PAT 1,965.82
+(down from FY2025's 2,427.10), **CFO −272.53**, net worth 12,972.98;
+H1 FY2027 revenue 20,587.29 (**+99.4%**), PAT 2,255.90, **CFO −1,870.47**,
+net worth 15,227.96, receivables 8,949.83, inventory 4,376.82,
+borrowings ≈2,206.63. **CFO/PAT moves +16% → −13.9% → −83%**, and
+borrowings rose ₹17.1 cr in the half while ₹25 cr of IPO money sat in
+mutual funds and deposits; CWIP ₹9.57 cr against ₹24.99 cr unspent means
+**72% of the manufacturing object is undeployed 20 months after
+listing**. Three contradictions inside the FY2026 filing are recorded,
+not resolved: Note 6 vs Annexure 1 state different utilisation totals;
+the Reg. 32 statement says "Deviation: No" beside unspent growth
+capital; the utilisation certificate is signed by Prem Chand Jain & Co.
+(FRN 000066C), **not** the firm that audits the accounts, and the
+auditors' report carries an Emphasis of Matter on **₹1,474.26 lakh of
+customs duty** (11.4% of net worth, 75% of FY2026 PAT). Chemkart moves
+**Avoid → Watch**, on evidence grade (C+ → A−) rather than opinion, with
+the cash test as the falsifier (research §18; governance §18.5; the same
+issuer-vs-collector failure is logged as **[C3]** in the commitments
+record, alongside Refex's Monitoring Agency Reports). The gap is
+acquisition, not disclosure — the collector needs a per-issuer site
+check. **Blockers unchanged:** `ALLOW_EVENT_AUTO_PROMOTION` stays False,
+live canonical promotion and the 68-document extraction backlog both
+need the owner, and the owner must still choose the governing v3
+materiality standard (A/B/C; recommendation B or C). The Refex part-2
+dry-run is still running (180 of 213 plans at 12:25 UTC, ~25 s/plan).
+
+**Earlier this evening: Last updated:** 2026-11-07 evening (`fe90f62` in the research
 worktree, read-only). **Six of the eight six-company documents that the
 4–6 November sweep registered with zero extraction units were fetched
 and read, hash-verified, through a new read-only tool** —
@@ -192,7 +227,14 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`fe90f62`** (2026-11-07
+  `feature/direct-event-extractor`, HEAD **`d36e6df`** (2026-11-07
+  late evening, read-only: Chemkart's FY2026 audited and H1 FY2027
+  reviewed results retrieved from the issuer's own site and read — the
+  collector had no Chemkart document after 20 Sep 2026 — giving the
+  CFO/PAT path +16% → −13.9% → **−83%**, three recorded contradictions
+  in the utilisation disclosures, and an Avoid → **Watch** stance move
+  on evidence grade; governance §18.5, research §18; see "Last updated"
+  above); prior **`fe90f62`** (2026-11-07
   evening, read-only: `fetch_drive_evidence.py` added and used to read
   six of the eight six-company 4–6 November documents hash-verified —
   UNO's Q2/H1 statutory results with the standalone/consolidated split
