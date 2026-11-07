@@ -19,8 +19,22 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 late evening (`d36e6df` in the research
-worktree, read-only). **The Chemkart evidence gap is closed, and the
+**Last updated:** 2026-11-07 late evening (`019009e` in the research
+worktree, read-only). **The Refex validation chain is complete.** The
+part-2 dry-run finished (213 candidates, 152 AUTO_PROMOTE, 61
+NEEDS_REVIEW); combined with the 275-plan first run the Refex pool is
+**488 plans, 365 AUTO_PROMOTE**, triaged as one log (a new
+`combine_promotion_dryruns_20261107.py` exists because triage dedup only
+works inside a single file and the two candidate sets were disjoint).
+Triage: **237 PROMOTE / 128 QUARANTINE**; manual review of the 91 part-2
+PROMOTE rows removed 65, so with the 83 part-1 quarantines the
+promotion-ready list is **90 ids** (`commit_ids_refex_20261107.json`;
+order contracts 20, regulatory/litigation 12, capital actions 11,
+promoter pledges 10, demergers 8, shareholding 6, capex 4, closures 4,
+governance 4, RPTs 4, other 7). One part-2 row was a **wrong-issuer
+record** — a Triveni Engineering power-transmission demerger filed under
+Refex — and was quarantined. No kept id has a non-verbatim quote.
+Also: **the Chemkart evidence gap is closed, and the
 company's stance moved on the evidence.** The BSE-only collector holds no
 Chemkart document after 20 September 2026 — three records said so — but
 the issuer publishes its own filings at `chemkart.com/quarterly-half-yearly-filings/`.
@@ -51,8 +65,11 @@ acquisition, not disclosure — the collector needs a per-issuer site
 check. **Blockers unchanged:** `ALLOW_EVENT_AUTO_PROMOTION` stays False,
 live canonical promotion and the 68-document extraction backlog both
 need the owner, and the owner must still choose the governing v3
-materiality standard (A/B/C; recommendation B or C). The Refex part-2
-dry-run is still running (180 of 213 plans at 12:25 UTC, ~25 s/plan).
+materiality standard (A/B/C; recommendation B or C). With Choice (43),
+GP Eco (31) and Refex (90) all holding promotion-ready id lists — the
+only three companies with in-scope event candidates; UNO Minda,
+Chemplast and Chemkart have none — the queue is ready for the moment
+writes unblock.
 
 **Earlier this evening: Last updated:** 2026-11-07 evening (`fe90f62` in the research
 worktree, read-only). **Six of the eight six-company documents that the
@@ -227,8 +244,12 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`d36e6df`** (2026-11-07
-  late evening, read-only: Chemkart's FY2026 audited and H1 FY2027
+  `feature/direct-event-extractor`, HEAD **`019009e`** (2026-11-07
+  late evening, read-only: the Refex chain completed — 488 plans in two
+  disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
+  manual review of the 91 part-2 rows, one wrong-issuer record caught;
+  prior **`d36e6df`** the same evening, read-only: Chemkart's FY2026
+  audited and H1 FY2027
   reviewed results retrieved from the issuer's own site and read — the
   collector had no Chemkart document after 20 Sep 2026 — giving the
   CFO/PAT path +16% → −13.9% → **−83%**, three recorded contradictions
