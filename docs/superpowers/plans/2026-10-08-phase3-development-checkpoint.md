@@ -19,7 +19,52 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 (fc3f308, read-only: concall intelligence from the only two Q2 FY2027 transcripts in the corpus with every commitment origin-tagged; the Refex "beaten margin" verdict withdrawn as a wind-segment vs stand-alone-company conflation; Choice's NHIS terms, PCR 24.73% and 5x ambition adjudicated in governance §16; six calls stated with falsification tests; Chemkart FY2026 accounts obtained at grade C — CFO −₹3 cr on ₹19.7 cr PAT, CCC 119 days, H1 FY2027 revenue ₹206 cr (+99%) — and two promotion sets validated (Choice 43, GP Eco 31) with live promotion and the 68-document extraction backlog both owner-blocked. Session dates corrected from 2026-11-08 to the commit timestamps — see the dating note in Session Recovery State. Choice Q2 FY27 transcript read and every 4-6 Nov six-company filing classified (efb8969, read-only): three of four CONCALL rows are pointer letters, the transcript was read from the company's public URL, Chemplast published no Q2 transcript by 7 Nov (audio only), the call gives no NPA or provision figure and does not repeat the 5x ambition, and the NHIS CCPS conversion is stated as "after 3 years" with the ratio still undetermined; no stance change. GP Eco KMP/AR read (4373fa5, read-only): resignation letters read from the stored PDF and hash-matched (reasons given are formulas), the successor CFO is named with no appointment date anywhere in 93 GPECO documents, and the FY2026 annual report's own KMP table keeps the departed CFO, keeps a resigned director and omits the serving one, contradicting the 6 Aug Reg. 30 filing on Jain's designation and date. V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed); UNO Minda's ₹1,415 cr headline expansion reconciled as a subset of the ₹5,287 cr tracker (rows 12-15, sunroof row 16), with TGSIN Q4 FY2029 and Hosur Q1 FY2029 the longest-dated SOPs); UNO Minda's 5 Nov press release read hash-verified (H1 owners' PAT ₹716 cr; further ₹85 cr sunroof capex; no numeric guidance) and the Q1 FY2027 PAT row corrected to ₹296 cr; UNO Minda 5 Nov board outcomes read hash-verified — Nitesh Minda as CEO-Designate SCS (Giridharan's retirement date undisclosed), sunroof DPR ₹85 cr / 2,91,000 units p.a. debt-and-accrual funded, limited review unmodified; Refex preferential-issue record read (five CARE MA reports through 4 Nov 2026, the 7 May 2026 forfeiture disclosure, FY2026 AR Reg 32(7A) and the 24th AGM notice): Issue 2's ₹392.07 cr warrant balance was never paid and ₹130.69 cr was forfeited, the ₹85 cr capex object ended 4.1% spent while working capital absorbed ₹96 cr more than a pro-rata allocation, and the MA recorded twice that no approval for the consequent object-clause change had been shared — while Issue 1's much smaller ₹19.07 cr capex reallocation DID take a special resolution; ₹35 cr of Issue 1 proceeds sits in an 11% ICD with Rudra Securities; the SEBI ₹10 lakh UPSI penalty on Anil Jain and the Dec-2025 income-tax search are now in the Refex scorecard)
+**Last updated:** 2026-11-07 evening (`fe90f62` in the research
+worktree, read-only). **Six of the eight six-company documents that the
+4–6 November sweep registered with zero extraction units were fetched
+and read, hash-verified, through a new read-only tool** —
+`scripts/direct_event_extractor/fetch_drive_evidence.py` resolves
+document → `document_content.sha256` → `document_storage_location.storage_key`,
+downloads through the existing read-only Drive OAuth and **refuses any
+payload whose SHA-256 differs from the recorded one**; no database row
+is written. Findings: **UNO Minda's Q2/H1 FY2027 statutory results**
+(governance §18.1, research §4.1) — consolidated revenue ₹6,655.4 cr
++38.3% and owners' PAT ₹419.7 cr +38.1%, but **standalone PAT only
++16.0%** and **H1 standalone +4.0%**; consolidated EBITDA margin 11.02%
+= **+73 bp on Q1 but −44 bp on Q2 FY2026** (−108 bp for H1), so the
+scorecard's "margin test met" is restated as **half met**; the release's
+"+32% H1 PAT" is against a *normalised* ₹543 cr base versus reported
+₹594.7 cr (+20.3%); valuation re-anchored 62.9x FY26 / 52.6x annualised
+H1 / 44.8x annualised Q2 / 11.0x Sept-26 book. **Refex's Q2 FY2027
+Monitoring Agency Report** (§18.2) — the ₹220 cr issue's capex object
+was cut from ₹19.68 cr to **₹0.62 cr** by the 24th AGM, **₹35.00 cr**
+remains unspent on an **11% inter-corporate deposit with Rudra
+Securities and Capital**, and the same CARE report says "Deviation:
+**Nil**" on one page and "as per Offer Document: **No**" on the next.
+**Concall coverage is now closed against company sources**: UNO's call
+was rescheduled 16:00 → **15:30 IST** by a 1 Nov filing (not a
+third-party claim) and its audio was filed at 19:49 IST with no
+transcript; **Chemplast's own transcript page lists audio only for Q2
+FY2027** — the first quarter since FY2022 Q1 without text — so both
+companies' Q2 words are a disclosure choice, not an acquisition failure.
+The remaining two of the eight are procedural cover letters. Also this
+evening: the **Refex part-1 manual review is complete** (83 of 150
+PROMOTE candidates quarantined by rule family, one cluster
+representative preserved per family — `manual_decisions_refex_part1_20261107.json`),
+and the part-2 dry-run is still running (213 candidates, ~50 planned at
+15:32; no resume flag, ~25 s/plan). **Blockers unchanged:**
+`ALLOW_EVENT_AUTO_PROMOTION` stays False, live canonical promotion and
+the 68-document extraction backlog both need the owner — the harness
+denies any command naming the live DB as a write target — and the owner
+must still choose the governing v3 materiality standard (A/B/C in
+`EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md` §7; recommendation
+B or C). Net effect on the mandate: **the six recommendations no longer
+rest on a missing document for UNO Minda or Refex**; the next work is to
+finish the Refex chain (combine part-1 + part-2 logs → single triage →
+audit → decisions → `commit_ids_refex_20261107.json`) so that, when the
+owner unblocks writes, all four companies are queued.
+
+**Earlier the same day: Last updated:** 2026-11-07 (fc3f308, read-only: concall intelligence from the only two Q2 FY2027 transcripts in the corpus with every commitment origin-tagged; the Refex "beaten margin" verdict withdrawn as a wind-segment vs stand-alone-company conflation; Choice's NHIS terms, PCR 24.73% and 5x ambition adjudicated in governance §16; six calls stated with falsification tests; Chemkart FY2026 accounts obtained at grade C — CFO −₹3 cr on ₹19.7 cr PAT, CCC 119 days, H1 FY2027 revenue ₹206 cr (+99%) — and two promotion sets validated (Choice 43, GP Eco 31) with live promotion and the 68-document extraction backlog both owner-blocked. Session dates corrected from 2026-11-08 to the commit timestamps — see the dating note in Session Recovery State. Choice Q2 FY27 transcript read and every 4-6 Nov six-company filing classified (efb8969, read-only): three of four CONCALL rows are pointer letters, the transcript was read from the company's public URL, Chemplast published no Q2 transcript by 7 Nov (audio only), the call gives no NPA or provision figure and does not repeat the 5x ambition, and the NHIS CCPS conversion is stated as "after 3 years" with the ratio still undetermined; no stance change. GP Eco KMP/AR read (4373fa5, read-only): resignation letters read from the stored PDF and hash-matched (reasons given are formulas), the successor CFO is named with no appointment date anywhere in 93 GPECO documents, and the FY2026 annual report's own KMP table keeps the departed CFO, keeps a resigned director and omits the serving one, contradicting the 6 Aug Reg. 30 filing on Jain's designation and date. V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed); UNO Minda's ₹1,415 cr headline expansion reconciled as a subset of the ₹5,287 cr tracker (rows 12-15, sunroof row 16), with TGSIN Q4 FY2029 and Hosur Q1 FY2029 the longest-dated SOPs); UNO Minda's 5 Nov press release read hash-verified (H1 owners' PAT ₹716 cr; further ₹85 cr sunroof capex; no numeric guidance) and the Q1 FY2027 PAT row corrected to ₹296 cr; UNO Minda 5 Nov board outcomes read hash-verified — Nitesh Minda as CEO-Designate SCS (Giridharan's retirement date undisclosed), sunroof DPR ₹85 cr / 2,91,000 units p.a. debt-and-accrual funded, limited review unmodified; Refex preferential-issue record read (five CARE MA reports through 4 Nov 2026, the 7 May 2026 forfeiture disclosure, FY2026 AR Reg 32(7A) and the 24th AGM notice): Issue 2's ₹392.07 cr warrant balance was never paid and ₹130.69 cr was forfeited, the ₹85 cr capex object ended 4.1% spent while working capital absorbed ₹96 cr more than a pro-rata allocation, and the MA recorded twice that no approval for the consequent object-clause change had been shared — while Issue 1's much smaller ₹19.07 cr capex reallocation DID take a special resolution; ₹35 cr of Issue 1 proceeds sits in an 11% ICD with Rudra Securities; the SEBI ₹10 lakh UPSI penalty on Anil Jain and the Dec-2025 income-tax search are now in the Refex scorecard)
 added read-only (pledge promise now dated: acquisition-linked
 ~Rs 400-450 cr in 3-5 months; NCLT demerger listed 11 Nov 2026; growth
 20-25%; GST demand Rs 29.32 cr vacated, income-tax addition remanded).
@@ -147,7 +192,14 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`fc3f308`** (`fc3f308`, 2026-11-07
+  `feature/direct-event-extractor`, HEAD **`fe90f62`** (2026-11-07
+  evening, read-only: `fetch_drive_evidence.py` added and used to read
+  six of the eight six-company 4–6 November documents hash-verified —
+  UNO's Q2/H1 statutory results with the standalone/consolidated split
+  and the normalised-base discrepancy, and Refex's Monitoring Agency
+  Report with the ₹0.62 cr capex object and the ₹35 cr 11% ICD — plus
+  the company-confirmed UNO call reschedule and Chemplast audio-only Q2;
+  see "Last updated" above); prior **`fc3f308`**, 2026-11-07
   concall intelligence, Choice adjudication, six calls and Chemkart
   FY2026 — `CONCALL_INTELLIGENCE_2026-11-07.md` reads the only two Q2
   FY2027 transcripts in the corpus (Refex 29 Oct, Choice 3 Nov) in full
