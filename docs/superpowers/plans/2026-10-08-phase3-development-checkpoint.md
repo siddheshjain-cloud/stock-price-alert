@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed); UNO Minda's ₹1,415 cr headline expansion reconciled as a subset of the ₹5,287 cr tracker (rows 12-15, sunroof row 16), with TGSIN Q4 FY2029 and Hosur Q1 FY2029 the longest-dated SOPs); UNO Minda's 5 Nov press release read hash-verified (H1 owners' PAT ₹716 cr; further ₹85 cr sunroof capex; no numeric guidance) and the Q1 FY2027 PAT row corrected to ₹296 cr)
+**Last updated:** 2026-11-08 (V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed); UNO Minda's ₹1,415 cr headline expansion reconciled as a subset of the ₹5,287 cr tracker (rows 12-15, sunroof row 16), with TGSIN Q4 FY2029 and Hosur Q1 FY2029 the longest-dated SOPs); UNO Minda's 5 Nov press release read hash-verified (H1 owners' PAT ₹716 cr; further ₹85 cr sunroof capex; no numeric guidance) and the Q1 FY2027 PAT row corrected to ₹296 cr; UNO Minda 5 Nov board outcomes read hash-verified — Nitesh Minda as CEO-Designate SCS (Giridharan's retirement date undisclosed), sunroof DPR ₹85 cr / 2,91,000 units p.a. debt-and-accrual funded, limited review unmodified)
 added read-only (pledge promise now dated: acquisition-linked
 ~Rs 400-450 cr in 3-5 months; NCLT demerger listed 11 Nov 2026; growth
 20-25%; GST demand Rs 29.32 cr vacated, income-tax addition remanded).
@@ -134,7 +134,9 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`d41087b`** (`d41087b`
+  `feature/direct-event-extractor`, HEAD **`cf13bb7`** (`cf13bb7`
+  UNO Minda 5 Nov board outcomes — succession, sunroof DPR, clean
+  limited review; `d41087b`
   UNO Minda 5 Nov press release read (hash-verified) and the Q1 FY2027
   PAT row corrected to ₹296 cr; `f0c6e6f`
   UNO Minda ₹1,415 cr headline reconciled to the capex tracker and Q2
@@ -519,6 +521,19 @@ test evidence are authoritative over this note if they ever disagree
   full corrected §7's Q1 FY2027 PAT row from ₹355 cr to **₹296 cr**
   (₹355 cr is PBT before the JV share); 296 + 420 = ₹716 cr ties the
   quarters to the half-year, and Q1 QoQ is +42%, not +18%.
+
+  **Then on 2026-11-08 (`cf13bb7`, read-only): UNO Minda board outcomes
+  in the same filing.** SHA-256 `f453f5f0…` and 11,277,283 bytes match
+  the stored content record. Governance: Nitesh Minda (promoter family)
+  appointed CEO (Designate)-SCS Domain effective 5 Nov 2026, to succeed
+  A.G. Giridharan on retirement — transition stated, **retirement date
+  not disclosed**; Kartikeya Joshi to CMO; Amit Jain to new Group CGTO.
+  Sunroof DPR: existing capacity 1,45,000 units p.a. with utilisation
+  nil (SOP March 2027); ₹85 cr adds 2,91,000 units p.a., SOP Q2 FY2028,
+  financed by **term loan and internal accrual**. Auditor's limited
+  review (S.R. Batliboi) is unmodified; two partnership firms were not
+  reviewed by any auditor and carry Nil share; the FY2026 audit-trail
+  qualification is not re-tested by a quarterly review.
 
   **Also 2026-11-08 (`f6c1ad6`, read-only): Refex Q2 FY2027
   business-level revenue** (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
