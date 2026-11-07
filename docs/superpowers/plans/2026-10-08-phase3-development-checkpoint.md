@@ -134,7 +134,8 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`07d5914`** (`07d5914`
+  `feature/direct-event-extractor`, HEAD **`0fba951`** (`0fba951`
+  GP Eco board-vs-auditor ICFR contradiction; `07d5914`
   Chemkart evidence chain and EX-020 re-verification (25533bcc holds
   ITD Cementation's AR); `48a2228`
   UNO Minda statutory segment note and audit-trail status; `ea815a1`
@@ -450,6 +451,22 @@ test evidence are authoritative over this note if they ever disagree
   trail — and the report contains **no remediation statement**, so the
   Dec-2025 partial fix was the only one delivered. No stance change
   (constructive on operations, cautious on ~63x owners' earnings).
+
+  **Then on 2026-11-08 (`0fba951`, read-only): GP Eco board vs auditor
+  on ICFR.** Read from the FY2026 annual-report PDF in the local
+  evidence store: the Directors' Report §39 (PDF p39) affirms the
+  internal financial controls "were operating effectively throughout
+  the financial year" and states the statutory auditors gave an
+  "unmodified opinion" with no material weakness, while the auditor's
+  own Annexure B repeats, in both the standalone (p54) and consolidated
+  (p79) IFC reports, that the Company "needs more strong ERP system for
+  recovery from debtors and stock management … need more effectiveness
+  as at 31st March 2026". The board's summary of its auditor is
+  therefore not supportable — a disclosure-integrity flag on top of the
+  control weakness. The CARO audit-trail paragraph (3(i)(vi)) is clean.
+  Refex's ash & coal revenue gap is re-classified as **not disclosed in
+  any filing held** (the 28 Oct investor presentation is order-based
+  only: ₹346 cr new orders, ₹1,721 cr orderbook, 46.4% FY22–FY26 CAGR).
 
   **Then on 2026-11-08 (`07d5914`, read-only): Chemkart evidence chain
   and the residual EX-020 document defect.** Every one of Chemkart's 87
