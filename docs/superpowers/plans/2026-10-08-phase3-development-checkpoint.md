@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 late evening (`b677598` in the research
+**Last updated:** 2026-11-07 late evening (`28e7718` in the research
 worktree, read-only). **The Refex validation chain is complete.** The
 part-2 dry-run finished (213 candidates, 152 AUTO_PROMOTE, 61
 NEEDS_REVIEW); combined with the 275-plan first run the Refex pool is
@@ -70,6 +70,16 @@ GP Eco (31) and Refex (90) all holding promotion-ready id lists — the
 only three companies with in-scope event candidates; UNO Minda,
 Chemplast and Chemkart have none — the queue is ready for the moment
 writes unblock.
+
+**Fresh-context handover:** `docs/direct_event_extractor/SPARS_CONTEXT_HANDOVER_20261107.md`
+(research worktree, `28e7718`) states the whole resume position in one
+file: 164 promotion-ready ids with artefact references, the closed write
+gate, the 68-document backlog, the pending migration `20261104_01` (DB at
+`20261020_05`), the Refex 45.99%-vs-51.37% provenance gap, the Chemkart
+rating reconciliation, the confirmed but uncorrected GP Eco
+document-identity defect, and the read-only Final Pre-Promotion
+Consistency Audit as the next directive. Nothing was written, promoted
+or migrated.
 
 **Earlier this evening: Last updated:** 2026-11-07 evening (`fe90f62` in the research
 worktree, read-only). **Six of the eight six-company documents that the
