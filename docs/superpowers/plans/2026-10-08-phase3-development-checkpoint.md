@@ -19,7 +19,7 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update
+**Last updated:** 2026-11-08 (V3 PRE-DRAW REGRESSION FAILED: the 127-case benchmark re-scored live on the shipped code at precision 0.9516 / recall 0.6277 (TP 59 / FP 3 / FN 35 / TN 30) against the recorded anchor 0.9651 / 0.8830, so consistency condition 5 fails; G1-G4 pass. 35 verdicts changed -- 31 demotions, all frozen-PASS, and 4 recoveries -- and the decisive finding is a conflict between two materiality standards already on record: the frozen rubric treats measurable guidance and pending items as material, while the v2/v3 rubric requires a completed action. No code can satisfy both; the best achievable score under the v3 rubric is 0.9639/0.8511. Two genuine defects were fixed in 5bc43a9 (table-header unit grounding; a wider completed-action carve-out; 8 new tests; tests/pipeline 331 passed/2 skipped) and the artifacts committed in 6ae0260. NO v3 sample is drawn, NO promotion begins, ALLOW_EVENT_AUTO_PROMOTION stays False; the owner must choose the governing materiality standard (options A/B/C in EVENT_BENCHMARK_V3_REGRESSION_RESULT_2026-11-08.md section 7; recommendation B or C). Refex Q2 FY2027 governance/commitment update; Choice H1 FY2027 cash flow and NBFC asset quality (promise to rebuild PCR before growing the book was reversed); UNO Minda single-segment statutory note and un-remediated audit trail; Chemkart evidence chain re-verified and EX-020 re-confirmed (0 unsuperseded wrong-issuer GP Eco facts), with the second GPECO_AR_FY2025 row found to hold ITD Cementation's annual report (EX-020 item 4 re-diagnosed; remediation needs owner approval); Chemkart post-listing gap is structural (BSE SME, no BSE-SME feed)
 added read-only (pledge promise now dated: acquisition-linked
 ~Rs 400-450 cr in 3-5 months; NCLT demerger listed 11 Nov 2026; growth
 20-25%; GST demand Rs 29.32 cr vacated, income-tax addition remanded).
@@ -134,7 +134,9 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`48a2228`** (`48a2228`
+  `feature/direct-event-extractor`, HEAD **`07d5914`** (`07d5914`
+  Chemkart evidence chain and EX-020 re-verification (25533bcc holds
+  ITD Cementation's AR); `48a2228`
   UNO Minda statutory segment note and audit-trail status; `ea815a1`
   Choice H1 FY2027 cash flow and NBFC asset quality; `f6c1ad6`
   Refex Q2 FY2027 business-level revenue; `8bf5a2b`
@@ -448,6 +450,25 @@ test evidence are authoritative over this note if they ever disagree
   trail — and the report contains **no remediation statement**, so the
   Dec-2025 partial fix was the only one delivered. No stance change
   (constructive on operations, cautious on ~63x owners' earnings).
+
+  **Then on 2026-11-08 (`07d5914`, read-only): Chemkart evidence chain
+  and the residual EX-020 document defect.** Every one of Chemkart's 87
+  facts cites document `bcdecb12…`, titled `GPECO_AR_FY2025` but
+  holding Chemkart's 10 Jul 2025 prospectus (units 1–3 read
+  "CHEMKART INDIA LIMITED … Prospectus"); the `fin.raw.*` values were
+  re-checked against the prospectus text, so the numbers are Chemkart's
+  despite the title. **EX-020 re-verified independently:** of the 52 GP
+  Eco facts citing that document, **none is unsuperseded** (39 carry
+  superseding rows equal to the real AR — revenue 246.4348, PAT
+  10.3649; 13 carry RETRACTED supersession records). **New finding:**
+  the second GPECO-titled row `25533bcc…` (same NSE URL, 304 units) is
+  **ITD Cementation India Limited's annual report** — 169 units mention
+  ITD, none mentions GP Eco, 0 facts — so EX-020 item 4 is not a missing
+  Drive file but a third company's filing stored under a GP Eco row;
+  remediation needs owner approval (Level 3). A read-only sweep of all
+  410 documents created in the same acquisition window found no other
+  wrong-issuer document. The Chemkart post-listing-disclosure gap is
+  **structural** (BSE SME; no CHEMKART-titled document in the corpus).
 
   **Also 2026-11-08 (`f6c1ad6`, read-only): Refex Q2 FY2027
   business-level revenue** (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md`
