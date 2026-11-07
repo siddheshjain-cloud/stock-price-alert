@@ -134,7 +134,13 @@ test evidence are authoritative over this note if they ever disagree
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`599bde2`** (`599bde2`
+  `feature/direct-event-extractor`, HEAD **`398bc08`** (`398bc08`
+  GP Eco preferential-issue review (§12) — ₹123.76 cr headline vs
+  ₹44.07 cr of cash (35.6%), ₹77.72 cr due on warrants by Jan 2028,
+  a 2.2%-of-capital warrant mandate, post-EGM allottee churn, CFO and
+  director resignations, an NSE ₹5,900 fine, and the Welkin order
+  restated −37%; it also corrects §9.1's mis-description of the Reg. 32
+  report as an IPO-proceeds statement; `599bde2`
   Refex preferential-issue utilisation review (§11) — three shortfalls,
   three approval routes, the 4.1%-spent capex object, the ₹35 cr Rudra
   ICD, the promoter-group lapsed warrants, and the SEBI/IT overlays;
@@ -550,6 +556,49 @@ test evidence are authoritative over this note if they ever disagree
   that guidance remains unscorable. The segment-split gap is partially
   closed; Q2 EBITDA margin fell 190 bps YoY and Q2 PAT growth lagged
   revenue by 23 points.
+
+  **Then on 2026-11-08 (`398bc08`, read-only): GP Eco preferential
+  issue — the raise was ₹44.07 cr of cash, not ₹123.76 cr**
+  (`SIX_COMPANY_MANAGEMENT_GOVERNANCE_2026-11-07.md` §12). The July
+  2026 preferential issue proposed **5,53,000 equity shares and
+  28,47,000 warrants** for ₹123.76 cr (equity ₹20.13 cr + warrants
+  ₹103.63 cr). The EGM passed on 20 June; a 1 July committee
+  "took note of" a corrected list (5,36,000 shares); the 18 July
+  allotment delivered **4,99,000 shares — ₹18.16 cr cash**, so the
+  issue raised **₹44.07 cr and fully utilised it** on 100% working
+  capital, while **₹77.72 cr (62.8%) is a warrant promise due by
+  January 2028** (25% paid, ₹77.72 cr due on exercise). The Acuité
+  Reg. 32 report (30 Oct 2026) is the **first monitoring-agency report
+  for this issue**, not an IPO-proceeds statement; §9.1 had described
+  it as the latter and is corrected explicitly in the document. Its
+  "no deviation" finding is accurate for cash received and silent on
+  the unpaid 62.8%. **Governance readings:** the warrant resolution
+  (Res. 02, ₹103.63 cr) carried on **2,58,000 votes = 2.2% of the
+  capital** after the allottees abstained, against 63.2% turnout on
+  the equity/s.180 resolutions; 54,000 proposed shares (₹1.97 cr) were
+  never allotted and 32 named proposed allottees became 20 actual
+  ones; pricing was at the Reg. 164/166A floor (₹364 vs ₹363.86, CA
+  certificate); the two offshore allottees (Minerva, Al Maha, 6.00%
+  each) have undisclosed-UBO chains recorded. **KMP turnover** in the
+  same window: CFO Neha Garg resigned effective 31 July (reason not
+  disclosed), director Akhilesh Kumar Jain likewise, WTD Pavitra
+  Khandelvwal from 13 Aug was disclosed only on 21 Sep; no successor
+  CFO appointment exists anywhere in the corpus. **Welkin order
+  restated:** ₹121.92 cr (10 Jul 2025) → **₹76.85 cr** (29 Aug 2026),
+  −37%, which the company attributes to scope/design changes ("not
+  comparable on a like-for-like basis"); recorded as restated, not as
+  a miss. Funding leg changed materially: borrowings ₹109.0 →
+  ₹214.7 cr (+₹105.7 cr) against the ₹44.07 cr equity; promoter FD
+  59.24% → 52.80% on the company's own table (53.25% ex-ESOPs). The
+  tests are H2 FY2027 operating cash flow and the ₹77.72 cr exercise.
+  No canonical write, no promotion, `ALLOW_EVENT_AUTO_PROMOTION`
+  still `False`.
+
+  **Next research step:** Chemplast Q2 FY2027 presentation (38 units)
+  for capex and guidance and the Karaikal fire impact, then Choice Q2
+  FY2027 presentation (45 units) for AUM and asset-quality guidance,
+  then the two GP Eco gaps (reason for the CFO resignation; successor
+  appointment date — §12.7).
 
   **Open item (unchanged):** no web application launcher exists on
   this machine (no service, no running `main.py`, no scheduled task);
