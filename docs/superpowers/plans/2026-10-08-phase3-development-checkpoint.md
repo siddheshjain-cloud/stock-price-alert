@@ -147,12 +147,13 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`efb8969`** (`efb8969`, 2026-11-07
+  `feature/direct-event-extractor`, HEAD **`e79fe2c`** (`e79fe2c`, 2026-11-07
   Choice Q2 FY27 transcript read from the company's own URL and every
   4–6 Nov six-company filing classified — three of four CONCALL rows are
-  pointer letters, Chemplast published no Q2 transcript as of 7 Nov, and
-  the "5x in three years" ambition is absent for a
-  third document (§15); `4373fa5`, 2026-11-07
+  pointer letters, Chemplast published no Q2 transcript as of 7 Nov, a
+  corpus-wide search finds the "5x in three years" ambition stated in
+  exactly one Choice document (the 9 July press release) and repeated
+  nowhere, including the transcript; `4373fa5`, 2026-11-07
   GP Eco resignation letters read from the stored PDF and the FY2026
   annual report read in full — the stated causes are formulas, the
   successor CFO is named with no appointment date in any of 93
