@@ -19,14 +19,15 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (`f115f8d` in the research worktree):
-**R1+R2+R3 complete; 0 FAIL in the 164-id ledger.** Staging code fixed,
-153 candidate dates backfilled, all 41 active facts repaired in place,
-the six undated promotion documents dated from their own text with all
-54 citing candidates reset, and the four non-verbatim quotes replaced
-with literal unit text under a substring gate. Ledger 159 PASS /
-5 REVIEW / 0 FAIL; remaining REVIEWs are 3 layout-normalisation quotes
-and the 2 GP Eco issuer ids (R4). The
+**Last updated:** 2026-11-08 (`8bdcd0b` in the research worktree):
+**R1+R2+R3+R4 complete; the 164-id ledger is 164 PASS / 0 REVIEW /
+0 FAIL.** Staging code fixed, 153 candidate dates backfilled, all 41
+active facts repaired in place, the six undated promotion documents
+dated from their own text with all 54 citing candidates reset, the four
+non-verbatim quotes replaced with literal unit text, and all five
+REVIEWs closed in a checked-in decision record (3 layout-normalisation
+quotes; 2 resolution-table issuer ids established by their document
+header). Next: R5 canonical metadata and R6/R7 documentation. The
 audit itself (`88cc765`) remains **NO-GO; the promotion gate stays
 closed.** All 164 promotion-ready
 ids ledgered at 144 PASS / 5 REVIEW / 15 FAIL (4 non-verbatim quotes,
@@ -275,21 +276,25 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`f115f8d`** (2026-11-08:
-  **R1+R2+R3 complete; 0 FAIL in the 164-id ledger.** Both staging
-  scripts take the as-of from the document date and refuse undated
-  documents (`d8c19ee`); 153 candidates backfilled and all 41 active
-  facts repaired in place (`a3ad48b`); the six NULL-date promotion
-  documents dated from their own text and all 54 candidates citing them
-  reset to filing dates + FY quarters (`f91a0be`); the four non-verbatim
-  quotes (`d7c3badf`, `839b9057`, `cdc5a969`, `e1d9d939`) replaced with
-  literal unit text under a substring gate (`f115f8d`); 0 staging-date
-  as-of, 0 UNKNOWN periods, 0 verbatim FAIL. Ledger now **159 PASS / 5
-  REVIEW / 0 FAIL** — remaining REVIEWs are 3 layout-normalisation
-  quotes and the 2 GP Eco issuer ids (R4). New **EX-024** filed.
-  Prior `88cc765`: **Final Pre-Promotion &
-  Canonical Integrity Audit — verdict NO-GO; the promotion gate stays
-  closed.** The 164 ids are
+  `feature/direct-event-extractor`, HEAD **`8bdcd0b`** (2026-11-08:
+  **R1-R4 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0
+  FAIL.** Both staging scripts take the as-of from the document date
+  and refuse undated documents (`d8c19ee`); 153 candidates backfilled
+  and all 41 active facts repaired in place (`a3ad48b`); the six
+  NULL-date promotion documents dated from their own text and all 54
+  candidates citing them reset to filing dates + FY quarters
+  (`f91a0be`); the four non-verbatim quotes (`d7c3badf`, `839b9057`,
+  `cdc5a969`, `e1d9d939`) replaced with literal unit text under a
+  substring gate (`f115f8d`); the five remaining REVIEWs dispositioned
+  in `logs/direct_event_extractor/review_decisions_20261108.json`
+  (`8bdcd0b`) — 3 layout-normalisation quotes and 2 resolution-table
+  issuer ids whose own document header names GP Eco / NSE GPECO — and
+  reported as ACCEPTED without changing any check rule. New **EX-024**
+  filed. Next: R5 canonical metadata (`bcdecb12`, `25533bcc`,
+  `64319a0d`, 12 Refex derivations, UNO Minda fork) and R6/R7
+  documentation. The audit that opened this remediation is **`88cc765`:
+  Final Pre-Promotion & Canonical Integrity Audit — verdict NO-GO; the
+  promotion gate stays closed.** The 164 ids were
   144 PASS / 5 REVIEW / 15 FAIL; the 15 FAIL are 4 non-verbatim quotes
   (`d7c3badf`, `839b9057`, `cdc5a969`, `e1d9d939`) and 11 NULL-date
   events. The decisive finding is systemic: **all 164 candidates carry
