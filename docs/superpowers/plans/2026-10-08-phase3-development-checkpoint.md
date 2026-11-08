@@ -19,28 +19,42 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (`8bdcd0b` in the research worktree):
-**R1+R2+R3+R4 complete; the 164-id ledger is 164 PASS / 0 REVIEW /
-0 FAIL.** Staging code fixed, 153 candidate dates backfilled, all 41
-active facts repaired in place, the six undated promotion documents
-dated from their own text with all 54 citing candidates reset, the four
-non-verbatim quotes replaced with literal unit text, and all five
-REVIEWs closed in a checked-in decision record (3 layout-normalisation
-quotes; 2 resolution-table issuer ids established by their document
-header). Next: R5 canonical metadata and R6/R7 documentation. The
-audit itself (`88cc765`) remains **NO-GO; the promotion gate stays
-closed.** All 164 promotion-ready
-ids ledgered at 144 PASS / 5 REVIEW / 15 FAIL (4 non-verbatim quotes,
-11 undated events), and every one of the 164 carries the staging date
-(2026-11-04/05) as `proposed_as_of_date` because both staging scripts
-pass `date.today()` — new EX-023; 41 active facts already carry it.
-Canonical base: 882 facts / 836 active, 0 duplicate or contradictory
-groups, 0 broken evidence, derivation or supersession references; GP Eco
-contamination contained in values but its document attribution is still
-wrong (bcdecb12, 25533bcc, 64319a0d); Refex 45.99%/51.37% reconciled;
-governance 120/134 unsupported; `20261104_01_watchlist_entry` compatible
-and not applied. Evidence:
-`docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`.
+**Last updated:** 2026-11-08 (`4d6a550` in the research worktree):
+**R1-R5 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0 FAIL.**
+R5 repaired the canonical metadata in one transaction after a
+checksummed snapshot (`instance/trading_app.db.bak_pre_canonical_metadata_20261108`,
+SHA-256 `116872c06b6d331c91b181dbbbda9b3dc161d28a5104f0a4c6ab6e9cc990ec99`;
+every old/new pair in `logs/direct_event_extractor/canonical_metadata_repair_20261108.json`):
+`bcdecb12` is the **Chemkart India IPO prospectus dated 2025-07-10**
+(retitled, type OTHER, wrong NSE URL cleared, still linked to Chemkart);
+`25533bcc` is **ITD Cementation's Annual Report 2024-25 dated 2025-06-20**
+(retitled, unlinked from GP Eco; 0 facts, 0 evidence rows and 0 candidate
+findings referenced it); `64319a0d` (GP Eco's genuine AR) is dated
+2025-06-19 from its own secretarial audit report; the four open identity
+flags (1 MISLABELED_COMPANY, 3 DUPLICATE_TITLE) are resolved in writing;
+**12 `fact_derivation` rows + 26 inputs** now record the Refex derived
+facts (EBITDA v1/v2, cash capex, FCF, accrual capex) with arithmetic
+re-checked against the component facts; the **UNO Minda fork is
+linearised** (`33396d84` 306.72 -> `50e7ddf6` 296 -> `8cbc4386` 296).
+Scan after the write: multi-successor 0, duplicate groups 0, 0 Refex
+derived facts without a formula, 0 open identity flags on GP Eco, every
+referential-integrity counter 0; 882 facts / 835 active. New **EX-025**
+filed for the NSE URL that was recorded against two non-GP-Eco files.
+Still open: **R6/R7 documentation** (governance 120/134; GP Eco defect
+document), 135 active facts behind five other NULL-date documents (UNO
+AR + Q1 FY2027 presentation, IKIO AR + presentation, Asian Energy
+concall), the Refex EBITDA v1->v2 metric decision (formula now recorded;
+v2 currently supersedes v1, so no active v1 row exists), and the EX-025
+ingest gate. The promotion gate stays closed
+(`ALLOW_EVENT_AUTO_PROMOTION=False`); the audit `88cc765` verdict remains
+**NO-GO** until the owner approves promotion. Evidence:
+`docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
+commits `4d6a550` (R5), `8bdcd0b` (R4), `f115f8d` (R3), `f91a0be` (R2),
+`d8c19ee` + `a3ad48b` (R1). Earlier, 2026-11-08 (`8bdcd0b`): R1-R4
+complete; staging code fixed, 153 candidate dates backfilled, all 41
+active facts repaired, six documents dated, four quotes made literal,
+five REVIEWs dispositioned.
+
 Earlier, 2026-11-07 late evening (`28e7718` in the research
 worktree, read-only): **the Refex validation chain is complete.** The
 part-2 dry-run finished (213 candidates, 152 AUTO_PROMOTE, 61
@@ -98,8 +112,8 @@ writes unblock.
 file: 164 promotion-ready ids with artefact references, the closed write
 gate, the 68-document backlog, the pending migration `20261104_01` (DB at
 `20261020_05`), the Refex 45.99%-vs-51.37% provenance gap, the Chemkart
-rating reconciliation, the confirmed but uncorrected GP Eco
-document-identity defect, and the read-only Final Pre-Promotion
+rating reconciliation, the GP Eco document-identity
+defect, corrected 2026-11-08 in R5, and the read-only Final Pre-Promotion
 Consistency Audit as the next directive. Nothing was written, promoted
 or migrated.
 
@@ -276,44 +290,40 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`8bdcd0b`** (2026-11-08:
-  **R1-R4 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0
-  FAIL.** Both staging scripts take the as-of from the document date
-  and refuse undated documents (`d8c19ee`); 153 candidates backfilled
-  and all 41 active facts repaired in place (`a3ad48b`); the six
-  NULL-date promotion documents dated from their own text and all 54
-  candidates citing them reset to filing dates + FY quarters
-  (`f91a0be`); the four non-verbatim quotes (`d7c3badf`, `839b9057`,
-  `cdc5a969`, `e1d9d939`) replaced with literal unit text under a
-  substring gate (`f115f8d`); the five remaining REVIEWs dispositioned
-  in `logs/direct_event_extractor/review_decisions_20261108.json`
-  (`8bdcd0b`) — 3 layout-normalisation quotes and 2 resolution-table
-  issuer ids whose own document header names GP Eco / NSE GPECO — and
-  reported as ACCEPTED without changing any check rule. New **EX-024**
-  filed. Next: R5 canonical metadata (`bcdecb12`, `25533bcc`,
-  `64319a0d`, 12 Refex derivations, UNO Minda fork) and R6/R7
-  documentation. The audit that opened this remediation is **`88cc765`:
-  Final Pre-Promotion & Canonical Integrity Audit — verdict NO-GO; the
-  promotion gate stays closed.** The 164 ids were
-  144 PASS / 5 REVIEW / 15 FAIL; the 15 FAIL are 4 non-verbatim quotes
-  (`d7c3badf`, `839b9057`, `cdc5a969`, `e1d9d939`) and 11 NULL-date
-  events. The decisive finding is systemic: **all 164 candidates carry
-  the staging date (2026-11-04/05) as `proposed_as_of_date`** because
-  both staging scripts pass `date.today()`, and promotion copies it into
-  the fact; 41 active facts already carry it (40 with source documents
-  74–631 days older). Canonical base: 882 facts/836 active, 0
-  duplicate or contradictory groups, 0 broken evidence/derivation/
-  supersession references; GP Eco/Chemkart contamination contained
-  (no active GP Eco fact holds Chemkart values) but `bcdecb12` still
-  carries GPECO title/URL/date, `25533bcc` (ITD Cementation content,
-  0 facts) is still linked to GP Eco with an open flag, and the genuine
-  AR `64319a0d` has no document date. Refex 45.99% vs 51.37% reconciled
-  arithmetically (same denominator, +41,74,607 encumbered shares at
-  29 Oct 2026); governance 120/134 unsupported (139/153 and 105/119
-  verified); `20261104_01_watchlist_entry` compatible and inert, not
-  applied. New **EX-023** filed. Full evidence in
+  `feature/direct-event-extractor`, HEAD **`4d6a550`** (2026-11-08:
+  **R1-R5 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0
+  FAIL.** Both staging scripts take the as-of from the document date and
+  refuse undated documents (`d8c19ee`); 153 candidates backfilled and all
+  41 active facts repaired in place (`a3ad48b`); the six NULL-date
+  promotion documents dated from their own text and all 54 candidates
+  citing them reset (`f91a0be`); the four non-verbatim quotes replaced
+  with literal unit text under a substring gate (`f115f8d`); the five
+  remaining REVIEWs dispositioned in
+  `logs/direct_event_extractor/review_decisions_20261108.json`
+  (`8bdcd0b`) and reported as ACCEPTED without changing any check rule.
+  **R5 (`4d6a550`):** `bcdecb12` retitled `CHEMKART_IPO_PROSPECTUS_2025`
+  (type OTHER, date 2025-07-10, wrong NSE URL cleared, still linked to
+  Chemkart); `25533bcc` retitled `ITD_CEMENTATION_AR_FY2025` (date
+  2025-06-20, unlinked from GP Eco); `64319a0d` dated 2025-06-19; four
+  identity flags resolved with notes; 12 `fact_derivation` rows + 26
+  inputs for the Refex derived facts, arithmetic re-checked before
+  insertion; UNO Minda fork linearised (`33396d84` -> `50e7ddf6` ->
+  `8cbc4386`). Pre-write snapshot
+  `instance/trading_app.db.bak_pre_canonical_metadata_20261108`
+  (SHA-256 `116872c0...ec99`), every old/new pair in
+  `canonical_metadata_repair_20261108.json`. Scan after: multi-successor
+  0, duplicate groups 0, 0 derived facts without a formula, 0 open GP Eco
+  flags, referential integrity all 0, 882 facts / 835 active. New
+  **EX-025** (NSE URL recorded against two non-GP-Eco files). Next: R6
+  governance counts (120/134 vs verified 139/153 and 105/119) and R7 GP
+  Eco defect document; then the five remaining NULL-date documents (135
+  active facts), the Refex EBITDA v1-vs-v2 metric decision, and the
+  EX-025 ingest gate. The audit that opened this remediation is
+  **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
+  NO-GO; the promotion gate stays closed.** Full evidence in
   `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-  commits `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
+  commits `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
+  `d8c19ee`, `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
   manual review of the 91 part-2 rows, one wrong-issuer record caught;
