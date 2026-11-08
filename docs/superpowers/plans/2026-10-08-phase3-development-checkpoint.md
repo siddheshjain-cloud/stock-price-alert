@@ -19,8 +19,22 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-07 late evening (`28e7718` in the research
-worktree, read-only). **The Refex validation chain is complete.** The
+**Last updated:** 2026-11-08 (`88cc765` in the research worktree,
+read-only): **final pre-promotion and canonical integrity audit —
+verdict NO-GO; the promotion gate stays closed.** All 164 promotion-ready
+ids ledgered at 144 PASS / 5 REVIEW / 15 FAIL (4 non-verbatim quotes,
+11 undated events), and every one of the 164 carries the staging date
+(2026-11-04/05) as `proposed_as_of_date` because both staging scripts
+pass `date.today()` — new EX-023; 41 active facts already carry it.
+Canonical base: 882 facts / 836 active, 0 duplicate or contradictory
+groups, 0 broken evidence, derivation or supersession references; GP Eco
+contamination contained in values but its document attribution is still
+wrong (bcdecb12, 25533bcc, 64319a0d); Refex 45.99%/51.37% reconciled;
+governance 120/134 unsupported; `20261104_01_watchlist_entry` compatible
+and not applied. Evidence:
+`docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`.
+Earlier, 2026-11-07 late evening (`28e7718` in the research
+worktree, read-only): **the Refex validation chain is complete.** The
 part-2 dry-run finished (213 candidates, 152 AUTO_PROMOTE, 61
 NEEDS_REVIEW); combined with the 275-plan first run the Refex pool is
 **488 plans, 365 AUTO_PROMOTE**, triaged as one log (a new
@@ -254,7 +268,28 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`b677598`** (2026-11-07
+  `feature/direct-event-extractor`, HEAD **`88cc765`** (2026-11-08,
+  read-only: **Final Pre-Promotion & Canonical Integrity Audit executed;
+  verdict NO-GO — the promotion gate stays closed.** The 164 ids are
+  144 PASS / 5 REVIEW / 15 FAIL; the 15 FAIL are 4 non-verbatim quotes
+  (`d7c3badf`, `839b9057`, `cdc5a969`, `e1d9d939`) and 11 NULL-date
+  events. The decisive finding is systemic: **all 164 candidates carry
+  the staging date (2026-11-04/05) as `proposed_as_of_date`** because
+  both staging scripts pass `date.today()`, and promotion copies it into
+  the fact; 41 active facts already carry it (40 with source documents
+  74–631 days older). Canonical base: 882 facts/836 active, 0
+  duplicate or contradictory groups, 0 broken evidence/derivation/
+  supersession references; GP Eco/Chemkart contamination contained
+  (no active GP Eco fact holds Chemkart values) but `bcdecb12` still
+  carries GPECO title/URL/date, `25533bcc` (ITD Cementation content,
+  0 facts) is still linked to GP Eco with an open flag, and the genuine
+  AR `64319a0d` has no document date. Refex 45.99% vs 51.37% reconciled
+  arithmetically (same denominator, +41,74,607 encumbered shares at
+  29 Oct 2026); governance 120/134 unsupported (139/153 and 105/119
+  verified); `20261104_01_watchlist_entry` compatible and inert, not
+  applied. New **EX-023** filed. Full evidence in
+  `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
+  commits `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
   manual review of the 91 part-2 rows, one wrong-issuer record caught;
@@ -358,14 +393,17 @@ uses the true date.
   `37bae00` promotion-batch reconciliation, `ac030a2` EX-021 retry,
   from `484181a`).
 
-  **Canonical-promotion position at HEAD `fc3f308` (2026-11-07).** Two
-  companies have completed the full chain — dry-run → ruleset triage →
-  manual id-level review → final disposition:
-  **Choice PROMOTE 43 / QUARANTINE 62** (`final_choice_20261107.json`)
-  and **GP Eco PROMOTE 31 / QUARANTINE 88** (`final_gpeco_20261107.json`),
-  every quarantine carrying a stated reason; **Refex part 2 running**
-  (213 remaining ids, `promotion_dryrun_refex_part2_20261107.json`),
-  triage pending. No live canonical write has been made —
+  **Canonical-promotion position at HEAD `88cc765` (2026-11-08).** All
+  three companies have completed the full chain — dry-run → ruleset
+  triage → manual id-level review → final disposition:
+  **Choice PROMOTE 43 / QUARANTINE 62** (`final_choice_20261107.json`),
+  **GP Eco PROMOTE 31 / QUARANTINE 88** (`final_gpeco_20261107.json`)
+  and **Refex PROMOTE 90 / QUARANTINE 275**
+  (`final_refex_20261107.json`), 164 ids in total, every quarantine
+  carrying a stated reason. The 2026-11-08 final audit returned
+  **NO-GO on all 164** (see the HEAD entry above and EX-023); the
+  owner's exact gate-opening conditions are in audit report §8. No live
+  canonical write has been made —
   `ALLOW_EVENT_AUTO_PROMOTION` is still `False` in the module, and the
   harness denies every command that names the live DB
   (`instance/trading_app.db`) with "[Modify Shared Resources]", so both
