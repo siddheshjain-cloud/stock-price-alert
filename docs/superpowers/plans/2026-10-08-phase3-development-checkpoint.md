@@ -19,8 +19,10 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (`782e050` in the research worktree):
-**R1-R8 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0 FAIL.**
+**Last updated:** 2026-11-08 (`2d2c375` in the research worktree):
+**R1-R8 complete and the audited set promoted — 157 of the 164 ids are
+now facts; the 7 that failed the independent semantic check remain
+OPEN. The 164-id ledger is 164 PASS / 0 REVIEW / 0 FAIL.**
 R5 repaired the canonical metadata in one transaction after a
 checksummed snapshot (`instance/trading_app.db.bak_pre_canonical_metadata_20261108`,
 SHA-256 `116872c06b6d331c91b181dbbbda9b3dc161d28a5104f0a4c6ab6e9cc990ec99`;
@@ -59,15 +61,29 @@ already the correct event/reporting dates. Snapshot
 `logs/direct_event_extractor/null_doc_date_repair_20261108.json`.
 Scan after: `NULL_DOCUMENT_DATE_WITH_FACTS` empty (`document_issues`
 0), **0 active facts behind an undated document** (47 documents remain
-undated and back none). Still open: the Refex EBITDA v1->v2 metric
-decision (formula now recorded; v2 currently supersedes v1, so no active
-v1 row exists), the EX-025 ingest gate, and the disposition of the
-unlinked ITD row `25533bcc` (register to ITD or remove). The promotion
-gate stays closed
-(`ALLOW_EVENT_AUTO_PROMOTION=False`); the audit `88cc765` verdict remains
-**NO-GO** until the owner approves promotion. Evidence:
+undated and back none). **Audited-set promotion (`29b6e95`):** on the
+owner's instruction ("promote first without expanding scope if
+audited") the scope was fixed to the 164 ids in
+`final_choice/gpeco/refex_20261107.json` and nothing else. Dry run:
+157 AUTO_PROMOTE / 7 NEEDS_REVIEW. Only the 157 inspected ids entered
+the commit run; all passed re-verification and were promoted (Choice
+40, GP Eco 30, Refex 87). Active facts 835 -> **992**; every new fact
+carries its event date; 157 `PROMOTED` decisions. Pre-write snapshot
+`instance/trading_app.db.bak_pre_audited_promotion_20261108` (SHA-256
+`97a99936...e1e81d`), logs in
+`promotion_lane_audited157_commit_20261108.json`. The **7 refusals**
+remain OPEN and were not forced (`1f69b9bc`, `4e2fb0b3`, `dfe8fc5e`,
+`08bfb23e`, `ed97750d`, `879926f3`, `31996228`). Post-promotion scan: 0
+duplicate groups (the event key now includes the event date — two
+same-type pairs were distinct events), `document_issues` 0,
+referential integrity all 0. The module gate is unchanged
+(`ALLOW_EVENT_AUTO_PROMOTION=False`); the override was per-run only.
+Still open: the Refex EBITDA v1->v2 metric decision (formula now
+recorded; v2 currently supersedes v1, so no active v1 row exists), the
+EX-025 ingest gate, and the disposition of the unlinked ITD row
+`25533bcc` (register to ITD or remove). Evidence:
 `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-commits `782e050` + `a3f8fae` (R8), `0660cbb` (R7), `df0509e` (R6),
+commits `2d2c375` + `29b6e95` (promotion), `782e050` + `a3f8fae` (R8), `0660cbb` (R7), `df0509e` (R6),
 `4d6a550` (R5), `8bdcd0b` (R4),
 `f115f8d` (R3), `f91a0be` (R2), `d8c19ee` + `a3ad48b` (R1). Earlier,
 2026-11-08 (`8bdcd0b`): R1-R4 complete; staging code fixed, 153 candidate dates
@@ -310,8 +326,9 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`782e050`** (2026-11-08:
-  **R1-R8 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0
+  `feature/direct-event-extractor`, HEAD **`2d2c375`** (2026-11-08:
+  **R1-R8 complete and the audited set promoted — 157 of 164 ids are
+  facts; 7 remain OPEN. The 164-id ledger is 164 PASS / 0 REVIEW / 0
   FAIL.** Both staging scripts take the as-of from the document date and
   refuse undated documents (`d8c19ee`); 153 candidates backfilled and all
   41 active facts repaired in place (`a3ad48b`); the six NULL-date
@@ -345,12 +362,24 @@ uses the true date.
   `document_date` written, snapshot
   `trading_app.db.bak_pre_null_doc_dates_20261108`; scan
   `document_issues` 0 and 0 active facts behind an undated document.
+  **Audited-set promotion (`29b6e95`):** owner-approved, scope fixed to
+  the 164 audited ids; dry run 157 AUTO_PROMOTE / 7 NEEDS_REVIEW, and
+  only those 157 inspected ids were committed (Choice 40, GP Eco 30,
+  Refex 87); all 157 passed re-verification. Active facts 835 -> 992;
+  new facts carry their event dates; snapshot
+  `trading_app.db.bak_pre_audited_promotion_20261108` (SHA-256
+  `97a99936...e1e81d`). The 7 refusals remain OPEN, unforced. Scan
+  after: 0 duplicate groups, document_issues 0, referential integrity
+  all 0; the event duplicate key now includes the event date. Module
+  gate unchanged (`ALLOW_EVENT_AUTO_PROMOTION=False`).
   Next: the Refex EBITDA v1-vs-v2 metric decision, the EX-025 ingest
-  gate, and the ITD row `25533bcc` (register or remove). The audit that opened this remediation is
+  gate, the ITD row `25533bcc` (register or remove), and the 7 unpromoted
+  ids on review. The audit that opened this remediation is
   **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
-  NO-GO; the promotion gate stays closed.** Full evidence in
+  NO-GO at audit; remediation completed and the audited set promoted
+  under owner instruction.** Full evidence in
   `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-  commits `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
+  commits `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
   `d8c19ee`, `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
