@@ -19,12 +19,14 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (`7cfed0f` in the research worktree):
-**as-of remediation complete (R1+R2)** — staging code fixed, 153
-candidate dates backfilled, all 41 active facts repaired in place, the
-six undated promotion documents dated from their own text and all 54
-candidates citing them reset, 0 UNKNOWN periods. Ledger 155 PASS /
-5 REVIEW / 4 FAIL; only the four non-verbatim quotes remain (R3). The
+**Last updated:** 2026-11-08 (`f115f8d` in the research worktree):
+**R1+R2+R3 complete; 0 FAIL in the 164-id ledger.** Staging code fixed,
+153 candidate dates backfilled, all 41 active facts repaired in place,
+the six undated promotion documents dated from their own text with all
+54 citing candidates reset, and the four non-verbatim quotes replaced
+with literal unit text under a substring gate. Ledger 159 PASS /
+5 REVIEW / 0 FAIL; remaining REVIEWs are 3 layout-normalisation quotes
+and the 2 GP Eco issuer ids (R4). The
 audit itself (`88cc765`) remains **NO-GO; the promotion gate stays
 closed.** All 164 promotion-ready
 ids ledgered at 144 PASS / 5 REVIEW / 15 FAIL (4 non-verbatim quotes,
@@ -273,15 +275,18 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`7cfed0f`** (2026-11-08:
-  **as-of remediation complete (R1+R2).** Both staging scripts take the
-  as-of from the document date and refuse undated documents
-  (`d8c19ee`); 153 candidates backfilled and all 41 active facts
-  repaired in place (`a3ad48b`); the six NULL-date promotion documents
-  dated from their own text and all 54 candidates citing them reset to
-  filing dates + FY quarters (`f91a0be`); 0 staging-date as-of in
-  canonical data and 0 UNKNOWN periods. Ledger now **155 PASS / 5
-  REVIEW / 4 FAIL** — only the four non-verbatim quotes remain (R3).
+  `feature/direct-event-extractor`, HEAD **`f115f8d`** (2026-11-08:
+  **R1+R2+R3 complete; 0 FAIL in the 164-id ledger.** Both staging
+  scripts take the as-of from the document date and refuse undated
+  documents (`d8c19ee`); 153 candidates backfilled and all 41 active
+  facts repaired in place (`a3ad48b`); the six NULL-date promotion
+  documents dated from their own text and all 54 candidates citing them
+  reset to filing dates + FY quarters (`f91a0be`); the four non-verbatim
+  quotes (`d7c3badf`, `839b9057`, `cdc5a969`, `e1d9d939`) replaced with
+  literal unit text under a substring gate (`f115f8d`); 0 staging-date
+  as-of, 0 UNKNOWN periods, 0 verbatim FAIL. Ledger now **159 PASS / 5
+  REVIEW / 0 FAIL** — remaining REVIEWs are 3 layout-normalisation
+  quotes and the 2 GP Eco issuer ids (R4). New **EX-024** filed.
   Prior `88cc765`: **Final Pre-Promotion &
   Canonical Integrity Audit — verdict NO-GO; the promotion gate stays
   closed.** The 164 ids are
