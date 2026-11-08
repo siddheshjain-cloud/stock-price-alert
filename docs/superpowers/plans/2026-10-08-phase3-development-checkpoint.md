@@ -19,9 +19,12 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (`88cc765` in the research worktree,
-read-only): **final pre-promotion and canonical integrity audit —
-verdict NO-GO; the promotion gate stays closed.** All 164 promotion-ready
+**Last updated:** 2026-11-08 (`46c4698` in the research worktree):
+**as-of remediation started on owner instruction** — staging code fixed,
+153 of 164 candidate dates backfilled, all 41 active facts repaired in
+place, canonical staging-date count now 0; 11 undated candidates wait on
+R2. The audit itself (`88cc765`) remains **NO-GO; the promotion gate
+stays closed.** All 164 promotion-ready
 ids ledgered at 144 PASS / 5 REVIEW / 15 FAIL (4 non-verbatim quotes,
 11 undated events), and every one of the 164 carries the staging date
 (2026-11-04/05) as `proposed_as_of_date` because both staging scripts
@@ -268,9 +271,17 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`88cc765`** (2026-11-08,
-  read-only: **Final Pre-Promotion & Canonical Integrity Audit executed;
-  verdict NO-GO — the promotion gate stays closed.** The 164 ids are
+  `feature/direct-event-extractor`, HEAD **`46c4698`** (2026-11-08:
+  **remediation started on the owner's instruction — as-of dates
+  fixed.** Both staging scripts now take the as-of from the document
+  date and refuse undated documents (`d8c19ee`); 153 of the 164
+  promotion-ready candidates backfilled and all 41 active facts
+  repaired in place (`a3ad48b`, owner-approved metadata correction,
+  checksum-verified snapshot); canonical scan now reports 0
+  staging-date as-of. The 11 undated candidates remain blocked on
+  document dating (R2). Prior `88cc765`: **Final Pre-Promotion &
+  Canonical Integrity Audit — verdict NO-GO; the promotion gate stays
+  closed.** The 164 ids are
   144 PASS / 5 REVIEW / 15 FAIL; the 15 FAIL are 4 non-verbatim quotes
   (`d7c3badf`, `839b9057`, `cdc5a969`, `e1d9d939`) and 11 NULL-date
   events. The decisive finding is systemic: **all 164 candidates carry
