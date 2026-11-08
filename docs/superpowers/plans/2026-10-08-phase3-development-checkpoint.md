@@ -19,12 +19,14 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (`46c4698` in the research worktree):
-**as-of remediation started on owner instruction** — staging code fixed,
-153 of 164 candidate dates backfilled, all 41 active facts repaired in
-place, canonical staging-date count now 0; 11 undated candidates wait on
-R2. The audit itself (`88cc765`) remains **NO-GO; the promotion gate
-stays closed.** All 164 promotion-ready
+**Last updated:** 2026-11-08 (`7cfed0f` in the research worktree):
+**as-of remediation complete (R1+R2)** — staging code fixed, 153
+candidate dates backfilled, all 41 active facts repaired in place, the
+six undated promotion documents dated from their own text and all 54
+candidates citing them reset, 0 UNKNOWN periods. Ledger 155 PASS /
+5 REVIEW / 4 FAIL; only the four non-verbatim quotes remain (R3). The
+audit itself (`88cc765`) remains **NO-GO; the promotion gate stays
+closed.** All 164 promotion-ready
 ids ledgered at 144 PASS / 5 REVIEW / 15 FAIL (4 non-verbatim quotes,
 11 undated events), and every one of the 164 carries the staging date
 (2026-11-04/05) as `proposed_as_of_date` because both staging scripts
@@ -271,15 +273,16 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`46c4698`** (2026-11-08:
-  **remediation started on the owner's instruction — as-of dates
-  fixed.** Both staging scripts now take the as-of from the document
-  date and refuse undated documents (`d8c19ee`); 153 of the 164
-  promotion-ready candidates backfilled and all 41 active facts
-  repaired in place (`a3ad48b`, owner-approved metadata correction,
-  checksum-verified snapshot); canonical scan now reports 0
-  staging-date as-of. The 11 undated candidates remain blocked on
-  document dating (R2). Prior `88cc765`: **Final Pre-Promotion &
+  `feature/direct-event-extractor`, HEAD **`7cfed0f`** (2026-11-08:
+  **as-of remediation complete (R1+R2).** Both staging scripts take the
+  as-of from the document date and refuse undated documents
+  (`d8c19ee`); 153 candidates backfilled and all 41 active facts
+  repaired in place (`a3ad48b`); the six NULL-date promotion documents
+  dated from their own text and all 54 candidates citing them reset to
+  filing dates + FY quarters (`f91a0be`); 0 staging-date as-of in
+  canonical data and 0 UNKNOWN periods. Ledger now **155 PASS / 5
+  REVIEW / 4 FAIL** — only the four non-verbatim quotes remain (R3).
+  Prior `88cc765`: **Final Pre-Promotion &
   Canonical Integrity Audit — verdict NO-GO; the promotion gate stays
   closed.** The 164 ids are
   144 PASS / 5 REVIEW / 15 FAIL; the 15 FAIL are 4 non-verbatim quotes
