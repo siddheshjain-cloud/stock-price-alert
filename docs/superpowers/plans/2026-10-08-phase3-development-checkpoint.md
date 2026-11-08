@@ -19,8 +19,8 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (`0660cbb` in the research worktree):
-**R1-R7 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0 FAIL.**
+**Last updated:** 2026-11-08 (`782e050` in the research worktree):
+**R1-R8 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0 FAIL.**
 R5 repaired the canonical metadata in one transaction after a
 checksummed snapshot (`instance/trading_app.db.bak_pre_canonical_metadata_20261108`,
 SHA-256 `116872c06b6d331c91b181dbbbda9b3dc161d28a5104f0a4c6ab6e9cc990ec99`;
@@ -46,15 +46,29 @@ handover and the audit; no artifact ever contained 120/134 (deltas 19
 and 15). R7 refreshed the GP Eco defect note to "remediation applied;
 metadata outstanding" with the 39/57/96 reconciliation, and recorded
 `6a2a2441` as layout-verbatim and `e1d9d939` as the fifth non-verbatim
-id. Still open: 135 active facts behind five other NULL-date documents
-(UNO AR + Q1 FY2027 presentation, IKIO AR + presentation, Asian Energy
-concall), the Refex EBITDA v1->v2 metric decision (formula now recorded;
-v2 currently supersedes v1, so no active v1 row exists), and the EX-025
-ingest gate. The promotion gate stays closed
+id. **R8 (`a3f8fae`, `782e050`)** dated the five documents behind the
+last **135 active facts with no `document_date`**, each date verified as
+literal text before the write: UNO Minda AR **2026-07-03** (70 facts),
+UNO Minda Q1 FY2027 presentation **2026-08-04** (49), IKIO AR
+**2026-05-02** (8), Asian Energy concall **2026-05-26** (4), IKIO Q1
+FY2027 presentation **2026-08-11** (4). Only `document_date` changed;
+candidates and facts were left alone because their as-of dates were
+already the correct event/reporting dates. Snapshot
+`instance/trading_app.db.bak_pre_null_doc_dates_20261108` (SHA-256
+`5b3cffb4...cfe8a2`); old/new pairs in
+`logs/direct_event_extractor/null_doc_date_repair_20261108.json`.
+Scan after: `NULL_DOCUMENT_DATE_WITH_FACTS` empty (`document_issues`
+0), **0 active facts behind an undated document** (47 documents remain
+undated and back none). Still open: the Refex EBITDA v1->v2 metric
+decision (formula now recorded; v2 currently supersedes v1, so no active
+v1 row exists), the EX-025 ingest gate, and the disposition of the
+unlinked ITD row `25533bcc` (register to ITD or remove). The promotion
+gate stays closed
 (`ALLOW_EVENT_AUTO_PROMOTION=False`); the audit `88cc765` verdict remains
 **NO-GO** until the owner approves promotion. Evidence:
 `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-commits `0660cbb` (R7), `df0509e` (R6), `4d6a550` (R5), `8bdcd0b` (R4),
+commits `782e050` + `a3f8fae` (R8), `0660cbb` (R7), `df0509e` (R6),
+`4d6a550` (R5), `8bdcd0b` (R4),
 `f115f8d` (R3), `f91a0be` (R2), `d8c19ee` + `a3ad48b` (R1). Earlier,
 2026-11-08 (`8bdcd0b`): R1-R4 complete; staging code fixed, 153 candidate dates
 backfilled, all 41 active facts repaired, six documents dated, four
@@ -296,8 +310,8 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`4d6a550`** (2026-11-08:
-  **R1-R5 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0
+  `feature/direct-event-extractor`, HEAD **`782e050`** (2026-11-08:
+  **R1-R8 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0
   FAIL.** Both staging scripts take the as-of from the document date and
   refuse undated documents (`d8c19ee`); 153 candidates backfilled and all
   41 active facts repaired in place (`a3ad48b`); the six NULL-date
@@ -324,13 +338,19 @@ uses the true date.
   (`df0509e`): governance §17 and the handover now show 139/153 (ready
   pool) and 105/119 (AUTO_PROMOTE); 120/134 had no artifact. R7 done
   (`0660cbb`): GP Eco defect note and handover refreshed to the post-R5
-  state. Next: the five remaining NULL-date documents (135
-  active facts), the Refex EBITDA v1-vs-v2 metric decision, and the
-  EX-025 ingest gate. The audit that opened this remediation is
+  state. R8 done (`a3f8fae`, `782e050`): the five NULL-date documents
+  behind 135 active facts dated from their own text (UNO AR
+  2026-07-03, UNO presentation 2026-08-04, IKIO AR 2026-05-02, Asian
+  concall 2026-05-26, IKIO presentation 2026-08-11), only
+  `document_date` written, snapshot
+  `trading_app.db.bak_pre_null_doc_dates_20261108`; scan
+  `document_issues` 0 and 0 active facts behind an undated document.
+  Next: the Refex EBITDA v1-vs-v2 metric decision, the EX-025 ingest
+  gate, and the ITD row `25533bcc` (register or remove). The audit that opened this remediation is
   **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
   NO-GO; the promotion gate stays closed.** Full evidence in
   `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-  commits `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
+  commits `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
   `d8c19ee`, `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
