@@ -19,8 +19,8 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-08 (`4d6a550` in the research worktree):
-**R1-R5 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0 FAIL.**
+**Last updated:** 2026-11-08 (`df0509e` in the research worktree):
+**R1-R6 complete; the 164-id ledger is 164 PASS / 0 REVIEW / 0 FAIL.**
 R5 repaired the canonical metadata in one transaction after a
 checksummed snapshot (`instance/trading_app.db.bak_pre_canonical_metadata_20261108`,
 SHA-256 `116872c06b6d331c91b181dbbbda9b3dc161d28a5104f0a4c6ab6e9cc990ec99`;
@@ -40,8 +40,11 @@ Scan after the write: multi-successor 0, duplicate groups 0, 0 Refex
 derived facts without a formula, 0 open identity flags on GP Eco, every
 referential-integrity counter 0; 882 facts / 835 active. New **EX-025**
 filed for the NSE URL that was recorded against two non-GP-Eco files.
-Still open: **R6/R7 documentation** (governance 120/134; GP Eco defect
-document), 135 active facts behind five other NULL-date documents (UNO
+R6 replaced the unsupported 120/134 pool counts with 139/153 (ready
+pool) and 105/119 (AUTO_PROMOTE) in the governance §17 table, the
+handover and the audit; no artifact ever contained 120/134 (deltas 19
+and 15). Still open: **R7 documentation** (GP Eco defect document), 135
+active facts behind five other NULL-date documents (UNO
 AR + Q1 FY2027 presentation, IKIO AR + presentation, Asian Energy
 concall), the Refex EBITDA v1->v2 metric decision (formula now recorded;
 v2 currently supersedes v1, so no active v1 row exists), and the EX-025
@@ -49,10 +52,11 @@ ingest gate. The promotion gate stays closed
 (`ALLOW_EVENT_AUTO_PROMOTION=False`); the audit `88cc765` verdict remains
 **NO-GO** until the owner approves promotion. Evidence:
 `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-commits `4d6a550` (R5), `8bdcd0b` (R4), `f115f8d` (R3), `f91a0be` (R2),
-`d8c19ee` + `a3ad48b` (R1). Earlier, 2026-11-08 (`8bdcd0b`): R1-R4
-complete; staging code fixed, 153 candidate dates backfilled, all 41
-active facts repaired, six documents dated, four quotes made literal,
+commits `df0509e` (R6), `4d6a550` (R5), `8bdcd0b` (R4), `f115f8d` (R3),
+`f91a0be` (R2), `d8c19ee` + `a3ad48b` (R1). Earlier, 2026-11-08
+(`8bdcd0b`): R1-R4 complete; staging code fixed, 153 candidate dates
+backfilled, all 41 active facts repaired, six documents dated, four
+quotes made literal,
 five REVIEWs dispositioned.
 
 Earlier, 2026-11-07 late evening (`28e7718` in the research
@@ -314,15 +318,16 @@ uses the true date.
   `canonical_metadata_repair_20261108.json`. Scan after: multi-successor
   0, duplicate groups 0, 0 derived facts without a formula, 0 open GP Eco
   flags, referential integrity all 0, 882 facts / 835 active. New
-  **EX-025** (NSE URL recorded against two non-GP-Eco files). Next: R6
-  governance counts (120/134 vs verified 139/153 and 105/119) and R7 GP
+  **EX-025** (NSE URL recorded against two non-GP-Eco files). R6 done
+  (`df0509e`): governance §17 and the handover now show 139/153 (ready
+  pool) and 105/119 (AUTO_PROMOTE); 120/134 had no artifact. Next: R7 GP
   Eco defect document; then the five remaining NULL-date documents (135
   active facts), the Refex EBITDA v1-vs-v2 metric decision, and the
   EX-025 ingest gate. The audit that opened this remediation is
   **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
   NO-GO; the promotion gate stays closed.** Full evidence in
   `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-  commits `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
+  commits `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
   `d8c19ee`, `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
