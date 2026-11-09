@@ -19,14 +19,13 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-09 (`09c0290` in the research worktree): **the
+**Last updated:** 2026-11-09 (`526053c` in the research worktree): **the
 seven unpromoted ids were reviewed and dispositioned. `1f69b9bc`,
 `4e2fb0b3` and `879926f3` were corrected (category for two, source-exact
-wording for the third) and pass the semantic gate 3/3 in a fresh dry
-run; the commit run was blocked by the environment permission
-classifier, so they remain candidates and no fact was added. `dfe8fc5e`,
-`08bfb23e` and `ed97750d` are quarantined (left OPEN, no decision row);
-`31996228` awaits an LOI taxonomy decision.** The 2026-11-08 position
+wording for the third), passed the semantic gate 3/3, and were promoted
+(active facts 992 -> 995). `dfe8fc5e`, `08bfb23e` and `ed97750d` are
+quarantined (left OPEN, no decision row); `31996228` awaits an LOI
+taxonomy decision.** The 2026-11-08 position
 was: R1-R8 complete and the audited set promoted — 157 of the 164 ids
 are now facts; the 7 that failed the independent semantic check
 remained OPEN. The 164-id ledger is 164 PASS / 0 REVIEW / 0 FAIL.
@@ -333,11 +332,10 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`09c0290`** (2026-11-09:
-  **three of the seven open ids corrected and re-verified 3/3, live
-  promotion blocked by the environment classifier; three quarantined;
-  one taxonomy decision. 2026-11-08: R1-R8 complete and the audited set
-  promoted — 157 of 164 ids are facts. The 164-id ledger is 164 PASS / 0 REVIEW / 0
+  `feature/direct-event-extractor`, HEAD **`526053c`** (2026-11-09:
+  **three of the seven open ids corrected, re-verified 3/3 and promoted;
+  three quarantined; one taxonomy decision. 2026-11-08: R1-R8 complete
+  and the audited set promoted — 157 of 164 ids are facts. The 164-id ledger is 164 PASS / 0 REVIEW / 0
   FAIL.** Both staging scripts take the as-of from the document date and
   refuse undated documents (`d8c19ee`); 153 candidates backfilled and all
   41 active facts repaired in place (`a3ad48b`); the six NULL-date
@@ -381,7 +379,7 @@ uses the true date.
   after: 0 duplicate groups, document_issues 0, referential integrity
   all 0; the event duplicate key now includes the event date. Module
   gate unchanged (`ALLOW_EVENT_AUTO_PROMOTION=False`).
-  **Seven open ids dispositioned (`09c0290`, 2026-11-09):** after the
+  **Seven open ids dispositioned (`09c0290`, `526053c`, 2026-11-09):** after the
   read-only review, `1f69b9bc` (`partnership_jv` -> `event.other`, SEBI
   NOC), `4e2fb0b3` (description restated in the filing's own words:
   94% subscribed and paid, "undersubscription"), and `879926f3`
@@ -389,19 +387,23 @@ uses the true date.
   quote, period, as-of and evidence untouched. Snapshot
   `trading_app.db.bak_pre_open_ids_fix_20261109` (SHA-256
   `08c95193...07593`). Fresh dry run over exactly those three:
-  **3 AUTO_PROMOTE / 0 NEEDS_REVIEW**. The `--commit` run was **blocked
-  by the environment permission classifier**; no fact was promoted and
-  the three remain candidates. `dfe8fc5e` (VRPL, not Refex, is the
+  **3 AUTO_PROMOTE / 0 NEEDS_REVIEW**. The owner then executed the
+  bounded commit (`promote_open3.sh`); all three passed re-verification
+  and were promoted: `5604fb0c` (Choice AIF NOC), `775f7b89` (Refex IPO
+  undersubscription), `e151fa8f` (Choice Fintoo/Glory acquisition).
+  Active facts 992 -> **995** (1,042 total); 0 duplicate groups, 0
+  orphan evidence links, none supersedes another. One snippet-level
+  issuer-name advisory on the Refex fact, of the kind already accepted
+  for 70 audited-batch facts. `dfe8fc5e` (VRPL, not Refex, is the
   contracting party), `08bfb23e` (already covered by the scheme facts
   and misdated at the later filing) and `ed97750d` (H1 bidder, not an
   award) are quarantined: left OPEN with reasons, no decision row
   (the only non-promoted decision is terminal REJECTED). `31996228`
   (GP Eco/Oriana LOI) awaits a taxonomy decision — the base already
   promotes two LOIs as `event.order_contract`.
-  Next: the live promotion of the three corrected candidates (owner must
-  run the blocked command or grant the permission), the LOI taxonomy
-  decision, the Refex EBITDA v1-vs-v2 metric decision, the EX-025 ingest
-  gate, and the ITD row `25533bcc` (register or remove). The audit that opened this remediation is
+  Next: the LOI taxonomy decision (`31996228`), the Refex EBITDA
+  v1-vs-v2 metric decision, the EX-025 ingest gate, and the ITD row
+  `25533bcc` (register or remove). The audit that opened this remediation is
   **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
   NO-GO at audit; remediation completed and the audited set promoted
   under owner instruction.** Full evidence in
