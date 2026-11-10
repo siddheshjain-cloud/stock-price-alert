@@ -19,13 +19,17 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-09 (`526053c` in the research worktree): **the
-seven unpromoted ids were reviewed and dispositioned. `1f69b9bc`,
-`4e2fb0b3` and `879926f3` were corrected (category for two, source-exact
+**Last updated:** 2026-11-10 (`b0621d4` in the research worktree): **the
+GP Eco/Oriana 500 MW LOI (`31996228`) was verified read-only — the
+filing is an LOI disclosed under the Reg 30 order/contract annexure,
+no order-book or backlog computation consumes `event.*` facts, and the
+base already files two LOIs under `event.order_contract` — then
+promoted under the owner's LOI-as-order-contract rule (fact `4ab081e6`;
+active facts 995 -> 996).** The 2026-11-09 position was: `1f69b9bc`,
+`4e2fb0b3` and `879926f3` corrected (category for two, source-exact
 wording for the third), passed the semantic gate 3/3, and were promoted
-(active facts 992 -> 995). `dfe8fc5e`, `08bfb23e` and `ed97750d` are
-quarantined (left OPEN, no decision row); `31996228` awaits an LOI
-taxonomy decision.** The 2026-11-08 position
+(active facts 992 -> 995); `dfe8fc5e`, `08bfb23e` and `ed97750d` were
+quarantined (left OPEN, no decision row). The 2026-11-08 position
 was: R1-R8 complete and the audited set promoted — 157 of the 164 ids
 are now facts; the 7 that failed the independent semantic check
 remained OPEN. The 164-id ledger is 164 PASS / 0 REVIEW / 0 FAIL.
@@ -332,9 +336,11 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`526053c`** (2026-11-09:
-  **three of the seven open ids corrected, re-verified 3/3 and promoted;
-  three quarantined; one taxonomy decision. 2026-11-08: R1-R8 complete
+  `feature/direct-event-extractor`, HEAD **`b0621d4`** (2026-11-10:
+  **the Oriana LOI verified read-only and promoted under the
+  LOI-as-order-contract rule, active facts 996; the remaining three
+  open ids quarantined. 2026-11-09: three of the seven open ids
+  corrected, re-verified 3/3 and promoted. 2026-11-08: R1-R8 complete
   and the audited set promoted — 157 of 164 ids are facts. The 164-id ledger is 164 PASS / 0 REVIEW / 0
   FAIL.** Both staging scripts take the as-of from the document date and
   refuse undated documents (`d8c19ee`); 153 candidates backfilled and all
@@ -398,17 +404,26 @@ uses the true date.
   contracting party), `08bfb23e` (already covered by the scheme facts
   and misdated at the later filing) and `ed97750d` (H1 bidder, not an
   award) are quarantined: left OPEN with reasons, no decision row
-  (the only non-promoted decision is terminal REJECTED). `31996228`
-  (GP Eco/Oriana LOI) awaits a taxonomy decision — the base already
-  promotes two LOIs as `event.order_contract`.
-  Next: the LOI taxonomy decision (`31996228`), the Refex EBITDA
-  v1-vs-v2 metric decision, the EX-025 ingest gate, and the ITD row
-  `25533bcc` (register or remove). The audit that opened this remediation is
+  (the only non-promoted decision is terminal REJECTED).
+  **Oriana LOI (`b0621d4`, 2026-11-10):** `31996228` was verified
+  read-only first — the filing is an LOI disclosed under the Reg 30
+  order/contract annexure (named counterparty Oriana Power; SUNGROW-make
+  300 MW string + 200 MW central inverters; 100% advance payment before
+  dispatch; execution by 31 Mar 2026; no rupee value; the instrument
+  itself is not in the corpus), no order-book or backlog computation
+  consumes `event.*` facts, and two prior LOIs already sit under
+  `event.order_contract`. Under the owner's LOI-as-order-contract rule
+  the bounded commit (`promote_loi.sh`, cap 1) re-verified and promoted
+  it: fact `4ab081e6`, evidence `dbf17e27` (page 1). Active facts
+  995 -> **996** (1,043 total); 0 duplicate groups, 0 orphan evidence
+  links, no same-day GP Eco collision. No new taxonomy was introduced.
+  Next: the Refex EBITDA v1-vs-v2 metric decision, the EX-025 ingest
+  gate, and the ITD row `25533bcc` (register or remove). The audit that opened this remediation is
   **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
   NO-GO at audit; remediation completed and the audited set promoted
   under owner instruction.** Full evidence in
   `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-  commits `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
+  commits `b0621d4`, `7160801`, `526053c`, `09c0290`, `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
   `d8c19ee`, `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
