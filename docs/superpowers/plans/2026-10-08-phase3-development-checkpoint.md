@@ -19,13 +19,16 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-10 (`b0621d4` in the research worktree): **the
-GP Eco/Oriana 500 MW LOI (`31996228`) was verified read-only — the
-filing is an LOI disclosed under the Reg 30 order/contract annexure,
-no order-book or backlog computation consumes `event.*` facts, and the
-base already files two LOIs under `event.order_contract` — then
-promoted under the owner's LOI-as-order-contract rule (fact `4ab081e6`;
-active facts 995 -> 996).** The 2026-11-09 position was: `1f69b9bc`,
+**Last updated:** 2026-11-11 (`2abe82d` in the research worktree): **the
+Refex standalone EBITDA metric was decided — v2 (reported basis,
+excluding other income: 350.0235 / 207.7807) is canonical because it
+reconciles to the company's reported 350.02 / 207.78; v1 stays as
+superseded lineage with its stored formula and the cross-type edge is a
+documented methodology correction. The live state already conformed, so
+no database write was made; the audit section 9 item is closed.** The
+2026-11-10 position was: the GP Eco/Oriana 500 MW LOI (`31996228`) was
+verified read-only and promoted under the owner's LOI-as-order-contract
+rule (fact `4ab081e6`; active facts 995 -> 996). The 2026-11-09 position was: `1f69b9bc`,
 `4e2fb0b3` and `879926f3` corrected (category for two, source-exact
 wording for the third), passed the semantic gate 3/3, and were promoted
 (active facts 992 -> 995); `dfe8fc5e`, `08bfb23e` and `ed97750d` were
@@ -336,8 +339,9 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`b0621d4`** (2026-11-10:
-  **the Oriana LOI verified read-only and promoted under the
+  `feature/direct-event-extractor`, HEAD **`2abe82d`** (2026-11-11:
+  **Refex EBITDA metric decided — v2 canonical, no DB change. 2026-11-10:
+  the Oriana LOI verified read-only and promoted under the
   LOI-as-order-contract rule, active facts 996; the remaining three
   open ids quarantined. 2026-11-09: three of the seven open ids
   corrected, re-verified 3/3 and promoted. 2026-11-08: R1-R8 complete
@@ -417,13 +421,23 @@ uses the true date.
   it: fact `4ab081e6`, evidence `dbf17e27` (page 1). Active facts
   995 -> **996** (1,043 total); 0 duplicate groups, 0 orphan evidence
   links, no same-day GP Eco collision. No new taxonomy was introduced.
-  Next: the Refex EBITDA v1-vs-v2 metric decision, the EX-025 ingest
-  gate, and the ITD row `25533bcc` (register or remove). The audit that opened this remediation is
+  **Refex EBITDA (`2abe82d`, 2026-11-11):** v2 (EBITDA v1 minus other
+  income) is ratified as the canonical standalone metric — it equals the
+  company's reported 350.02 / 207.78, while v1 (380.0452 / 260.2796)
+  exceeds it by exactly other income (30.0217 / 52.4989). v1 stays as
+  superseded lineage with its `fact_derivation` formula; the cross-type
+  edge is a documented methodology correction (same convention as UNO
+  Minda), and no application code references either type by name. The
+  live state already conformed, so **no database write was made**;
+  canonical-scan drift 3 is now explained rather than open. Record:
+  `docs/direct_event_extractor/REFEX_EBITDA_METRIC_DECISION_2026-11-11.md`.
+  Next: the EX-025 ingest gate and the ITD row `25533bcc` (register or
+  remove). The audit that opened this remediation is
   **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
   NO-GO at audit; remediation completed and the audited set promoted
   under owner instruction.** Full evidence in
   `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-  commits `b0621d4`, `7160801`, `526053c`, `09c0290`, `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
+  commits `2abe82d`, `b0621d4`, `7160801`, `526053c`, `09c0290`, `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
   `d8c19ee`, `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
