@@ -19,7 +19,13 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-11 (`2abe82d` in the research worktree): **the
+**Last updated:** 2026-11-11 (`1e291c6` in the research worktree): **the
+EX-025 ingest issuer gate is built — the sheets bridge now checks a
+newly downloaded file's opening pages against the manifest row's issuer
+and quarantines a mismatch before registration (`ISSUER_MISMATCH_QUARANTINED`,
+never registered, batch fails); EX-025 required action 1 is closed and
+only item 2 (the ITD row `25533bcc`, register or remove) remains open.**
+Earlier the same day (`2abe82d`): **the
 Refex standalone EBITDA metric was decided — v2 (reported basis,
 excluding other income: 350.0235 / 207.7807) is canonical because it
 reconciles to the company's reported 350.02 / 207.78; v1 stays as
@@ -91,10 +97,11 @@ duplicate groups (the event key now includes the event date — two
 same-type pairs were distinct events), `document_issues` 0,
 referential integrity all 0. The module gate is unchanged
 (`ALLOW_EVENT_AUTO_PROMOTION=False`); the override was per-run only.
-Still open: the Refex EBITDA v1->v2 metric decision (formula now
-recorded; v2 currently supersedes v1, so no active v1 row exists), the
-EX-025 ingest gate, and the disposition of the unlinked ITD row
-`25533bcc` (register to ITD or remove). Evidence:
+Then still open (both since closed): the Refex EBITDA v1->v2 metric
+decision (settled 2026-11-11, v2 canonical, no DB write) and the EX-025
+ingest gate (built 2026-11-11, `1e291c6`) — leaving the disposition of
+the unlinked ITD row `25533bcc` (register to ITD or remove) as the one
+open EX-025 item. Evidence:
 `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
 commits `2d2c375` + `29b6e95` (promotion), `782e050` + `a3f8fae` (R8), `0660cbb` (R7), `df0509e` (R6),
 `4d6a550` (R5), `8bdcd0b` (R4),
@@ -339,8 +346,10 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`2abe82d`** (2026-11-11:
-  **Refex EBITDA metric decided — v2 canonical, no DB change. 2026-11-10:
+  `feature/direct-event-extractor`, HEAD **`1e291c6`** (2026-11-11:
+  **EX-025 ingest issuer gate built — mispaired files quarantined before
+  registration; 83 bridge tests pass. Earlier the same day (`2abe82d`):
+  Refex EBITDA metric decided — v2 canonical, no DB change. 2026-11-10:
   the Oriana LOI verified read-only and promoted under the
   LOI-as-order-contract rule, active facts 996; the remaining three
   open ids quarantined. 2026-11-09: three of the seven open ids
@@ -431,13 +440,29 @@ uses the true date.
   live state already conformed, so **no database write was made**;
   canonical-scan drift 3 is now explained rather than open. Record:
   `docs/direct_event_extractor/REFEX_EBITDA_METRIC_DECISION_2026-11-11.md`.
-  Next: the EX-025 ingest gate and the ITD row `25533bcc` (register or
-  remove). The audit that opened this remediation is
+  **EX-025 ingest gate (`1e291c6`, 2026-11-11):**
+  `IssuerIdentityGate.verify_pdf_bytes()` checks a downloaded file's
+  first two pages against the manifest row's company (legal/display-name
+  adjacency using the same two significant tokens, or a matching CIN)
+  before `DocumentLibraryService.create_document`. MISMATCH is reported
+  as `ISSUER_MISMATCH_QUARANTINED` and never registered; the batch warns
+  and exits 1. Image-only/unreadable bytes stay UNVERIFIABLE and
+  allowed. Default on (`--no-issuer-check` disables); bytes are fetched
+  only when the content hash is not yet registered, so steady state does
+  not re-download known documents. Tests: 14 in
+  `tests/spa_bridge/test_bridge_issuer_gate.py`, 69 existing bridge
+  tests, all passing. The original rows-2775/83 pairing cannot be
+  reconstructed offline (the manifest is the remote Sheet; no local
+  mirror; neither defective hash is in the local evidence store) —
+  recorded in EX-025. Required action 1 closed; the ITD row `25533bcc`
+  (register or remove) is item 2 and remains open.
+  Next: the ITD row `25533bcc` (register or remove) — the last EX-025
+  item. The audit that opened this remediation is
   **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
   NO-GO at audit; remediation completed and the audited set promoted
   under owner instruction.** Full evidence in
   `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-  commits `2abe82d`, `b0621d4`, `7160801`, `526053c`, `09c0290`, `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
+  commits `1e291c6`, `2abe82d`, `b0621d4`, `7160801`, `526053c`, `09c0290`, `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
   `d8c19ee`, `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
