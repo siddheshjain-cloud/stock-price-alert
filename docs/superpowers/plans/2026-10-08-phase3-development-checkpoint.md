@@ -19,8 +19,17 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-11 (`d37071f` in the research worktree): **EX-025
-is fully resolved. The ITD row `25533bcc` is retained as the corpus's one
+**Last updated:** 2026-11-13 (`5845edb` on `feature/autonomous-research-pipeline`
+in the main checkout `C:\GitHub\backendtest`): **the Direct Event
+Extractor branch was merged into the operating branch (219 commits; the
+merge commit records the resolution). EX-025's gate and decisions are now
+on the branch the scheduled catch-up runs from.** Targeted suites
+(`tests/pipeline`, `tests/spa_bridge`, issuer gate) pass **410 passed /
+2 skipped** on the merged tree. The full `pytest tests` run was started
+but had not completed when this session was deliberately closed — a fresh
+session **must rerun it on `5845edb` before trusting the merge fully**.
+Nothing was pushed. The 2026-11-11 position (`d37071f` in the worktree):
+**EX-025 is fully resolved. The ITD row `25533bcc` is retained as the corpus's one
 unlinked archive copy — no company registration, no deletion, no
 database write (it has 0 facts/evidence/candidates, its title/publisher
 match its own text, and ITD Cementation is outside the 73-company
@@ -352,7 +361,11 @@ uses the true date.
 - **Current workstream (2026-11-06): Direct Event Extractor; market-data
   service released and verified.** Worktree
   `.claude/worktrees/direct-event-extractor`, branch
-  `feature/direct-event-extractor`, HEAD **`d37071f`** (2026-11-11:
+  `feature/direct-event-extractor`, HEAD **`d37071f`**, **merged
+  2026-11-13 into `feature/autonomous-research-pipeline` in the main
+  checkout (`C:\GitHub\backendtest`) at merge commit `5845edb`** — that
+  checkout is now the live working tree for this work (the worktree is
+  retained, unchanged). (2026-11-11:
   **EX-025 fully resolved — ingest gate built (`1e291c6`) and the ITD
   row `25533bcc` retained unlinked by recorded decision (no DB write).
   Earlier the same day (`2abe82d`):
@@ -473,15 +486,40 @@ uses the true date.
   deletion"; onboarding ITD would expand the research universe and is a
   separate owner call. `archived_at` remains available if the row must
   be hidden from serving without deletion. **EX-025 is resolved.**
-  Next: no item from the pre-promotion audit or EX-025 remains open; the
-  owner-gated queue is the materiality-standard choice for the event
+  **Branch merge (`5845edb`, 2026-11-13):** on the owner's instruction
+  ("merge the gate branch"), `feature/direct-event-extractor`
+  (`d37071f`; 219 commits ahead of the operating branch) was merged
+  `--no-ff` into `feature/autonomous-research-pipeline` in the main
+  checkout, so the scheduled `SPARS_SpaBridgeCatchup` task
+  (`C:\github\backendtest` working tree) now runs the EX-025 gate.
+  Merge resolution, recorded in the merge commit: (a)
+  `tests/pipeline/test_stage_llm_candidates.py` — both branches had
+  added the same staging-idempotency test; kept one copy plus the
+  extractor's two extra tests (13/13 pass); (b)
+  `app/services/extraction_pipeline_service.py` — the auto-merge
+  duplicated the same-document guard block and referenced an undefined
+  `existing_types`; kept the extractor's newer
+  `same_document_fact_types` version; (c)
+  `scripts/check_financial_query_guards.py` — allowlisted the four
+  `scripts/direct_event_extractor/*_20261108.py` whole-corpus
+  audit/repair one-offs, matching the guard's existing one-off
+  ALLOWLIST. Targeted suites on the merged tree: **410 passed / 2
+  skipped** (`tests/pipeline`, `tests/spa_bridge`, issuer gate).
+  **Unfinished at session close:** the full `pytest tests` run was
+  started in the background and had not completed; its process dies
+  with the session, so **the next session must rerun the full suite on
+  `5845edb`** and only then treat the merge as fully verified. Nothing
+  was pushed (local branch is ahead of origin; release worktree
+  unchanged at `1993751`).
+  Next: (1) rerun the full test suite on `5845edb`; (2) then the
+  owner-gated queue — the materiality-standard choice for the event
   benchmark (options A/B/C) and the 68-document extraction backlog.
   The audit that opened this remediation is
   **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
   NO-GO at audit; remediation completed and the audited set promoted
   under owner instruction.** Full evidence in
   `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-  commits `d37071f`, `1e291c6`, `2abe82d`, `b0621d4`, `7160801`, `526053c`, `09c0290`, `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
+  commits `5845edb` (merge), `d37071f`, `1e291c6`, `2abe82d`, `b0621d4`, `7160801`, `526053c`, `09c0290`, `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
   `d8c19ee`, `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
@@ -1262,12 +1300,13 @@ hypothetical cases each rule exists to prevent):**
 
 **5. Branch/commit/DB state — verified this session, not assumed:**
 - `backendtest` main checkout (`C:\GitHub\backendtest`):
-  `feature/autonomous-research-pipeline` @ **`5edc122`**, clean except
-  the same two pre-existing untracked files as always. **20 commits
-  ahead of `origin/feature/autonomous-research-pipeline`** (origin
-  still at `d5b4c8c`, the PR #12 merge point) — **nothing from this
-  entire Phase 3.5B P0/Chemplast/Rulebook push has been pushed.**
-  Commit chain since the last push: `18422ab` (Rule F-1/F-2 fix) →
+  `feature/autonomous-research-pipeline` @ **`5845edb`** (2026-11-13,
+  after merging `feature/direct-event-extractor`), clean except
+  untracked scratch files. The paragraph below is the 2026-11-08
+  Phase 3.5B snapshot kept for its commit chain; its HEAD/counts are
+  stale — the **Session Recovery State at the top is authoritative**.
+  **Nothing has ever been pushed** (origin still at `d5b4c8c`, the
+  PR #12 merge point). 2026-11-08 commit chain since the last push: `18422ab` (Rule F-1/F-2 fix) →
   `e2455e8` (merge) → `eba8501`/`1993751` (Rule F-3 merge) → `fcb1113`
   (EX-018 docs) → `72b5842`/`b78c6cc` (factification-gap merge) →
   `d59a0a7` (extract-method refactor) → `b504355` (Rule F-6
