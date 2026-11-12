@@ -25,9 +25,12 @@ Extractor branch was merged into the operating branch (219 commits; the
 merge commit records the resolution). EX-025's gate and decisions are now
 on the branch the scheduled catch-up runs from.** Targeted suites
 (`tests/pipeline`, `tests/spa_bridge`, issuer gate) pass **410 passed /
-2 skipped** on the merged tree. The full `pytest tests` run was started
-but had not completed when this session was deliberately closed — a fresh
-session **must rerun it on `5845edb` before trusting the merge fully**.
+2 skipped** on the merged tree. The full `pytest tests` was rerun on
+`5845edb` in the next session: **2008 passed, 11 failed, 2 skipped** —
+every failure is the pre-existing `market_quote` frozen-contract drift
+from `34bf5b7` (see the merge paragraph in Session Recovery State),
+awaiting an owner decision on extending the contract; it is not merge
+damage and does not block the gate living on the scheduled branch.
 Nothing was pushed. The 2026-11-11 position (`d37071f` in the worktree):
 **EX-025 is fully resolved. The ITD row `25533bcc` is retained as the corpus's one
 unlinked archive copy — no company registration, no deletion, no
@@ -505,15 +508,38 @@ uses the true date.
   audit/repair one-offs, matching the guard's existing one-off
   ALLOWLIST. Targeted suites on the merged tree: **410 passed / 2
   skipped** (`tests/pipeline`, `tests/spa_bridge`, issuer gate).
-  **Unfinished at session close:** the full `pytest tests` run was
-  started in the background and had not completed; its process dies
-  with the session, so **the next session must rerun the full suite on
-  `5845edb`** and only then treat the merge as fully verified. Nothing
-  was pushed (local branch is ahead of origin; release worktree
+  **Full-suite verification (`5845edb`, rerun 2026-11-13): `pytest
+  tests` = 2008 passed, 11 failed, 2 skipped** (exit 1, 899 s). All 11
+  are **one pre-existing defect carried in from the extractor branch,
+  not merge damage**: `34bf5b7` added `source` and `trading_date` to
+  `MarketQuoteSchema` and the quote projection, but did not extend the
+  frozen research-data contract — `MARKET_QUOTE_KEYS` in
+  `tests/security/test_research_data_isolation.py` still pins
+  `{cmp, as_of}`, so all nine `..._matches_frozen_contract` scenarios
+  plus `test_entitlement_changes_affect_next_call_without_new_jwt` and
+  `test_stale_jwt_claim_is_rejected_at_the_real_request_boundary` fail
+  with `market_quote keys drifted: unexpected=['source', 'trading_date']`.
+  Neither parent was red on this file: `5edc122` (operating branch) has
+  no new schema keys; `d37071f` (extractor branch) carries the same
+  frozen contract against the extended schema, so that branch was
+  already red here — the earlier targeted runs never included
+  `tests/security`. **Not fixed: the remedy is a contract decision** —
+  either extend `MARKET_QUOTE_KEYS`/the detail shapes to the intentional
+  two-key extension (recommended: they are quote *provenance*, carry no
+  premium content, and `tests/research/test_research_query_service.py`
+  already models them), or strip the keys from `company_detail`.
+  Second finding: `pytest.ini` pins `--basetemp=../.spa-pytest-temp`, a
+  fixed shared path, so concurrent pytest sessions corrupt each other —
+  one observed run produced 1,457 phantom setup errors, and the earlier
+  11-failure run was only trusted after a clean serial rerun reproduced
+  it. **Run suites serially** (or give each session its own basetemp).
+  Nothing was pushed (local branch is ahead of origin; release worktree
   unchanged at `1993751`).
-  Next: (1) rerun the full test suite on `5845edb`; (2) then the
-  owner-gated queue — the materiality-standard choice for the event
-  benchmark (options A/B/C) and the 68-document extraction backlog.
+  Next: (1) owner decision on the market-quote contract extension, then
+  apply it and rerun `tests/security` (plus a full-suite confirmation);
+  (2) then the owner-gated queue — the materiality-standard choice for
+  the event benchmark (options A/B/C) and the 68-document extraction
+  backlog.
   The audit that opened this remediation is
   **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
   NO-GO at audit; remediation completed and the audited set promoted
