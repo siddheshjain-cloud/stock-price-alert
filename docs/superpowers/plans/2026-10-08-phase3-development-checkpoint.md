@@ -19,19 +19,19 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-13 (`5845edb` on `feature/autonomous-research-pipeline`
+**Last updated:** 2026-11-13 (`dfed324` on `feature/autonomous-research-pipeline`
 in the main checkout `C:\GitHub\backendtest`): **the Direct Event
 Extractor branch was merged into the operating branch (219 commits; the
 merge commit records the resolution). EX-025's gate and decisions are now
 on the branch the scheduled catch-up runs from.** Targeted suites
 (`tests/pipeline`, `tests/spa_bridge`, issuer gate) pass **410 passed /
-2 skipped** on the merged tree. The full `pytest tests` was rerun on
-`5845edb` in the next session: **2008 passed, 11 failed, 2 skipped** —
-every failure is the pre-existing `market_quote` frozen-contract drift
-from `34bf5b7` (see the merge paragraph in Session Recovery State),
-awaiting an owner decision on extending the contract; it is not merge
-damage and does not block the gate living on the scheduled branch.
-Nothing was pushed. The 2026-11-11 position (`d37071f` in the worktree):
+2 skipped** on the merged tree. The full `pytest tests` rerun on
+`5845edb` found **11 failures from one pre-existing defect** carried in
+from `34bf5b7` (quote provenance added past the frozen contract); the
+owner decided the research-facing quote stays **exactly `cmp` and
+`as_of`**, the fix (`dfed324`) keeps provenance in an internal
+`MarketQuote` object, and the full suite is now **2019 passed / 2
+skipped** (exit 0). Nothing was pushed. The 2026-11-11 position (`d37071f` in the worktree):
 **EX-025 is fully resolved. The ITD row `25533bcc` is retained as the corpus's one
 unlinked archive copy — no company registration, no deletion, no
 database write (it has 0 facts/evidence/candidates, its title/publisher
@@ -368,7 +368,8 @@ uses the true date.
   2026-11-13 into `feature/autonomous-research-pipeline` in the main
   checkout (`C:\GitHub\backendtest`) at merge commit `5845edb`** — that
   checkout is now the live working tree for this work (the worktree is
-  retained, unchanged). (2026-11-11:
+  retained, unchanged); its HEAD is **`dfed324`** after the research-quote
+  contract fix. (2026-11-11:
   **EX-025 fully resolved — ingest gate built (`1e291c6`) and the ITD
   row `25533bcc` retained unlinked by recorded decision (no DB write).
   Earlier the same day (`2abe82d`):
@@ -523,29 +524,37 @@ uses the true date.
   no new schema keys; `d37071f` (extractor branch) carries the same
   frozen contract against the extended schema, so that branch was
   already red here — the earlier targeted runs never included
-  `tests/security`. **Not fixed: the remedy is a contract decision** —
-  either extend `MARKET_QUOTE_KEYS`/the detail shapes to the intentional
-  two-key extension (recommended: they are quote *provenance*, carry no
-  premium content, and `tests/research/test_research_query_service.py`
-  already models them), or strip the keys from `company_detail`.
-  Second finding: `pytest.ini` pins `--basetemp=../.spa-pytest-temp`, a
+  `tests/security`. **Resolved at `dfed324` by owner decision
+  (2026-11-13): the research-facing quote stays exactly `cmp`/`as_of`.**
+  Provenance is now held by an internal `MarketQuote` dataclass in
+  `research_query_service.py` (`cmp`, `as_of`, `source`,
+  `trading_date`, `stale`); `_market_quote_dict()` returns only its
+  `response()` view, `MarketQuoteSchema` carries only the two fields,
+  and the frozen contract is unchanged in substance — it now pins the
+  real production path as well, since the ticker path had also been
+  emitting the internal `stale` key past it. The quote's timestamp was
+  verified: a stored close at `2025-10-27` yields
+  `as_of = 2025-10-27T00:00:00Z` (asserted in
+  `tests/research/test_market_data_service.py`); system clock read
+  2026-11-13 02:23 IST. `tests/research` + `tests/security` + `tests/api`
+  = 992 passed; **full `pytest tests` = 2019 passed, 2 skipped, exit 0**
+  (881 s). Second finding: `pytest.ini` pins
+  `--basetemp=../.spa-pytest-temp`, a
   fixed shared path, so concurrent pytest sessions corrupt each other —
   one observed run produced 1,457 phantom setup errors, and the earlier
   11-failure run was only trusted after a clean serial rerun reproduced
   it. **Run suites serially** (or give each session its own basetemp).
   Nothing was pushed (local branch is ahead of origin; release worktree
   unchanged at `1993751`).
-  Next: (1) owner decision on the market-quote contract extension, then
-  apply it and rerun `tests/security` (plus a full-suite confirmation);
-  (2) then the owner-gated queue — the materiality-standard choice for
-  the event benchmark (options A/B/C) and the 68-document extraction
+  Next: the owner-gated queue — the materiality-standard choice for the
+  event benchmark (options A/B/C) and the 68-document extraction
   backlog.
   The audit that opened this remediation is
   **`88cc765`: Final Pre-Promotion & Canonical Integrity Audit - verdict
   NO-GO at audit; remediation completed and the audited set promoted
   under owner instruction.** Full evidence in
   `docs/direct_event_extractor/FINAL_PRE_PROMOTION_AUDIT_2026-11-08.md`,
-  commits `5845edb` (merge), `d37071f`, `1e291c6`, `2abe82d`, `b0621d4`, `7160801`, `526053c`, `09c0290`, `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
+  commits `dfed324` (quote contract fix), `5845edb` (merge), `d37071f`, `1e291c6`, `2abe82d`, `b0621d4`, `7160801`, `526053c`, `09c0290`, `2d2c375`, `29b6e95`, `782e050`, `a3f8fae`, `0660cbb`, `df0509e`, `4d6a550`, `8bdcd0b`, `f115f8d`, `f91a0be`, `a3ad48b`,
   `d8c19ee`, `13a4d63`, `88cc765`; prior **`b677598`** (2026-11-07
   late evening, read-only: the Refex chain completed — 488 plans in two
   disjoint runs combined, triaged 237/128, 90 promotion-ready ids after
