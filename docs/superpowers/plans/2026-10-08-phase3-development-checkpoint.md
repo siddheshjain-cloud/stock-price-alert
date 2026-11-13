@@ -494,8 +494,40 @@ uses the true date.
   ("merge the gate branch"), `feature/direct-event-extractor`
   (`d37071f`; 219 commits ahead of the operating branch) was merged
   `--no-ff` into `feature/autonomous-research-pipeline` in the main
-  checkout, so the scheduled `SPARS_SpaBridgeCatchup` task
-  (`C:\github\backendtest` working tree) now runs the EX-025 gate.
+  checkout (`C:\GitHub\backendtest`). **This merges the EX-025 gate into
+  the dev working tree only.** The scheduled `SPARS_SpaBridgeCatchup`
+  task runs from a *separate* release checkout
+  (`C:\SPARS-release\backendtest`, branch `release/market-data-service`).
+  It ran ungated through `a04c4ad` — confirmed 2026-11-13 before cutover
+  (zero occurrences of `IssuerIdentityGate` in that checkout; 14
+  documents registered there 2026-11-11/12 with no issuer verification,
+  since cleared read-only against the dev gate logic with 0 mismatches).
+  **Production cutover executed 2026-11-13, owner-approved**: preflight
+  (GO; full suite 2019 passed/2 skipped reproduced independently in an
+  isolated candidate tree) → fresh verified backup
+  (`trading_app.db.scheduled-backup-20261113_113815.db`) → release
+  checkout moved `a04c4ad` → `dfed324` → all 5 scheduled jobs real-run
+  and verified, not merely checkout-switched:
+  **`SPARS_SpaBridgeCatchup`** exit 1, fully accounted for (16 new
+  documents registered, all 16 `issuer_check: VERIFIED` — the gate's
+  first live production success; the exit is EX-026 row 2276 plus the
+  already-documented ITD `DRIVE_FILE_NOT_FOUND` exception, zero new
+  failures); **`SPARS_PipelineCycle`** fired naturally on schedule
+  (17:25:55), exit 0; **`SPARS_PriorityExtraction`** exit 0;
+  **`SPARS_HealthCheck`** exit 1, pre-existing staleness flag unrelated
+  to the cutover. One genuine regression found and fixed: cutover to
+  `dfed324` deleted `scripts\scheduled\run_market_data_refresh.bat` —
+  confirmed the *only* file present in `a04c4ad` and absent from
+  `dfed324` (authored directly on the release branch at `33d2386`,
+  2026-11-07, never merged into the dev lineage `dfed324` descends
+  from). Owner chose the narrow fix: restored byte-identical from
+  `a04c4ad`, committed locally on `release/market-data-service`
+  (`cd6b989`, not pushed). Re-verified: **`SPARS_MarketDataDailyRefresh`**
+  exit 0, 95/95 symbols. **All 5 scheduled jobs operationally green on
+  `dfed324` (+ `cd6b989`) as of 2026-11-13 17:46.** EX-026 filed for row
+  2276 (OPEN, unowned, unresolved — see exception backlog). Pending
+  migration `20261104_01` (`watchlist_entry`) deliberately **not**
+  applied, per instruction; still dormant, no job depends on it.
   Merge resolution, recorded in the merge commit: (a)
   `tests/pipeline/test_stage_llm_candidates.py` — both branches had
   added the same staging-idempotency test; kept one copy plus the
