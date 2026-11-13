@@ -1908,6 +1908,58 @@ mirror, synced once from this merged result on 2026-11-02. Neither copy
 is edited independently after that. The previous divergence is recorded
 as EX-001 in `docs/SPARS_EXCEPTION_BACKLOG.md` (backendtest).
 
+**Current workstream (2026-11-14): Phase 3.5D downstream-intelligence
+integration, UNO Minda as the evidence-backed case, now generalized
+cross-company.** Branch `feature/autonomous-research-pipeline` in
+`C:\GitHub\backendtest`, HEAD through `8ded750` plus this session's
+uncommitted-at-time-of-writing EX-033 changes (to be committed as a
+new commit on the same branch; dev-only, no live writes, per the
+charter's Level-1 boundary). Sequence this session:
+(1) **UNO Minda valuation gate reassessment** -- MARKET_CAP_OPPORTUNITY
+and VARIANT_PERCEPTION recomputed against the then-current ~31%-higher
+market cap; price-only revaluation separated from assumption changes;
+both gates reassessed independently, not forced to match the original
+2026-10-25 closure.
+(2) **EX-032 (UNO Minda ROE/ROCE forensic reconciliation, `5a7773e`,
+`73fb1b5`):** company's own Note 42 methodology reconstructed exactly.
+**ROE: CLOSED** -- average-equity basis reproduces the company's
+disclosed 19.10% to within 0.03pp (rounding only).  **ROCE: OPEN** --
+even with the company's real consolidated Goodwill/Intangibles/DTL/
+Exceptional-items figures in hand (`8ded750`), neither the year-end
+(19.8915%) nor averaged (21.4776%) variant exactly matches the
+disclosed 19.20%; explicitly not forced.
+(3) **EX-032 follow-up / reusable fact coverage (`8ded750`):**
+`compute_roce_tangible_capital_employed_basis` validated against two
+MORE real companies (Refex Industries, Choice International) using
+real AR figures, not fabricated ones. This validation pass is what
+surfaced **EX-033**.
+(4) **EX-033 (cross-company `fin.raw.total_equity` NCI-basis
+inconsistency), this session:** corpus-wide read-only audit of
+**every** `total_equity` fact in the live DB (17 facts, 5 companies) --
+classified against each company's own source balance sheet (UNO
+Minda/Choice inclusive-of-NCI; Refex/GP Eco FY2024-25 exclusive with
+real unextracted NCI; **GP Eco FY2026 exclusive despite a same-period
+NCI fact also being recorded** -- the sharpest finding, proving "an
+NCI fact exists for this period" does not imply `total_equity`
+includes it; Chemplast/Chemkart genuinely NCI-free, confirmed via
+each company's own 100%-wholly-owned-subsidiary disclosure). Reusable
+correction implemented in `app/services/financial_diagnostics_service.py`:
+new `fin.raw.total_equity_includes_nci` TEXT marker fact (no migration
+-- reuses the existing `ExtractedFact`/`value_type=TEXT` mechanism) and
+a strict `_resolve_total_equity_basis` resolver that returns "basis
+unconfirmed" rather than ever guessing. Applied to the three newer
+diagnostics (`compute_roe_average_equity_basis`,
+`compute_roce_average_capital_employed_basis`,
+`compute_roce_tangible_capital_employed_basis`); legacy
+`compute_roe`/`compute_roce` (Matrix Engine's dependency) deliberately
+left unchanged to preserve compatibility.
+`tests/research/test_roe_roce_average_basis_reconciliation.py` grew
+16 -> 31 tests, all passing (Matrix Engine's and Phase 3.5B's own
+suites also re-run and unaffected). Full detail, evidence, and the
+remaining (not-yet-authorized) live-data action in `docs/
+SPARS_EXCEPTION_BACKLOG.md` EX-032/EX-033. **No live database write
+was made at any step of this sequence.**
+
 ---
 
 ## Repository state (verified at last checkpoint)
