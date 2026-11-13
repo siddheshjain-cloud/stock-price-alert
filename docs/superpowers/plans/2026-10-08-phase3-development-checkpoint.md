@@ -524,10 +524,74 @@ uses the true date.
   `a04c4ad`, committed locally on `release/market-data-service`
   (`cd6b989`, not pushed). Re-verified: **`SPARS_MarketDataDailyRefresh`**
   exit 0, 95/95 symbols. **All 5 scheduled jobs operationally green on
-  `dfed324` (+ `cd6b989`) as of 2026-11-13 17:46.** EX-026 filed for row
-  2276 (OPEN, unowned, unresolved — see exception backlog). Pending
-  migration `20261104_01` (`watchlist_entry`) deliberately **not**
-  applied, per instruction; still dormant, no job depends on it.
+  `dfed324` (+ `cd6b989`) as of 2026-11-13 17:46.** EX-026 was
+  investigated, closed (content subset of an already-registered
+  document, no DB write — see exception backlog), and its recurring
+  exit-1 noise fixed with a tested `DOCUMENTED_DUPLICATE_REVIEWS`
+  allowlist (dev-only, `4248f57`, later folded into the merges below).
+  Pending migration `20261104_01` (`watchlist_entry`) deliberately
+  **not** applied, per instruction; still dormant, no job depends on
+  it.
+
+  **SPARS Research Readiness Audit + Development Mandate (2026-11-13,
+  this session, "SPARS Research Development Mandate"):** a full
+  read-only audit found Phase 3.5A (evidence retrieval/brief) 100%
+  unmerged in `feature/phase3-5a-evidence-retrieval` (41 tests passing
+  in isolation, never integrated); Phase 3.5B split across merged and
+  3 stranded branches (`banking-spec`, `excel-backfill`,
+  `integration-verification` — actually one linear chain, 4 unique
+  commits); Phase 3.5C "Large-Scale Intelligence & Matrix Engine" and
+  3.5D as the owner's task framed them had **zero implementation
+  footprint anywhere** (confirmed: no "matrix engine"/"cross-company"/
+  "5,000 companies"/"Calquity" hits in any code or doc); coverage was
+  73/96 registered companies, 10/73 with any fact, 6 with real depth,
+  1 (UNO Minda) with a forecast/valuation/investment case (only 3 of 9
+  gates assessed), 0 `cycle_assessment` rows anywhere. Full trace and
+  numbers: `backendtest` session transcript 2026-11-13 (not yet
+  written to a standalone report file).
+
+  **Owner approved, then executed same day:** Phase 3.5A and 3.5B
+  merged into `feature/autonomous-research-pipeline` via cherry-pick
+  (not a doomed 259-commit merge — the 3.5A branch had drifted that
+  far; only its 3 unique commits were picked onto current tip). Found
+  and fixed a real integration defect: both branches had independently
+  minted exceptions numbered EX-010 through EX-013 for *different*
+  issues than the already-merged EX-010–013 — renumbered to EX-027–030
+  with 2026-11-13 re-measured numbers (862 unextracted → now 61/2,313;
+  0 publication dates → now 451/2,313; IKIO 0 `fin.raw.*` → now 3).
+  Found and fixed a second: 3 evidence-retrieval tests predated the
+  EX-020 issuer-identity gate and their fixtures didn't name the
+  company. Scoped regression on the real branch after both merges:
+  **1443 passed, 2 skipped, exit 0.** Commits `133f745`…`aca1010`
+  (8 total), pushed nowhere yet.
+
+  **Phase 3.5C Matrix Engine, first slice, built same day
+  (`d3f5dc5`):** `app/services/matrix_engine_service.py` — cross-
+  company metric comparison, sector/industry cohorts, cycle-exposure
+  lookup via the existing `CompanyExposure`→`CycleAssessment` join,
+  cross-sectional threshold screening. Reuses
+  `FinancialDiagnosticsService`'s existing idempotent compute methods
+  verbatim — no new formulas, no fabricated figures (missing data is
+  explicit `INSUFFICIENT_DATA`, never interpolated), no composite
+  score/rank (threshold pass/fail only, per the no-unsupported-
+  rankings constraint). Read-only by default; a `materialize=True`
+  path can trigger a real (idempotent) canonical write and has
+  **not** been run against the live DB this session — built and
+  tested against isolated fixtures only. 10 new tests (TDD; caught one
+  real bug — cycle exposure needed the `CompanyExposure` join, not a
+  direct company lookup, before merge). `tests/research` full suite:
+  813 passed, 0 failed.
+
+  **Not yet done:** the 23-company registration gap (96 universe vs.
+  73 registered, confirmed via the real production resolver — not a
+  name-matching artifact) has its verified identity list prepared,
+  **no company registered** pending owner approval. Nothing pushed to
+  origin. Coordinated directly with the parallel "Pilot 01" review
+  session (Gemini/Antigravity's CSV-to-Parquet work, independently
+  reviewed, `review/csv-to-parquet-pilot01-audit` @ `0754792`, GO for
+  dev-branch merge, on hold until this session's work lands) before
+  touching the shared branch — confirmed no collision, proceeded.
+
   Merge resolution, recorded in the merge commit: (a)
   `tests/pipeline/test_stage_llm_candidates.py` — both branches had
   added the same staging-idempotency test; kept one copy plus the
@@ -4637,10 +4701,15 @@ use research-specific names, and six `fin.raw.revenue/pat/ebitda`
 candidates remain OPEN, duplicated, in INR crore. That vocabulary gap is
 the main blocker to using the existing Phase 3 diagnostics for IKIO.
 
-**Backlog:** EX-010 (Evidence not uniformly verbatim), EX-011
-(publication-date precision absent), EX-012 (862 unextracted; two IKIO
-material gaps), EX-013 (IKIO fact vocabulary/units) added in
-`backendtest/docs/SPARS_EXCEPTION_BACKLOG.md`.
+**Backlog:** filed at the time as EX-010 (Evidence not uniformly
+verbatim), EX-011 (publication-date precision absent), EX-012 (862
+unextracted; two IKIO material gaps), EX-013 (IKIO fact
+vocabulary/units) in `backendtest/docs/SPARS_EXCEPTION_BACKLOG.md`.
+**Renumbered EX-027–030 on 2026-11-13 merge** (those numbers were
+independently reused for different issues on the branch that merged
+first); see the Session Recovery State entry above for current,
+re-measured numbers — the counts in this historical section are as of
+2026-11-02 and are stale.
 
 **Decision gate (exact approvals requested, Level 3 unless noted):**
 1. Deploy the retrieval read path / read-only API endpoint to production.
