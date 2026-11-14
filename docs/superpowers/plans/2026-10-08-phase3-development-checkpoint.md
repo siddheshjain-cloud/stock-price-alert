@@ -370,6 +370,58 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
+- **P0 SIX-COMPANY COMPLETION — rehearsal finished, approval pending
+  (2026-11-14).** Worktree `C:\GitHub\backendtest-ex033`, branch
+  `research/ex035-freshness-audit`, tip `37161b5` (pushed, not merged);
+  uncommitted there: the NSE redirect + `--subject-contains` fix in
+  `scripts/direct_event_extractor/direct_acquire_extract_stage.py`, its
+  5 new tests, `docs/SPARS_SIX_COMPANY_DATA_COMPLETION_REPORT.md`, and
+  EX-036…EX-042 in the exception backlog. **Nothing was written to the
+  live DB**; every measurement comes from
+  `C:\Users\Home\AppData\Local\Temp\spars_p0\acquire_copy.db` (a copy
+  taken through the read-only SQLite API from
+  `C:\GitHub\backendtest\instance\trading_app.db`).
+  **Measured ledger, `as_of` 2026-11-14: 22 VERIFIED, 1 PARTIAL, 7
+  SOURCE_MISSING, 6 NOT_APPLICABLE (36 cells).** Baseline was 20
+  VERIFIED / 10 open. The delta is UNO Minda FY26Q2+Q3+Q4, closed on the
+  copy by acquiring its three investor presentations, staging through
+  the existing Groq path and promoting **exactly 8** candidates
+  (revenue/PAT/EBITDA Q2, revenue+EBITDA Q3, revenue/PAT/EBITDA Q4, all
+  CONSOLIDATED) → UNO 3/6 → **5 V + 1 PARTIAL**. **Q3 is PARTIAL, not
+  VERIFIED, by design:** the deck's headline 298 is the *adjusted* PAT;
+  reported owners' PAT is 277 (9M reported 819 = 239+304+277 vs adjusted
+  841), and no existing mechanism yields 277, so PAT was left out rather
+  than promoted on a basis inconsistent with the rest of the corpus.
+  **Two things deliberately NOT promoted:** Q3 `fin.raw.pat` 298
+  (basis, above) and `capex` 550 (a project investment plan, not
+  quarterly capex). **Still BLOCKED, filings available:** Chemplast
+  FY26Q3 and all six Chemkart quarters. Chemplast's 2026-02-07 statement
+  is OCR-degraded (`Revenue from ooerations`), so the deterministic
+  parser extracts nothing; the clean 2026-02-08 deck carries the right
+  numbers (revenue 835, PAT −119) but two re-stages both failed — the
+  latest returned eight mutually conflicting PAT proposals for that one
+  cell and staged nothing. Chemkart: 39 Drive manifest rows replay
+  22 REGISTERED / 13 metadata-conflict / 4 duplicate-review on a copy
+  (registration is safe, extraction is not — its lakh-denominated
+  results staged revenue 10322.56 labelled INR_CRORE, a ~100× error that
+  the unit gate passed). GP Eco remains N/A ×6 (half-yearly cadence).
+  **Research surface:** five of six narrate; **Refex returns empty at
+  every period — zero `fin.norm.*` facts** (EX-041). **Tests: 2,181
+  passed, 2 skipped, 0 failed** (api 134, pipeline 378+2 skip, research
+  893, remainder 776); the remainder had to be re-run with an isolated
+  `--basetemp` because `pytest.ini`'s shared `C:\GitHub\.spa-pytest-temp`
+  collided with another session (EX-036). Live integrity re-verified
+  read-only: integrity/quick_check ok, 0 FK violations, 1,107 facts /
+  1,060 current, 0 current facts without evidence, 0 duplicate or
+  conflicting financial keys. **Next action:** the owner's decision on
+  the five-step approval package in §8 of the report — (1) Chemkart
+  manifest registration, (2) UNO deck acquisition ×3, (3) LLM staging,
+  (4) promotion of the 8 ids, (5) optional Chemplast revenue 835
+  (PARTIAL only). Also awaiting owner decisions: the release copy's
+  `priority_companies.txt` is still Choice-only; whether to acquire the
+  OCR-degraded statements live; any repair to the UNO FY27Q1
+  supersession chain / missing NCI fact (EX-042). Do not start Gemini
+  integration or the 50-company expansion.
 - **Approved live sequence: completed and verified (2026-11-14).**
   After a first attempt partial-wrote one document and was reverted
   (incident below, `1a56a2c`), the owner approved resuming all three
