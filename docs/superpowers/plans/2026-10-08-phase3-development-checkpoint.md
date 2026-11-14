@@ -19,7 +19,15 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-14 (EX-035 closed end to end — the approved
+**Last updated:** 2026-11-14 (P0 six-company directive — all 7 remaining
+quarters resolved on an isolated copy; no live write. Chemplast FY2026Q3
+is VERIFIED on the copy (835.14 / −119.20 consolidated, EX-051 OCR
+repair) and Chemkart's six cells are NOT_APPLICABLE (half-yearly cadence,
+EX-045 unit fix proved). EX-048 period inference, EX-050 listing-CIN gate
+and EX-051 extraction repaired with regression tests; suite 2,305 passed
+/ 2 skipped / 0 failed. Live DB unchanged at 23/30 — the promotions and
+the Chemplast February acquisition await explicit owner approval. EX-035
+closed end to end — the approved
 live sequence ran: six R3 document corrections applied and verified,
 a staging-only six-company cycle SUCCESS with 0 candidates / 0 facts
 promoted, and the six-company priority list on the branch; branch tip
@@ -370,17 +378,18 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
-- **P0 SIX-COMPANY COMPLETION — Steps 1–4 executed live; 23/30 on the
-  live DB; active assignment is the 7 remaining quarters
+- **P0 SIX-COMPANY COMPLETION — all 7 remaining quarters resolved on the
+  isolated copy; live 23/30 unchanged, promotions await owner approval
   (2026-11-14).** Worktree `C:\GitHub\backendtest-ex033`, branch
-  `research/ex035-freshness-audit`, tip **`ba075fd`** (not merged;
-  supersedes the `c46986b` state below — on the `37161b5` base:
+  `research/ex035-freshness-audit`, tip **`344006c`** (not merged, not
+  pushed; supersedes the `c46986b` state below — on the `37161b5` base:
   `ce25c6e` NSE acquisition fix, `ffc87cc` report + EX-036…EX-042,
   `8f8ae25` EX-040…EX-044 fixes, `bc8e922` EX-045, `24e590f`
   normalisation runner + EX-046, `6176e4b`→`c46986b` report
-  corrections, and `ba075fd` recording the live run). Report
-  `docs/SPARS_SIX_COMPANY_DATA_COMPLETION_REPORT.md` updated in place;
-  backlog carries EX-036…EX-046.
+  corrections, `ba075fd` recording the live run, **`e06d093`** the
+  EX-048/EX-050/EX-051 repairs + regression tests + report/backlog
+  revision, and `344006c` the certification/tip record). Report `docs/SPARS_SIX_COMPANY_DATA_COMPLETION_REPORT.md`
+  updated in place; backlog carries EX-036…EX-051.
   **Owner approved "steps 1–4, run them live" and the sequence was
   executed 2026-11-14.** Verified backup first
   (`instance\trading_app.db.bak_pre_p0_steps1to4_20261114T143423Z.db`,
@@ -408,37 +417,61 @@ uses the true date.
   EBITDA rows are stored UNDETERMINED (headline quote declares no
   basis); `_current_fact(scope=CONSOLIDATED)` excludes explicit foreign
   scopes, so no ratio consumes them.
-  **NEW ACTIVE ASSIGNMENT (Desktop `task.txt`, 2026-11-14 14:xx):**
-  resolve the remaining 7 quarters — (1) Chemkart: fix the lakh→crore
-  unit interpretation at extraction/validation level (EX-036/EX-038/
-  EX-045), preserve source units, normalise deterministically, reject
-  ambiguous conversions, reprocess all six quarters; (2) Chemplast:
-  acquire the missing Feb-2026 statement and investor presentation
-  through existing mechanisms, fix OCR-label recognition, column
-  alignment and conflicting PAT extraction, reprocess FY26Q3; plus
-  regression tests from the real failure cases, full
-  acquisition→query e2e, **all repairs on isolated copies first, no
-  repeat of completed live writes, any new promotion needs fresh owner
-  approval**. Success target 30/30 but only where evidence genuinely
-  supports it. Report §7's earlier rehearsals (rehearsal-copy ledger,
-  9+1 staged, Chemplast Step 5 withdrawal) remain the evidence base. **Refex normalisation fixed at the
-  mechanism level:** new company-agnostic
+  **ACTIVE ASSIGNMENT (Desktop `task.txt`, 2026-11-14): COMPLETED ON THE
+  ISOLATED COPY — no live write made.** All seven remaining quarters are
+  now proved resolvable through the existing pipeline:
+  (1) **Chemkart ×6 → NOT_APPLICABLE, cadence not gap.** Its one results
+  filing is headed *"Half year ended September 30, 2025"* with three
+  half-year columns and no quarter column (the cover letter's "quarter
+  and half year" is Reg-30 boilerplate; SME filers report half-yearly
+  under LODR Reg 33(3)), so the ledger's existing half-yearly rule
+  applies. The EX-045 unit defect is fixed: staging `ef47a782` on the
+  copy yields five correct facts (revenue **103.23 Cr** from the printed
+  lakh cell 10,322.56, PAT **10.15 Cr** from 1,015.26, plus assets /
+  receivables / CFO), all AUTO_PROMOTE, ledger N/A ×6, second pass
+  promotes 0 (idempotent). EX-050's U→L CIN transition fix lets the
+  post-listing documents pass the issuer gate at all.
+  (2) **Chemplast FY2026Q3 → VERIFIED on the copy.** The February
+  statement's consolidated PAT row reads
+  `Profit/(Lossl after tax 15 - 61 (119.201` through OCR and the
+  proposer was silently skipping it; with the EX-051 prompt rule and
+  deterministic precision repair it staged `fin.raw.pat = -119.20
+  CONSOLIDATED page 7`, the lane promoted **835.14 / -119.20** (10/10
+  AUTO_PROMOTE including revenue), and `CoverageLedgerService` reads
+  Chemplast **6/6** on the copy, reconciling to PBT (162.79) + tax
+  (43.59) = (119.20) and the deck's rounded 835 / (119). A second lane
+  pass promotes nothing (1 open candidate); one genuine source
+  disagreement (deck standalone COGS 275 vs statement 206.03) is left
+  NEEDS_REVIEW for a human. **Copy totals 23 V / 1 PARTIAL / 12 N/A**;
+  the PARTIAL is UNO FY2026Q3 copy staleness (live PAT 277 promoted
+  14:37, copy facts 11:30), not a regression.
+  (3) **EX-048** reporting-period inference now reads presentation
+  cover titles and quarter+nine-months titles and returns the latest
+  named period (deck `0077d5fb` and statement `f3ef494d` both →
+  FY2026Q3 on the copy, Chemkart `ef47a782` → FY2026H1 unchanged).
+  **Refex normalisation fixed at the mechanism level:** new company-agnostic
   `scripts/build_normalized_metrics_from_facts.py` (no figure entered,
   no formula added — drives the existing MatrixEngineService registry),
   11 `fin.norm.*` facts on the copy, exact two-run idempotence,
   narration then renders 6 + 5 cited sentences where it was empty.
   **EX-046 recorded:** Refex's consolidated `fin.raw.pat` is the
   total-including-NCI line (203.7210 vs owners' 203.3531), NCI share
-  unstored — correction is a Level 3 write in report §8 Step 7. **Still
-  BLOCKED, filings available:** Chemplast FY26Q3 (1 cell) and Chemkart
-  ×6. **Backlog triage measured on a fresh copy:** all **2,366** open
+  unstored — correction is a Level 3 write in report §8 Step 7. **Formerly
+  BLOCKED, now resolved on the copy:** Chemplast FY26Q3 (above, EX-051) and
+  Chemkart ×6 (above, half-yearly cadence). **Backlog triage measured on a fresh copy:** all **2,366** open
   candidates evaluated by the existing promotion lane (dry run) →
   **16 AUTO_PROMOTE, 1 AUTO_CORROBORATE, 2,349 NEEDS_REVIEW**; of the
   16, 9 + 1 are the UNO set and the other 7 are outside-scope
   implausible values (0 / 0.00 revenue etc.) with no plausibility gate —
-  recorded in report §10.1, not promoted. **Tests: 2,230 passed, 2
-  skipped, 0 failed** (final certification run after EX-045, 1,030.77 s,
-  isolated TMPDIR + `--basetemp`, EX-043). Live integrity re-verified
+  recorded in report §10.1, not promoted. **Tests: 2,305 passed, 2
+  skipped, 0 failed** (certification run after EX-048/EX-050/EX-051,
+  2026-11-14: api 134 · pipeline 497+2 skipped · research 897 ·
+  remainder 777, run as four sequential processes because whole-suite
+  processes are killed by the OS for low memory on this 8 GB host;
+  isolated TMPDIR + per-part `--basetemp`, `env -u DATABASE_URL`;
+  `test_event_proposer_real_staging_verification.py` excluded as the
+  pre-existing EX-047 flake). Previous certification after EX-045:
+  2,230 passed, 2 skipped, 0 failed, 1,030.77 s. Live integrity re-verified
   read-only: integrity/quick_check ok, 0 FK violations, 1,107 facts /
   1,060 current, 0 current facts without evidence, 0 multi-successor,
   0 dangling refs, 0 duplicate financial keys (scope-distinct pairs
@@ -464,11 +497,15 @@ uses the true date.
   and a third Chemplast Q3-deck pass was killed twice, its 27 logged
   calls accepting consolidated COGS 573 and no PAT. Both copies'
   `integrity_check` is `ok`; neither is conclusive beyond that. Do not
-  loop-restart them on this machine. **Next action:** execute the new
-  Desktop-task directive — Chemkart unit-gate fix + six-quarter
-  reprocess and Chemplast Q3 acquisition + parser/column/PAT fixes, all
-  on isolated copies, with regression tests; live promotion of anything
-  new requires fresh owner approval. **Still unapproved and untouched:**
+  loop-restart them on this machine. **Next action:** the Desktop-task
+  directive is complete on the isolated copy; code, tests and docs are
+  committed as `e06d093`/`344006c` and the suite is certified (2,305
+  passed). What
+  remains is the owner's decision on the live package — Chemplast
+  February statement + deck acquisition into the live DB and the Q3 pair
+  promotion, and the Chemkart five H1 fact promotions; both need
+  explicit approval before any live write. **Still unapproved
+  and untouched:**
   report §8 Step 6 (Refex 11 `fin.norm.*` facts) and Step 7 (EX-046 PAT
   correction + Step 6 re-run); the release copy's priority list (branch
   copy validated against the production reader: 6 ids, all resolve); the
