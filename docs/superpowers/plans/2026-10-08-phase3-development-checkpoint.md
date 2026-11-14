@@ -363,10 +363,48 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
-- **EX-034 complete (2026-11-14).** Worktree
+- **EX-035 complete (2026-11-14).** Branch
+  `research/ex035-freshness-audit` in `C:\GitHub\backendtest-ex033`, base
+  `feature/autonomous-research-pipeline` @ **`499a8c2`** (the merge tip
+  carrying both EX-033 and EX-034; that ref is also what origin has),
+  commit **`460a4e4`**, clean tree, **unpushed**. Read-only six-company
+  financial freshness audit as of 2026-11-14 across UNO Minda, Choice,
+  Chemplast, Refex, GP Eco and Chemkart. Live DB unchanged throughout
+  (SHA-256 `d8e74b83…`, 161,325,056 bytes, 1,062 facts / 1,015 current).
+  Result: **only Choice is materially current**; five of six hold the
+  latest disclosures as documents without current facts. **The earlier
+  REG30 root-cause hypothesis is corrected in the report** —
+  `_FACT_BEARING_DOCUMENT_TYPES` only reserves priority slots inside a
+  bounded batch; every recent Q2 filing already has an extraction run and
+  units, so the missing step is factification (run for Choice only).
+  New findings: `reporting_period` is sparse and mis-tagged, so
+  `EXTRACTION_FAILED` never fires and every gap reports as
+  `SOURCE_MISSING` (UNO's only `Q2 FY2027`-tagged doc is a trading-window
+  closure notice); "VERIFIED" quarters are often STANDALONE while annual
+  normalized facts are CONSOLIDATED (UNO, Refex); UNO carries one quarter
+  under two period labels (`FY2027Q1` 14 facts + `Q1 FY2027` 6 facts);
+  Refex has zero `fin.norm.*`; GP Eco has no `fin.raw.pat` FY2026 so ROE
+  is not computable; Chemkart's only document is the 2025-07-10 IPO
+  prospectus (~16-month gap, FY2026 and H1 FY2027 absent); Chemkart FY2025
+  ROE is still the stale 45.5488; GP Eco's four FY2023 "RETRACTED" prose
+  rows are current CONSOLIDATED facts and would raise inside
+  `FinancialDiagnosticsService._decimal()`. Deliverables:
+  `scripts/ex035_freshness_audit.py` (opens SQLite `mode=ro` and proves
+  the write refusal), report
+  `docs/ex035/EX035_SIX_COMPANY_FRESHNESS_AUDIT_2026-11-14.md`, evidence
+  `docs/ex035/evidence/ex035_audit.json` +
+  `ex035_coverage_ledger.json`. Remediation R1–R6 uses only existing
+  services (`CoverageLedgerService`, candidate staging →
+  `ResearchBrainService.record_fact`, `FinancialDiagnosticsService`
+  recompute, priority-company list); R1–R3/R5 are Level 3 and each needs
+  its own approval. No DB write, schema or architecture change,
+  deployment or push.
+
+- **EX-034 complete (2026-11-14), since merged and pushed.** Worktree
   `C:\GitHub\backendtest-ex034`, branch
   `research/ex034-screener-reconciliation`, base `4f72835`, commit
-  **`46ffb8a`**, unpushed, clean tree. Six-company ROE/ROCE
+  **`46ffb8a`**, later merged into `feature/autonomous-research-pipeline`
+  at **`499a8c2`** and pushed (non-force), clean tree. Six-company ROE/ROCE
   reconciliation against Screener.in and company disclosures. Result:
   **the SPARS ratio arithmetic is correct** — all 13 stored
   `fin.norm.*` values reproduce except Chemkart FY2025 ROE (stored
@@ -396,9 +434,9 @@ uses the true date.
   recommended canonical formulas and separately-labelled
   `fin.cmp.*` comparator slugs are in §7 of the report and await an
   EX-033 coordination decision. Note for EX-033: the 14-marker
-  manifest, once applied, would let the strict average/tangible
-  capital-employed variants run for these companies for the first time —
-  none can run on the live corpus today.
+  manifest has since been applied live (2026-11-14), which makes the
+  strict average/tangible capital-employed variants computable for these
+  companies for the first time.
 
 - **Active assignment:** **Phase 3.5B (ten-company Financial
   Normalization & Historical Backfill) is PAUSED here, 2026-11-03 --
