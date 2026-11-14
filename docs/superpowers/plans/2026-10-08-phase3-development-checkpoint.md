@@ -424,14 +424,24 @@ uses the true date.
   runs** — release copy still Choice-only (1 id), branch copy six ids.
   The scheduled cycle is extraction-only (`--stage-candidates` off) and
   `--limit 10` bounds documents per run, so six companies drain over
-  several cycles. **Next action:** owner approval for report §8 —
+  several cycles. **Chemplast correction (measured this pass):** both
+  Chemplast February documents (`f3ef494d` statement, `0077d5fb` deck)
+  and their candidate exist **only on the rehearsal copy** — the live
+  DB holds neither them nor any Chemplast financial candidate (earliest
+  live Chemplast doc is 2026-06-26), so the former Step 5 is
+  **withdrawn**, not pending approval. The EX-039 re-sweep was measured
+  on `ex039_copy.db`: the rule path stages 0 from the OCR statement,
+  correctly — its pages carry no balance-sheet line items and the lane
+  has no revenue/PAT pattern; the label-tolerance fix lives in the LLM
+  citation gate. **Next action:** owner approval for report §8 —
   Steps 1–4 (Chemkart registration, UNO deck acquisition ×3, LLM
-  staging, promotion of the 10-id file), Step 5 optional (Chemplast
-  revenue 835 → PARTIAL), Step 6 Refex normalisation (11 facts), Step 7
-  EX-046 PAT correction then re-run Step 6. Also owner decisions: the
-  release copy's priority list; acquiring the OCR-degraded statements
-  live; the UNO FY27Q1 chain / missing NCI fact (EX-042). Do not start
-  Gemini integration or the 50-company expansion.
+  staging, promotion of the 10-id file), Step 6 Refex normalisation
+  (11 facts), Step 7 EX-046 PAT correction then re-run Step 6. Also
+  owner decisions: the release copy's priority list (branch copy
+  validated against the production reader: 6 ids, all resolve); the
+  UNO FY27Q1 chain / missing NCI fact (EX-042); whether to acquire the
+  Chemplast February filings live at all. Do not start Gemini
+  integration or the 50-company expansion.
 - **Approved live sequence: completed and verified (2026-11-14).**
   After a first attempt partial-wrote one document and was reverted
   (incident below, `1a56a2c`), the owner approved resuming all three
