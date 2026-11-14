@@ -428,7 +428,9 @@ uses the true date.
   0 facts without evidence. No live action remains for this task.
   **Item 1 record (EX-034):** worktree
   `C:\GitHub\backendtest-ex034`, branch `research/ex034-screener-reconciliation`,
-  tip **`e67e12c`** (not pushed). The three 2026-11-15 Screener exports
+  tip **`e67e12c`** (pushed to origin 2026-11-15, plain fast-forward
+  `46ffb8a..e67e12c`, preflight clean: no tracked changes, no remote-only
+  commits; not merged). The three 2026-11-15 Screener exports
   (Refex, GP Eco, Chemkart) were already in
   `SPARS_Normalised_Financials`, so no move was needed. The harness now reads
   all six workbooks dependency-free (`--workbook-dir`) and writes the
