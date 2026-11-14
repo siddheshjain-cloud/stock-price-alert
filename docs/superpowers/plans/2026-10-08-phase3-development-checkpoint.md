@@ -19,7 +19,32 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-13 (`dfed324` on `feature/autonomous-research-pipeline`
+**Last updated:** 2026-11-14 (EX-033 population dry run, isolated
+worktree `C:\GitHub\backendtest-ex033`, branch `research/ex033-population`,
+baseline `4f72835`, uncommitted): **the 19-item equity-basis/NCI
+population manifest is prepared and validated on isolated copies —
+14 `total_equity_includes_nci` markers (UNO Minda FY2025/26, Choice
+FY2025/26, Refex FY2025/26, GP Eco FY2024/25/26, Chemplast FY2025/26,
+Chemkart FY2023/24/25) plus 5 missing NCI facts (Refex FY2025/26, GP Eco
+FY2024/25, Chemkart FY2025) — and NO live database write has been made.
+Awaiting owner approval (charter Level 3).** Plan → apply → second apply
+proved 19 WOULD_INSERT → 19 INSERTED → 19 REUSED; integrity clean (14
+markers unit NULL, 7 NCI facts, 7 evidence rows, 19 links, no duplicate
+current facts); rollback restored a byte-identical copy (SHA
+`aa4c6fed7bcce4e0`); a second fresh copy smoke-applied 19. New
+marker-aware `_owners_equity` guard (5 tests added; 27 in the file;
+adjacent research/diagnostics suites 86 passed) prevents the population
+from reintroducing the bucket-C double subtraction into the legacy path.
+Measured impact: legacy ROE/ROCE unchanged everywhere; only GP Eco
+FY2026 debt-to-equity changes, **101.7341 → 99.8318** (Matrix Engine
+`debt_to_equity_pct` identically); 8 company-periods gain strict
+average-basis ROE/ROCE. Backlog bucket E corrected in place — Chemkart
+FY2025 discloses Minority Interest (0.35) Lakhs and is not NCI-free.
+**Next action: owner approves the manifest in
+`docs/ex033/EX033_POPULATION_APPROVAL_REPORT.md`, then backup-then-apply
+per that report's §10 (snapshot + SHA-256 first, re-plan to confirm 19
+WOULD_INSERT, apply under the pipeline lock, verify rows).** The
+2026-11-13 position was: (`dfed324` on `feature/autonomous-research-pipeline`
 in the main checkout `C:\GitHub\backendtest`): **the Direct Event
 Extractor branch was merged into the operating branch (219 commits; the
 merge commit records the resolution). EX-025's gate and decisions are now
@@ -1910,11 +1935,13 @@ as EX-001 in `docs/SPARS_EXCEPTION_BACKLOG.md` (backendtest).
 
 **Current workstream (2026-11-14): Phase 3.5D downstream-intelligence
 integration, UNO Minda as the evidence-backed case, now generalized
-cross-company.** Branch `feature/autonomous-research-pipeline` in
-`C:\GitHub\backendtest`, HEAD through `8ded750` plus this session's
-uncommitted-at-time-of-writing EX-033 changes (to be committed as a
-new commit on the same branch; dev-only, no live writes, per the
-charter's Level-1 boundary). Sequence this session:
+cross-company.** Original EX-033 work is on
+`feature/autonomous-research-pipeline` in `C:\GitHub\backendtest`
+(HEAD through `4f72835`). The EX-033 **population dry run** is on a
+separate isolated worktree, `C:\GitHub\backendtest-ex033`, branch
+`research/ex033-population` (baseline `4f72835`), uncommitted at time of
+writing; dev-only, no live writes, per the charter's Level-1 boundary.
+Sequence this session:
 (1) **UNO Minda valuation gate reassessment** -- MARKET_CAP_OPPORTUNITY
 and VARIANT_PERCEPTION recomputed against the then-current ~31%-higher
 market cap; price-only revaluation separated from assumption changes;
@@ -1934,15 +1961,16 @@ MORE real companies (Refex Industries, Choice International) using
 real AR figures, not fabricated ones. This validation pass is what
 surfaced **EX-033**.
 (4) **EX-033 (cross-company `fin.raw.total_equity` NCI-basis
-inconsistency), this session:** corpus-wide read-only audit of
-**every** `total_equity` fact in the live DB (17 facts, 5 companies) --
-classified against each company's own source balance sheet (UNO
-Minda/Choice inclusive-of-NCI; Refex/GP Eco FY2024-25 exclusive with
-real unextracted NCI; **GP Eco FY2026 exclusive despite a same-period
-NCI fact also being recorded** -- the sharpest finding, proving "an
-NCI fact exists for this period" does not imply `total_equity`
-includes it; Chemplast/Chemkart genuinely NCI-free, confirmed via
-each company's own 100%-wholly-owned-subsidiary disclosure). Reusable
+inconsistency), original correction (`14d2ef2`):** corpus-wide read-only
+audit of **every** `total_equity` fact in the live DB (17 facts across
+6 companies) -- classified against each company's own source balance
+sheet (UNO Minda/Choice inclusive-of-NCI; Refex/GP Eco FY2024-25
+exclusive with real unextracted NCI; **GP Eco FY2026 exclusive despite a
+same-period NCI fact also being recorded** -- the sharpest finding,
+proving "an NCI fact exists for this period" does not imply
+`total_equity` includes it; Chemplast and Chemkart FY2023/FY2024
+NCI-free, confirmed via each company's own wholly-owned-subsidiary
+disclosure -- Chemkart FY2025 later corrected, see item 5). Reusable
 correction implemented in `app/services/financial_diagnostics_service.py`:
 new `fin.raw.total_equity_includes_nci` TEXT marker fact (no migration
 -- reuses the existing `ExtractedFact`/`value_type=TEXT` mechanism) and
@@ -1952,13 +1980,39 @@ diagnostics (`compute_roe_average_equity_basis`,
 `compute_roce_average_capital_employed_basis`,
 `compute_roce_tangible_capital_employed_basis`); legacy
 `compute_roe`/`compute_roce` (Matrix Engine's dependency) deliberately
-left unchanged to preserve compatibility.
-`tests/research/test_roe_roce_average_basis_reconciliation.py` grew
-16 -> 31 tests, all passing (Matrix Engine's and Phase 3.5B's own
-suites also re-run and unaffected). Full detail, evidence, and the
-remaining (not-yet-authorized) live-data action in `docs/
-SPARS_EXCEPTION_BACKLOG.md` EX-032/EX-033. **No live database write
-was made at any step of this sequence.**
+left unchanged at that commit to preserve compatibility.
+`tests/research/test_roe_roce_average_basis_reconciliation.py` grew to
+27 collected tests (the "31" figure recorded at the time was an
+overcount), all passing, and the full `tests/research/` suite passed
+857/857. Full detail in `docs/SPARS_EXCEPTION_BACKLOG.md` EX-033.
+(5) **EX-033 population dry run (2026-11-14, worktree
+`backendtest-ex033`, branch `research/ex033-population`, uncommitted):**
+prepared the exact 19-item live-write manifest (14 basis markers + 5
+missing NCI facts: Refex FY2025/FY2026, GP Eco FY2024/FY2025, Chemkart
+FY2025), each transcribed from a SHA-verified page and re-verified at
+write time. **Correction:** Chemkart FY2025 is not NCI-free -- the
+restated consolidated statement discloses Minority Interest (0.35)
+Lakhs, so the backlog bucket was corrected in place (marker `false` still
+correct; the NCI fact was missing). **New code guard:** `_owners_equity`
+made marker-aware (true -> total-NCI; false -> total; absent -> exact
+legacy behaviour), because populating `"false"` markers without it would
+have introduced the bucket-C double subtraction into the legacy path; 5
+tests added (27 in the file), adjacent suites 86 passed. **Dry run on
+isolated copies only:** plan 19 WOULD_INSERT; apply 19 INSERTED; second
+apply 19 REUSED; integrity (14 markers unit NULL, 7 NCI facts, 7
+evidence rows, 19 links, no duplicate current facts); rollback restored
+a byte-identical copy (SHA `aa4c6fed7bcce4e0`); second-copy smoke apply
+19 INSERTED. **Measured impact:** legacy ROE/ROCE unchanged everywhere;
+only GP Eco FY2026 debt-to-equity changes, 101.7341 -> 99.8318 (Matrix
+Engine `debt_to_equity_pct` identically), because the marker stops the
+double subtraction of the already-disclosed NCI; strict average-basis
+ROE/ROCE become available for 8 company-periods. **No live database
+write has been made.** Full approval report:
+`docs/ex033/EX033_POPULATION_APPROVAL_REPORT.md` (manifest, evidence,
+impacts, backup/rollback plan, exact proposed write manifest). **Next
+action: owner approval of that manifest** -- Level 3, then
+backup-then-apply per the report's §10. **No live database write was
+made at any step of this sequence.**
 
 ---
 
