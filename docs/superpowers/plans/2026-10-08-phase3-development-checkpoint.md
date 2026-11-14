@@ -373,11 +373,12 @@ uses the true date.
 - **P0 SIX-COMPANY COMPLETION — mechanisms complete, live writes
   awaiting owner approval (2026-11-14, evening pass).** Worktree
   `C:\GitHub\backendtest-ex033`, branch `research/ex035-freshness-audit`,
-  tip **`6176e4b`** (not merged; supersedes the `37161b5` state below —
+  tip **`c46986b`** (not merged; supersedes the `37161b5` state below —
   on top of it: `ce25c6e` NSE acquisition fix, `ffc87cc` report +
   EX-036…EX-042, `8f8ae25` EX-040…EX-044 fixes, `bc8e922` EX-045,
-  `24e590f` normalisation runner + EX-046, `6176e4b` report updated to
-  the measured rehearsal). Report
+  `24e590f` normalisation runner + EX-046, and the `6176e4b`→`c46986b`
+  report corrections: measured rehearsal, Chemplast Step 5 withdrawn,
+  pilot outcomes). Report
   `docs/SPARS_SIX_COMPANY_DATA_COMPLETION_REPORT.md` updated in place;
   backlog carries EX-036…EX-046. **Nothing written to the live DB this
   pass**; every measurement is from isolated copies
@@ -433,7 +434,15 @@ uses the true date.
   on `ex039_copy.db`: the rule path stages 0 from the OCR statement,
   correctly — its pages carry no balance-sheet line items and the lane
   has no revenue/PAT pattern; the label-tolerance fix lives in the LLM
-  citation gate. **Next action:** owner approval for report §8 —
+  citation gate. **Two measurement runs were cut short by host memory
+  pressure** (8 GB machine, ~1.2 GB free): the Refex annual-report LLM
+  pilot stopped after 1,804 calls having staged 6 financial candidates
+  (five STANDALONE/UNDETERMINED, one consolidated revenue 2,276.73),
+  and a third Chemplast Q3-deck pass was killed twice, its 27 logged
+  calls accepting consolidated COGS 573 and no PAT. Both copies'
+  `integrity_check` is `ok`; neither is conclusive beyond that. Do not
+  loop-restart them on this machine. **Next action:** owner approval for
+  report §8 —
   Steps 1–4 (Chemkart registration, UNO deck acquisition ×3, LLM
   staging, promotion of the 10-id file), Step 6 Refex normalisation
   (11 facts), Step 7 EX-046 PAT correction then re-run Step 6. Also
