@@ -402,8 +402,31 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
-- **EX-034 DIRECT SCREENER COMPARISON COMPLETE (2026-11-15); Desktop task
-  item 1 closed, item 2 (Chemplast February acquisition) is next.** Worktree
+- **DESKTOP TASK ITEMS 1+2 CLOSED (2026-11-15). Item 2 — Chemplast
+  February 2026 acquisition — executed live through the existing
+  mechanism.** Verified backup first
+  (`instance\trading_app.db.bak_pre_chemplast_feb_acquisition_20261114T213153Z.db`,
+  integrity ok, 0 FK, SHA-256 `e88451fa…4fcaa350`); both documents now
+  live with content hashes identical to the rehearsal (`f3ef494d…`
+  statement `3929db70…`, `0077d5fb…` deck `a9b8206e…`); issuer gate
+  VERIFIED on both (9/9 pages; 11/29); staging produced 6 candidates
+  from the statement and 8 from the deck; only the FY2026Q3 pair was
+  promoted (`evaluate_candidate` returned AUTO_PROMOTE for both),
+  citing statement p.7 with `as_of_date` 2026-02-07 (publication date)
+  so live reproduces the isolated copy exactly. Live before/after:
+  documents 2,338 → **2,340** (Chemplast-linked 32 → 34), candidates
+  2,650 → 2,664, decisions 289 → 291, facts 1,126/1,077 →
+  **1,128/1,079** (total/current), ledger 23 V / 1 M / 12 N/A →
+  **24 V / 0 M / 12 N/A (Chemplast 6/6 live)**. The standalone-COGS
+  disagreement stays NEEDS_REVIEW: all four COGS candidates (275 S,
+  206.03 S, 565.53 C, 573 C) remain OPEN, nothing resolved either way.
+  Surfaced honestly: the live deck staged a broader candidate set than
+  the rehearsal (a 14-AUTO_PROMOTE dry run including COGS), so the
+  promotion lane was NOT run with `--commit` — only the approved pair
+  went through `promote_candidate_finding`. Idempotence re-confirmed
+  (already_known=1, registered=0); post-write integrity ok, 0 FK,
+  0 facts without evidence. No live action remains for this task.
+  **Item 1 record (EX-034):** worktree
   `C:\GitHub\backendtest-ex034`, branch `research/ex034-screener-reconciliation`,
   tip **`e67e12c`** (not pushed). The three 2026-11-15 Screener exports
   (Refex, GP Eco, Chemkart) were already in
@@ -426,13 +449,13 @@ uses the true date.
   backfill lead, not coverage. No new implementation defect. The Chemkart and
   GP Eco share-capital/reserves display splits were corrected (totals and
   ratios unchanged). 27 EX-034 tests and 49 with the EX-033 suite pass.
-  **Next action: Desktop task item 2 — verified backup first; acquire the two
-  Chemplast February 2026 documents (`f3ef494d` statement, `0077d5fb` deck)
-  into the LIVE database through the existing mechanism (they currently exist
-  only on the rehearsal copy); issuer-identity check on both; Q3 extraction
-  and staging on live; promote 835.14 / −119.20 only if it reconciles the same
-  way as the isolated copy; the standalone-COGS disagreement 275 vs 206.03
-  stays NEEDS_REVIEW.**
+  Next action: none for the Desktop task; awaiting the owner's next
+  directive. (Chemkart FY2026H1: four of the anticipated five facts are
+  live — revenue 103.23, PAT 10.15, total assets 137.05, trade
+  receivables 56.19, all CONSOLIDATED, as_of 2025-11-10, each with one
+  evidence row; the fifth, CFO 0.6735 standalone, was never reproduced
+  by live staging and remains open with four other H1 candidates —
+  report §8.1.)
 - **P0 SIX-COMPANY COMPLETION — seven quarters resolved; Chemkart H1 facts
   promoted live; live ledger now 23 V / 1 M / 12 N/A (2026-11-15).** Worktree `C:\GitHub\backendtest-ex033`, branch
   `research/ex035-freshness-audit`, tip **`7d8e7f6`** (not merged, not
