@@ -404,14 +404,15 @@ uses the true date.
 
 - **P0 SIX-COMPANY COMPLETION — seven quarters resolved; Chemkart H1 facts
   promoted live; live ledger now 23 V / 1 M / 12 N/A (2026-11-15).** Worktree `C:\GitHub\backendtest-ex033`, branch
-  `research/ex035-freshness-audit`, tip **`344006c`** (not merged, not
+  `research/ex035-freshness-audit`, tip **`7d8e7f6`** (not merged, not
   pushed; supersedes the `c46986b` state below — on the `37161b5` base:
   `ce25c6e` NSE acquisition fix, `ffc87cc` report + EX-036…EX-042,
   `8f8ae25` EX-040…EX-044 fixes, `bc8e922` EX-045, `24e590f`
   normalisation runner + EX-046, `6176e4b`→`c46986b` report
   corrections, `ba075fd` recording the live run, **`e06d093`** the
   EX-048/EX-050/EX-051 repairs + regression tests + report/backlog
-  revision, and `344006c` the certification/tip record). Report `docs/SPARS_SIX_COMPANY_DATA_COMPLETION_REPORT.md`
+  revision, and `344006c` the certification/tip record, `17049ec` the
+  two applied PAT corrections, `7d8e7f6` the Refex FY2025/NCI record). Report `docs/SPARS_SIX_COMPANY_DATA_COMPLETION_REPORT.md`
   updated in place; backlog carries EX-036…EX-051.
   **Owner approved "steps 1–4, run them live" and the sequence was
   executed 2026-11-14.** Verified backup first
@@ -577,42 +578,66 @@ uses the true date.
   it unless explicitly asked. Code, tests and docs are committed as
   `e06d093`/`344006c`; suite 2,305 passed / 2 skipped / 0 failed.
   **Still unapproved and untouched:**
-  report §8 Step 6 (Refex 11 `fin.norm.*` facts) and Step 7 (EX-046 PAT
-  correction + Step 6 re-run); the UNO FY27Q1 chain / missing NCI fact
-  (EX-042). Do not start Gemini integration or the 50-company
+  report §8 Step 6 (Refex 11 `fin.norm.*` facts; GP Eco ROE); the UNO
+  FY27Q1 chain / missing NCI fact (EX-042). Step 7 is now executed
+  (§8.2, §8.3 below). Do not start Gemini integration or the 50-company
   expansion.
-- **THREE DATA FIXES — 2 applied live, 1 withdrawn (owner-approved
-  2026-11-15).** Fresh verified backup
+- **PAT-BASIS CORRECTIONS — all applied live; EX-034 corrected (2026-11-15).**
+  **Batch 1 (owner-approved 2026-11-15).** Verified backup
   `...bak_pre_three_data_fixes_20261114T204251Z.db` (integrity/quick_check
   ok, 0 FK, 1,120 facts / 1,073 current, SHA-256
-  `3e276a19…e74b0593`). All values parsed programmatically from the
-  stored extraction-unit text (nothing hand-entered); rehearsed on an
-  isolated copy first, then applied live under the release lane's
-  `pipeline_run_lock`, nothing else running. **Refex:** consolidated
-  `fin.raw.pat` FY2026 superseded `a2c74f1c` 203.7210 (total incl. NCI)
-  → `b68ae193` **203.3531** (owners, 20,335.31 lakh), evidence page 299
-  verbatim "Profit attributable to: Owners of the company 20,335.31".
+  `3e276a19…e74b0593`). **Refex:** consolidated `fin.raw.pat` FY2026
+  superseded `a2c74f1c` 203.7210 (total incl. NCI) → `b68ae193`
+  **203.3531** (owners, 20,335.31 lakh), evidence page 299 verbatim.
   **GP Eco:** FY2026 `fin.raw.pat` **`9bf283cf` 40.1216** (profit
-  4,274.16 − minority interest 262.00 lakh = 4,012.16 lakh) and
+  4,274.16 − minority interest 262.00 lakh) and
   `fin.raw.non_controlling_interest_pat` **`cc797254` 2.6200**, both
-  evidence page 81 (verbatim XV and XVI rows); FY2026 ROE is now
-  computable (rehearsal `compute_roe` = **36.7573%**; no live norm fact
-  was written). **Chemkart FY2025 ROE — NOT applied, premise withdrawn
-  as a measurement error:** current `compute_roe` returns the stored
-  **45.5488** unchanged, because the confirmed marker says total_equity
-  already excludes NCI (owners' equity = 53.2857). EX-034's 45.5373 came
-  from passing the NCI **PAT** (−0.0135) into its NCI **equity** field
-  (denominator 53.2992) — a double subtraction; with the real NCI equity
-  (−0.0035) the same path gives 45.5403, and neither is justified by the
-  marker. The stored fact is correct, not stale. EX-034 §4.6 and its
-  harness/test carry that input error (and the GP Eco entry
-  double-subtracts too: its owners' PAT 37.5016 = 40.1216 − 2.62 gives
-  SPARS ROE 35.01%; the basis-correct figure is 36.7573%) — **correction
-  of that merged deliverable is a proposed follow-up, not done here.**
-  Also surfaced, not fixed: Refex FY2025 `fin.raw.pat` holds the same
-  total-vs-owners figure (158.3834 stored vs 158.7782 owners). Post-write
-  live: **1,123 facts / 1,075 current**, integrity ok, 0 facts without
-  evidence. The three missing Screener exports remain owner-side.
+  page 81. **Chemkart FY2025 ROE — withdrawn as a measurement error:**
+  stored **45.5488** is correct on the confirmed basis (owners' equity =
+  53.2857); EX-034's 45.5373 came from passing NCI **PAT** (−0.0135) into
+  its NCI **equity** field. Post-batch: 1,123 facts / 1,075 current.
+  **Batch 2 — Refex FY2025 + NCI shares (owner-approved 2026-11-15
+  02:50 IST; report §8.3).** Backup
+  `...bak_pre_refex_fy25_nci_pat_20261114T205024Z.db` (164,368,384 B,
+  SHA-256 `6080bfa2…8d9377`, integrity ok, 0 FK); rehearsed on
+  `rehearse_refex_fy25.db` first. FY2025 `fin.raw.pat` `b30592c9`
+  158.3834 → **`8711f1c9` 158.7782** (owners, 15,877.82 lakh); NCI share
+  **`19e23d46` −0.3948** (FY2025) and **`a99e433b` 0.3679** (FY2026),
+  all cited to `ad62753b` page 299. Post: **1,126 facts / 1,077
+  current**, 0 facts without evidence, integrity ok. FY2025 ROE
+  13.0527 → **13.0852** frozen / 13.0594 → **13.0919** declared.
+  **EX-034 corrected (worktree `C:\GitHub\backendtest-ex034`, branch
+  `research/ex034-screener-reconciliation`, commit `f570f2b` on
+  `46ffb8a`; not pushed).** Every year now states
+  `total_equity_includes_nci` and the harness refuses to compute without
+  it; the frozen `compute_roe` path (which ignores the marker) is
+  modelled separately from the source-confirmed basis. Re-derived:
+  Refex FY2026 **13.5195** declared / 13.5594 frozen, FY2025
+  **13.0919** / 13.0852; GP Eco FY2026 **36.7573** / 37.4577, FY2024/25
+  **32.0026 / 15.9751** declared; Chemkart FY2025 **45.5458** frozen vs
+  45.5488 stored (gap 0.0030, cosmetic); Screener-comparable ROCE Refex
+  **23.7652**, GP Eco **38.6389**. **UNO Minda confirmed unaffected**
+  (marker `true` ⇒ owners' equity 6,829.57 on both paths; the
+  18.4062 → 19.2530 NCI step is genuine and the **−1.0974 residual stays
+  open, EX-032**); Choice and Chemplast unaffected. 43/43 research tests
+  pass (21 EX-034 + 22 EX-033). **Live markers:** all six now carry
+  `fin.raw.total_equity_includes_nci` (UNO/Choice `true`; the other four
+  `false`), recorded 2026-11-14.
+  **Open after this batch:** Refex Step 6 (11 `fin.norm.*` facts) and
+  GP Eco ROE norm fact; Chemkart stale `fin.norm.roe_pct`; Refex
+  duplicate un-superseded current rows (two `total_equity` and a
+  standalone `pat` per year — currently resolved only by `created_at`);
+  the frozen `compute_roe` NCI subtraction itself (EX-033 owns the
+  decision).
+  **New Desktop `task.txt` items (2026-11-15, active):** (1) three new
+  Screener exports for Refex / GP Eco / Chemkart are downloaded — move
+  them into the Drive `SPARS_Normalised_Financials` folder and run the
+  corrected EX-034 harness for a direct (not inferred) comparison;
+  (2) Chemplast's February 2026 acquisition is **approved** — backup,
+  acquire the two documents live through the existing mechanism,
+  issuer-identity check, Q3 extraction/staging live, promote the
+  835.14 / −119.20 pair **only if it reconciles as on the copy**; keep
+  the deck-vs-statement COGS disagreement (275 vs 206.03) NEEDS_REVIEW.
 - **Approved live sequence: completed and verified (2026-11-14).**
   After a first attempt partial-wrote one document and was reverted
   (incident below, `1a56a2c`), the owner approved resuming all three
