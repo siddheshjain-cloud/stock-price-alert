@@ -23,7 +23,7 @@ frontend implementation begins.
 H1 facts: 4 of the 5 copy-proved facts are now live — revenue 103.23,
 PAT 10.15, total assets 137.05, receivables 56.19, all CONSOLIDATED;
 backup `...bak_pre_chemkart_five_h1_facts_20261114T200544Z.db`, SHA-256
-`5edb2267…75761d8`. Live DB now **1,120 facts / 1,073 current**, ledger
+`5edb2267…75761d8`. Live DB now **1,123 facts / 1,075 current**, ledger
 **23 V / 1 M / 12 N/A** — 24 applicable, 23 verified; Chemkart ×6 flipped
 M→N/A. The UNO Q3 pair was already live from §8.0, so it was not
 re-written. The fifth Chemkart fact (CFO 0.6735) was not reproduced by
@@ -42,7 +42,12 @@ at origin (0/0) and merged at `499a8c2`; `137323b` and `b504355` are
 already in the release branch; the four data-quality issues are scoped
 in the report to the owner (Refex PAT relabel, GP Eco FY2026 owners'
 PAT, Chemkart stale FY2025 ROE, three Screener exports absent); EX-032
-re-confirmed open and untouched. EX-035
+re-confirmed open and untouched. The owner then approved the three data
+fixes: **Refex and GP Eco were applied live on 2026-11-15 and verified
+(1,123/1,075, 0 facts without evidence); the Chemkart ROE fix was
+withdrawn unexecuted** because its premise fails under the confirmed
+equity basis (EX-034 harness error — detail in the P0 bullet). The three
+Screener exports remain an owner-side acquisition. EX-035
 closed end to end — the approved
 live sequence ran: six R3 document corrections applied and verified,
 a staging-only six-company cycle SUCCESS with 0 candidates / 0 facts
@@ -576,6 +581,38 @@ uses the true date.
   correction + Step 6 re-run); the UNO FY27Q1 chain / missing NCI fact
   (EX-042). Do not start Gemini integration or the 50-company
   expansion.
+- **THREE DATA FIXES — 2 applied live, 1 withdrawn (owner-approved
+  2026-11-15).** Fresh verified backup
+  `...bak_pre_three_data_fixes_20261114T204251Z.db` (integrity/quick_check
+  ok, 0 FK, 1,120 facts / 1,073 current, SHA-256
+  `3e276a19…e74b0593`). All values parsed programmatically from the
+  stored extraction-unit text (nothing hand-entered); rehearsed on an
+  isolated copy first, then applied live under the release lane's
+  `pipeline_run_lock`, nothing else running. **Refex:** consolidated
+  `fin.raw.pat` FY2026 superseded `a2c74f1c` 203.7210 (total incl. NCI)
+  → `b68ae193` **203.3531** (owners, 20,335.31 lakh), evidence page 299
+  verbatim "Profit attributable to: Owners of the company 20,335.31".
+  **GP Eco:** FY2026 `fin.raw.pat` **`9bf283cf` 40.1216** (profit
+  4,274.16 − minority interest 262.00 lakh = 4,012.16 lakh) and
+  `fin.raw.non_controlling_interest_pat` **`cc797254` 2.6200**, both
+  evidence page 81 (verbatim XV and XVI rows); FY2026 ROE is now
+  computable (rehearsal `compute_roe` = **36.7573%**; no live norm fact
+  was written). **Chemkart FY2025 ROE — NOT applied, premise withdrawn
+  as a measurement error:** current `compute_roe` returns the stored
+  **45.5488** unchanged, because the confirmed marker says total_equity
+  already excludes NCI (owners' equity = 53.2857). EX-034's 45.5373 came
+  from passing the NCI **PAT** (−0.0135) into its NCI **equity** field
+  (denominator 53.2992) — a double subtraction; with the real NCI equity
+  (−0.0035) the same path gives 45.5403, and neither is justified by the
+  marker. The stored fact is correct, not stale. EX-034 §4.6 and its
+  harness/test carry that input error (and the GP Eco entry
+  double-subtracts too: its owners' PAT 37.5016 = 40.1216 − 2.62 gives
+  SPARS ROE 35.01%; the basis-correct figure is 36.7573%) — **correction
+  of that merged deliverable is a proposed follow-up, not done here.**
+  Also surfaced, not fixed: Refex FY2025 `fin.raw.pat` holds the same
+  total-vs-owners figure (158.3834 stored vs 158.7782 owners). Post-write
+  live: **1,123 facts / 1,075 current**, integrity ok, 0 facts without
+  evidence. The three missing Screener exports remain owner-side.
 - **Approved live sequence: completed and verified (2026-11-14).**
   After a first attempt partial-wrote one document and was reverted
   (incident below, `1a56a2c`), the owner approved resuming all three
