@@ -363,12 +363,50 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
+- **EX-035 RESOLVED; six-company pilot closed; final handover written
+  (2026-11-14).** Worktree `C:\GitHub\backendtest-ex033`, branch
+  `research/ex035-freshness-audit`, base `499a8c2`, six local commits on
+  top of the pushed `18275d9`: `708b450` (backlog entry), `bce1efb`
+  (ledger counts only current, scope-consistent facts), `f5c1dd7`
+  (half-yearly reporters → NOT_APPLICABLE), `5f31908` (reporting-period
+  inference service + 14 tests), `d7ff2a9` (discovery/staging no longer
+  drops period-less results filings + 2 tests), `8eac6cf` (backlog
+  resolved + research-report generator). **All six are local-only at the
+  time of writing — push is the immediate next action** (task part 1
+  explicitly permits pushing approved changes; non-force only).
+  Verification: ledger suite 22 passed, inference 14, pipeline 35,
+  static gate 0 violations; full suite at `f5c1dd7` = **2,155 passed, 2
+  skipped, 0 failed in 1,005 s**; a final full run on the shipped tree
+  was started and its result recorded in the handover (§8). Live
+  six-company coverage (read-only, `as_of` 2026-11-14): UNO 3V/3M,
+  Choice 6V, Chemplast 5V/1M, Refex 6V, GP Eco 6 N/A, Chemkart 6M —
+  **20 VERIFIED / 10 SOURCE_MISSING / 6 NOT_APPLICABLE**. UNO FY2027Q1
+  detail now 14 source facts, no superseded-only slug, CONSOLIDATED
+  scope. The 16 unverified cells are reclassified as 4 acquisition
+  gaps (UNO ×3, Chemplast ×1), 6 Chemkart post-listing gaps and 6 GP Eco
+  cadence cells — no data invented. Live DB untouched this session;
+  R1/R2 idempotence re-proved on a copy (0 drift / 0 inserts / 0
+  conflicts); provenance 1,060/1,060 current facts complete, integrity
+  ok. Research-query surface verified for all ten companies. Evidence-
+  backed report generated through the existing engine:
+  `scripts/ex035_research_report.py` →
+  `docs/ex035/EX035_RESEARCH_REPORT_UNO_MINDA_FY2026.md`. **Gemini's
+  stream delivered market-data Pilots 01 and 01B (both already
+  independently reviewed), NOT the four-company financial validation —
+  recorded as absent, not invented.** Final deliverable:
+  `docs/SPARS_PIPELINE_PILOT_FINAL_HANDOVER.md` — recommendation
+  **CONDITIONAL GO** for 50 companies, conditioned on an acquisition
+  programme, four open data exceptions, owner approval for the live
+  reprocessing/priority-list step (Level 3, not started), and the
+  missing second-stream financial validation.
+
 - **EX-035 R1/R2 applied to the live database (2026-11-14).** Same
   branch, base `499a8c2`, on top of `460a4e4`; manifest/apply artefacts
   as `9d94261`, the approved live apply and its evidence as
-  **`18275d9`** — **pushed to origin, not merged** (origin's tip; a
-  later local-only docs commit `708b450` adds the EX-035 backlog entry
-  and is **not** pushed). The owner approved the exact audited manifest; the live
+  **`18275d9`** — **pushed to origin, not merged** (origin's tip; the
+  follow-on commits `708b450`, `bce1efb`, `f5c1dd7`, `5f31908`,
+  `d7ff2a9`, `8eac6cf` carry the EX-035 remediation and are described in
+  the entry above). The owner approved the exact audited manifest; the live
   write is complete and verified. Manifest:
   `docs/ex035/EX035_R1_R2_MANIFEST.json` — 31 documents / 43 metadata
   fields (12 document-type changes, 0 sent to review; every period
