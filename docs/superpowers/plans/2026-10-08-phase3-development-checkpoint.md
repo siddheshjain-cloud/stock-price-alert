@@ -402,6 +402,37 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
+- **EX-034 DIRECT SCREENER COMPARISON COMPLETE (2026-11-15); Desktop task
+  item 1 closed, item 2 (Chemplast February acquisition) is next.** Worktree
+  `C:\GitHub\backendtest-ex034`, branch `research/ex034-screener-reconciliation`,
+  tip **`e67e12c`** (not pushed). The three 2026-11-15 Screener exports
+  (Refex, GP Eco, Chemkart) were already in
+  `SPARS_Normalised_Financials`, so no move was needed. The harness now reads
+  all six workbooks dependency-free (`--workbook-dir`) and writes the
+  committed evidence `docs/ex034/screener_workbook_extract_2026-11-15.json`;
+  report §4.8 carries the direct comparison. Direct vs reconstructed: UNO and
+  Chemplast exact, Choice ≤0.0075 pp (rounding). **Refex FY2026** ROE
+  13.5193 (recon 13.5195), ROCE **20.3423** vs 23.7652 — the −3.42 pp gap is
+  fully decomposed: leases 114.3840 (FY2025) / 62.9328 (FY2026) inside
+  Screener's Borrowings, Screener's PBT folding the after-tax discontinuing
+  loss (330.4304 → 291.7686; AR p.299 continuing PBT 33,043.04 lakh,
+  discontinuing after-tax (3,866.18)), and its interest line 36.56 vs finance
+  costs 32.0753. **GP Eco FY2026** ROE 36.4098 (recon 36.7573; 1.0381
+  share-warrant money in Screener reserves), ROCE 38.9821 (recon 38.6389);
+  FY2025 direct ROCE 25.3459 vs 23.8939 from a 0.9724-higher interest row.
+  **Chemkart FY2025** ROE 46.0312 (recon 45.5488, +0.48 pp: export NP 24.53 vs
+  prospectus 24.2710 — later filing basis; FY2023/24 reproduce 52.84/50.04)
+  and a new FY2026 row (ROE 15.1546, ROCE 27.6599) with no corpus source — a
+  backfill lead, not coverage. No new implementation defect. The Chemkart and
+  GP Eco share-capital/reserves display splits were corrected (totals and
+  ratios unchanged). 27 EX-034 tests and 49 with the EX-033 suite pass.
+  **Next action: Desktop task item 2 — verified backup first; acquire the two
+  Chemplast February 2026 documents (`f3ef494d` statement, `0077d5fb` deck)
+  into the LIVE database through the existing mechanism (they currently exist
+  only on the rehearsal copy); issuer-identity check on both; Q3 extraction
+  and staging on live; promote 835.14 / −119.20 only if it reconciles the same
+  way as the isolated copy; the standalone-COGS disagreement 275 vs 206.03
+  stays NEEDS_REVIEW.**
 - **P0 SIX-COMPANY COMPLETION — seven quarters resolved; Chemkart H1 facts
   promoted live; live ledger now 23 V / 1 M / 12 N/A (2026-11-15).** Worktree `C:\GitHub\backendtest-ex033`, branch
   `research/ex035-freshness-audit`, tip **`7d8e7f6`** (not merged, not
