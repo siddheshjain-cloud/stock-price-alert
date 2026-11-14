@@ -366,8 +366,9 @@ uses the true date.
 - **EX-035 R1/R2 applied to the live database (2026-11-14).** Same
   branch, base `499a8c2`, on top of `460a4e4`; manifest/apply artefacts
   as `9d94261`, the approved live apply and its evidence as
-  **`18275d9`** — branch tip, clean tree, **pushed to origin, not
-  merged**. The owner approved the exact audited manifest; the live
+  **`18275d9`** — **pushed to origin, not merged** (origin's tip; a
+  later local-only docs commit `708b450` adds the EX-035 backlog entry
+  and is **not** pushed). The owner approved the exact audited manifest; the live
   write is complete and verified. Manifest:
   `docs/ex035/EX035_R1_R2_MANIFEST.json` — 31 documents / 43 metadata
   fields (12 document-type changes, 0 sent to review; every period
@@ -427,11 +428,21 @@ uses the true date.
   journal/rollback pair is also committed). Reports:
   `docs/ex035/EX035_R1_R2_DRY_RUN_REPORT_2026-11-14.md` and
   `docs/ex035/EX035_R1_R2_LIVE_APPLY_REPORT_2026-11-14.md`.
-  **Open finding:** `CoverageLedgerService` does not filter superseded
-  facts — UNO FY2027Q1 reads VERIFIED off a superseded `fin.raw.pat`
-  306.72 — predates EX-035, needs its own exception.
-  **Next action:** none for EX-035; do not merge without a separate
-  instruction. Owner to triage the ledger finding.
+  **Open finding, now logged as EX-035 (2026-11-14):** the coverage
+  ledger ignores both supersession and scope. Recorded in
+  `docs/SPARS_EXCEPTION_BACKLOG.md` (commit **`708b450`**, local, not
+  pushed). Corrected reading of the earlier note: UNO FY2027Q1 is
+  currently VERIFIED on a **current** consolidated pair
+  (`fin.raw.revenue` 5556.85 + `fin.raw.pat` 306.72) — 306.72 is the
+  current row, while the 296 `pat_attributable_to_owners` row is the
+  superseded one. The verdict is unsound rather than wrong today: that
+  quarter's ledger detail counts 16 source facts where 14 are current
+  and lists a slug that exists only on a superseded row. Read-only
+  cross-company scan: 10 companies with financial facts, 24
+  company-quarters in the required window, **0 status differences**;
+  only UNO FY2027Q1's detail changes. **Next action:** none for
+  EX-035; do not merge without a separate instruction. Owner to
+  triage EX-035 remediation (backlog lists the five required steps).
 
 - **EX-035 audit complete (2026-11-14).** Branch
   `research/ex035-freshness-audit` in `C:\GitHub\backendtest-ex033`, base
