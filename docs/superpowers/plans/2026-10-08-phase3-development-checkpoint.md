@@ -460,8 +460,10 @@ uses the true date.
   report §8.1.)
 - **P0 SIX-COMPANY COMPLETION — seven quarters resolved; Chemkart H1 facts
   promoted live; live ledger now 23 V / 1 M / 12 N/A (2026-11-15).** Worktree `C:\GitHub\backendtest-ex033`, branch
-  `research/ex035-freshness-audit`, tip **`7d8e7f6`** (not merged, not
-  pushed; supersedes the `c46986b` state below — on the `37161b5` base:
+  `research/ex035-freshness-audit`, tip **`7d8e7f6`** (pushed to origin
+  2026-11-15, plain fast-forward `37161b5..7d8e7f6`, 17 commits —
+  including the EX-048/EX-050/EX-051 code fixes; preflight clean: no
+  tracked changes, no remote-only commits; not merged; supersedes the `c46986b` state below — on the `37161b5` base:
   `ce25c6e` NSE acquisition fix, `ffc87cc` report + EX-036…EX-042,
   `8f8ae25` EX-040…EX-044 fixes, `bc8e922` EX-045, `24e590f`
   normalisation runner + EX-046, `6176e4b`→`c46986b` report
