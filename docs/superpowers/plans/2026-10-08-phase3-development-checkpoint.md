@@ -19,9 +19,14 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-14 (EX-035 resolved, six-company pilot closed
-and pushed — `c030baa` on `research/ex035-freshness-audit`, final
-handover written; see its bullet in Session Recovery State. EX-034
+**Last updated:** 2026-11-14 (EX-035 closed end to end — the approved
+live sequence ran: six R3 document corrections applied and verified,
+a staging-only six-company cycle SUCCESS with 0 candidates / 0 facts
+promoted, and the six-company priority list on the branch; branch tip
+`37161b5` pushed, not merged, and the cycle exposed a 21-document
+staging gap as the next work item. The production release copy's
+priority list is still Choice-only — owner decision. Resolution,
+handover and suite results: the bullet below. EX-034
 complete — same section; commit `46ffb8a` on
 `research/ex034-screener-reconciliation`, unpushed. Earlier today: EX-033 live population applied — guard shipped first to
 `C:\GitHub\backendtest` (cherry-pick `c740e9f`, 27 guard tests passed in
@@ -365,25 +370,43 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
-- **Approved live sequence: halted after a partial write, database
-  restored — owner decision pending (2026-11-14).** The owner approved
-  all three live steps (R3 metadata corrections, staging-only corpus
-  reprocess, six-company priority list) with a verified backup first and
-  a stop-on-unexpected-change instruction. Backup
+- **Approved live sequence: completed and verified (2026-11-14).**
+  After a first attempt partial-wrote one document and was reverted
+  (incident below, `1a56a2c`), the owner approved resuming all three
+  steps and required that a post-commit display/log failure can never
+  leave a change unjournalled. Backup
   `trading_app.db.bak_pre_ex035_r3_20261114T103652Z.db` (SHA-256
-  `3c038908…`, integrity ok, logical fingerprint identical to live).
-  Step 1 committed **one** change (`a25ac7fd` GP_RESULTS_20_06_2026
-  QUARTERLY_RESULTS → OTHER) and then raised `KeyError: 'company'` on
-  the post-commit print; no journal was written. The change was
-  reverted through the same applier (`ex035_r3_partial_revert_journal_`
-  `20261114T103751Z.json`); post-revert the live database is logically
-  identical to the preflight (integrity ok, every count and target row
-  equal; only that row's `updated_at` records the touch). Manifest now
-  carries `company` on all six entries and the applier's print falls
-  back to the document id (`1a56a2c`, pushed; branch tip). **Steps 2
-  and 3 were not started.** Next action: owner decides whether to
-  re-run step 1 with the corrected manifest (dry-run now 6 will-set /
-  0 drift) and then steps 2–3.
+  `3c038908…`, integrity ok, logically identical to live). The applier
+  now flushes its journal atomically **before and after every commit**
+  (`pending_commit` → `applied`). **Step 1:** six document-type
+  corrections applied and journalled
+  (`ex035_r3_journal_20261114T104209Z.json`); fingerprint delta is the
+  type histogram only — facts stay 1,107 / 1,060 current, evidence,
+  documents, extraction runs and per-company totals unchanged.
+  **Step 2:** staging-only cycle scoped to the six companies,
+  `PipelineCycleRun ef52cc44` SUCCESS, 0 failures, **0 candidates, 0
+  facts promoted**; 24 documents swept, `coverage_review_pass` +27,
+  `pipeline_cycle_run` +1, nothing else. The pipeline's own
+  `PIPELINE_CYCLE_PROBLEM` email fired because **21 fact-bearing
+  documents produced zero rule-based candidates** — a staging
+  label-rule/text-layer gap (docs up to 1.2 MB), recorded as the next
+  backlog item; re-sweep them with `--force-restage-document-ids` after
+  a label fix, or their zero-result passes exclude them from discovery.
+  **Step 3:** `scripts/priority_companies.txt` on this branch lists all
+  six; the scheduled production task runs
+  `C:\SPARS-release\backendtest\scripts\scheduled\run_priority_extraction.bat`
+  and reads **that checkout's** copy, still Choice-only — a
+  release-config change that remains the owner's decision (not made).
+  Branch tip `37161b5`, pushed. Next work per the owner: close genuine
+  acquisition/extraction gaps through 2026-11-14; **do not begin
+  50-company expansion.**
+
+  *Incident (same day, earlier):* the first R3 attempt committed
+  `a25ac7fd` and then raised `KeyError: 'company'` on the post-commit
+  print; no journal existed. It was reverted through the same applier
+  (`ex035_r3_partial_revert_journal_20261114T103751Z.json`) and the
+  database verified logically identical to the preflight (only that
+  row's `updated_at` changed).
 
 - **EX-035 RESOLVED; six-company pilot closed; final handover written
   (2026-11-14).** Worktree `C:\GitHub\backendtest-ex033`, branch
@@ -425,8 +448,9 @@ uses the true date.
   `docs/SPARS_PIPELINE_PILOT_FINAL_HANDOVER.md` — recommendation
   **CONDITIONAL GO** for 50 companies, conditioned on an acquisition
   programme, four open data exceptions, owner approval for the live
-  reprocessing/priority-list step (Level 3, not started), and the
-  missing second-stream financial validation.
+  reprocessing/priority-list step (Level 3 — completed 2026-11-14; only
+  the production release-copy decision remains), and the missing
+  second-stream financial validation.
 
 - **EX-035 R1/R2 applied to the live database (2026-11-14).** Same
   branch, base `499a8c2`, on top of `460a4e4`; manifest/apply artefacts
