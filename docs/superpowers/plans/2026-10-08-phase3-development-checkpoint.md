@@ -34,18 +34,28 @@ the six-company priority-list change is **executed** under the owner's
 `release/market-data-service` (config file only; pushed to origin at the
 owner's explicit request, creating the remote branch — no CI workflows
 exist in that repo); the 8 GB
-host memory question is **answered** (evidence in the P0 bullet below).
-EX-035
+host memory question is **answered** (evidence in the P0 bullet below;
+owner adopted option 1 — sequencing/smaller batches, no host purchase,
+and asked to be told directly if it stops being sufficient). Bounded
+cleanup **assessed 2026-11-15, nothing implemented**: EX-034 is already
+at origin (0/0) and merged at `499a8c2`; `137323b` and `b504355` are
+already in the release branch; the four data-quality issues are scoped
+in the report to the owner (Refex PAT relabel, GP Eco FY2026 owners'
+PAT, Chemkart stale FY2025 ROE, three Screener exports absent); EX-032
+re-confirmed open and untouched. EX-035
 closed end to end — the approved
 live sequence ran: six R3 document corrections applied and verified,
 a staging-only six-company cycle SUCCESS with 0 candidates / 0 facts
 promoted, and the six-company priority list on the branch; branch tip
 `37161b5` pushed, not merged, and the cycle exposed a 21-document
 staging gap as the next work item. The production release copy's
-priority list is still Choice-only — owner decision. Resolution,
+priority list is six ids / committed `9b2052e` / pushed (2026-11-15 owner
+order). Resolution,
 handover and suite results: the bullet below. EX-034
 complete — same section; commit `46ffb8a` on
-`research/ex034-screener-reconciliation`, unpushed. Earlier today: EX-033 live population applied — guard shipped first to
+`research/ex034-screener-reconciliation`, **pushed (origin identical,
+0/0) and merged into `feature/autonomous-research-pipeline` at `499a8c2`**
+(verified 2026-11-15; the earlier "unpushed" note was stale). Earlier today: EX-033 live population applied — guard shipped first to
 `C:\GitHub\backendtest` (cherry-pick `c740e9f`, 27 guard tests passed in
 that checkout; `8923a5b` adds the `--allow-live` opt-in), then **19
 INSERTED** (14 markers + 5 NCI facts) into
@@ -1856,7 +1866,7 @@ recalled:**
 | F-3 | Corroborating evidence attaches to an existing Fact, never spawns a duplicate | `IMPLEMENTED`, deployed, **not yet `VERIFIED IN PRODUCTION`** | In the release worktree; never invoked against a real candidate |
 | F-4 | `fin.norm.*`/`fin.adj.*` facts don't carry `scope` (dormant risk) | `DOCUMENTED` only | No — no fix needed/applied, no live defect demonstrated |
 | F-5 | UNO Minda Q1 FY2027 PAT correction, 296 → 306.72 | `VERIFIED IN PRODUCTION` | Yes — live DB, supersession applied |
-| F-6 | Factification idempotency (reuse/conflict, never silent duplicate) + the Rulebook-bypass-by-design finding | `VERIFIED IN PRODUCTION` for **Chemplast only** | **No** for the general mechanism outside Chemplast's one execution — **not yet promoted to the release worktree** (pinned at `1993751`, 9 commits behind current HEAD) |
+| F-6 | Factification idempotency (reuse/conflict, never silent duplicate) + the Rulebook-bypass-by-design finding | `VERIFIED IN PRODUCTION` for **Chemplast only** | **Corrected 2026-11-15:** the "not yet promoted to the release worktree (pinned at `1993751`)" note describes the 2026-11-08 snapshot only — the release branch has since advanced to `9b2052e` and contains both `b504355` (F-6 fix) and `137323b` (staging-dedup fix), verified by ancestry in `C:\SPARS-release\backendtest` |
 | F-7 | A selected-line-item backfill is not a complete statement; must be reported as partial | `DOCUMENTED` | N/A — reporting discipline, no code |
 | F-8 | A cited comparison figure must name its source | `DOCUMENTED`, with a same-day correction | N/A — reporting discipline, no code |
 
