@@ -21,50 +21,23 @@ frontend implementation begins.
 
 **Last updated:** 2026-11-14 (EX-034 complete — see its bullet in
 Session Recovery State; commit `46ffb8a` on
-`research/ex034-screener-reconciliation`, unpushed. Earlier today:
-EX-033 population dry run, isolated
-worktree `C:\GitHub\backendtest-ex033`, branch `research/ex033-population`,
-baseline `4f72835`, now at `8481c87`): **the 19-item equity-basis/NCI
-population manifest is prepared and validated on isolated copies —
-14 `total_equity_includes_nci` markers (UNO Minda FY2025/26, Choice
-FY2025/26, Refex FY2025/26, GP Eco FY2024/25/26, Chemplast FY2025/26,
-Chemkart FY2023/24/25) plus 5 missing NCI facts (Refex FY2025/26, GP Eco
-FY2024/25, Chemkart FY2025) — and NO live database write has been made.
-Awaiting owner approval (charter Level 3).** Plan → apply → second apply
-proved 19 WOULD_INSERT → 19 INSERTED → 19 REUSED; integrity clean (14
-markers unit NULL, 7 NCI facts, 7 evidence rows, 19 links, no duplicate
-current facts); rollback restored a byte-identical copy (SHA
-`aa4c6fed7bcce4e0`); a second fresh copy smoke-applied 19. New
-marker-aware `_owners_equity` guard (5 tests added; 27 in the file;
-adjacent research/diagnostics suites 86 passed) prevents the population
-from reintroducing the bucket-C double subtraction into the legacy path.
-Measured impact: legacy ROE/ROCE unchanged everywhere; only GP Eco
-FY2026 debt-to-equity changes, **101.7341 → 99.8318** (Matrix Engine
-`debt_to_equity_pct` identically); 8 company-periods gain strict
-average-basis ROE/ROCE. Backlog bucket E corrected in place — Chemkart
-FY2025 discloses Minority Interest (0.35) Lakhs and is not NCI-free.
-**Live preflight performed 2026-11-14 (owner-authorized, read-only):**
-canonical live database confirmed as
-`C:\GitHub\backendtest\instance\trading_app.db` (SHA-256
-`77869a0c…a373aa855`), unchanged before and after; read-only plan mode
-returned **19 WOULD_INSERT, 0 conflict, 0 blocked; 19 issuer VERIFIED,
-19 snippet VERIFIED_UNIT**; manifest SHA-256 `e2dcc696…91ff4de0e`,
-unchanged since `0a27846`; no running Python process, all `SPARS_*`
-tasks idle, pipeline lock free, WAL 0 bytes, 28.4 GB free; backup/
-restore round-trip verified (snapshot differs from live only in page 1,
-the SQLite header; logical table digest identical). **One disclosed
-condition:** the marker-aware guard is in `research/ex033-population`
-(guard `0a27846`, tip `8d6397b`) but not yet in
-`C:\GitHub\backendtest` (`4f72835`, legacy
-`_owners_equity`) or `C:\SPARS-release\backendtest` (`69dd692`); until
-it ships, those checkouts' legacy ROE/D/E would drift slightly (max
-0.04 pp) once the NCI facts exist. Report:
-`docs/ex033/EX033_LIVE_PREFLIGHT_REPORT.md`. **Next action: owner
-decision on the write — either ship the guard to the
-diagnostics-serving checkout first, or accept the interim legacy drift
-— then authorize backup-then-apply per the preflight report §5 /
-approval report §10. No merge or push without separate
-authorization.** The
+`research/ex034-screener-reconciliation`, unpushed. Earlier today: EX-033 live population applied — guard shipped first to
+`C:\GitHub\backendtest` (cherry-pick `c740e9f`, 27 guard tests passed in
+that checkout; `8923a5b` adds the `--allow-live` opt-in), then **19
+INSERTED** (14 markers + 5 NCI facts) into
+`C:\GitHub\backendtest\instance\trading_app.db` under the pipeline lock,
+after a clean read-only preflight (`77869a0c…a373aa855` unchanged) and a
+verified backup. All 1,043 pre-existing fact rows unchanged (0 missing);
+7 evidence rows, 19 links, no duplicate current keys, `quick_check` ok.
+Legacy ratios unchanged everywhere except the intended GP Eco FY2026
+debt-to-equity **101.7341 → 99.8318**; 8 company-periods gain strict
+average-basis ROE/ROCE. Backup
+`trading_app.db.pre_ex033_population_20261114T065412Z.db` (SHA-256
+`a21bdc66…ce0f5180`). Worktree `C:\GitHub\backendtest-ex033`, branch
+`research/ex033-population`, now `d8a2395` — local, unpushed; report
+`docs/ex033/EX033_LIVE_APPLY_REPORT.md`.
+`C:\SPARS-release\backendtest` (`69dd692`, market-data production
+release) untouched. **No merge and no push.** The
 2026-11-13 position was: (`dfed324` on `feature/autonomous-research-pipeline`
 in the main checkout `C:\GitHub\backendtest`): **the Direct Event
 Extractor branch was merged into the operating branch (219 commits; the
@@ -1997,9 +1970,9 @@ cross-company.** Original EX-033 work is on
 `feature/autonomous-research-pipeline` in `C:\GitHub\backendtest`
 (HEAD through `4f72835`). The EX-033 **population dry run** is on a
 separate isolated worktree, `C:\GitHub\backendtest-ex033`, branch
-`research/ex033-population` (baseline `4f72835`, tip `8d6397b`, guard
-committed at `0a27846`); dev-only, no live writes, per the charter's
-Level-1 boundary.
+`research/ex033-population` (baseline `4f72835`, tip `d8a2395`, guard
+committed at `0a27846`); dev work plus the owner-approved 19-item live
+population (see item (5)).
 Sequence this session:
 (1) **UNO Minda valuation gate reassessment** -- MARKET_CAP_OPPORTUNITY
 and VARIANT_PERCEPTION recomputed against the then-current ~31%-higher
@@ -2044,9 +2017,9 @@ left unchanged at that commit to preserve compatibility.
 27 collected tests (the "31" figure recorded at the time was an
 overcount), all passing, and the full `tests/research/` suite passed
 857/857. Full detail in `docs/SPARS_EXCEPTION_BACKLOG.md` EX-033.
-(5) **EX-033 population dry run and live preflight (2026-11-14, worktree
-`backendtest-ex033`, branch `research/ex033-population`, committed at
-`0a27846` with the guard, `8d6397b` tip):**
+(5) **EX-033 population dry run, live preflight and live apply
+(2026-11-14, worktree `backendtest-ex033`, branch
+`research/ex033-population`, tip `d8a2395`, local/unpushed):**
 prepared the exact 19-item live-write manifest (14 basis markers + 5
 missing NCI facts: Refex FY2025/FY2026, GP Eco FY2024/FY2025, Chemkart
 FY2025), each transcribed from a SHA-verified page and re-verified at
@@ -2083,11 +2056,25 @@ disclosed condition:** the marker-aware guard is in this worktree only
 @ `69dd692` still run the legacy path, which would drift 5 legacy
 ROE/D-E figures by at most 0.04 pp if the markers land first (GP Eco
 FY2026 does not worsen; it improves only once the guard ships). Report:
-`docs/ex033/EX033_LIVE_PREFLIGHT_REPORT.md`. **Next action: owner
-decision on the guard-deployment ordering, then explicit authorization
-of backup-then-apply per the report's §10.** No merge, push, or
-migration is authorized. **No live database write was made at any step
-of this sequence.**
+`docs/ex033/EX033_LIVE_PREFLIGHT_REPORT.md`. **Live apply (2026-11-14
+12:24 IST, owner chose option (a) — guard first, then write):** the
+guard was cherry-picked into `C:\GitHub\backendtest` (`c740e9f`; the
+27-test guard file passed there) together with a new `--allow-live`
+opt-in (`8923a5b`, worktree `dd23def`), then the manifest was applied
+through `ResearchBrainService.record_fact` under the pipeline lock:
+**19 INSERTED, 0 conflict/blocked.** Post-write read-only comparison
+against the verified backup (`...pre_ex033_population_20261114T065412Z
+.db`, SHA-256 `a21bdc66…ce0f5180`): all **1,043** pre-existing fact
+rows unchanged, 0 missing; facts 1,043 → 1,062 (active 996 → 1,015);
+7 evidence rows, 19 links; no duplicate current keys; `quick_check` ok.
+Legacy ratios unchanged except the intended GP Eco FY2026 D/E
+101.7341 → 99.8318. `C:\SPARS-release\backendtest` (`69dd692`,
+market-data production release) untouched — its scheduled jobs never
+call `compute_roe`. Report:
+`docs/ex033/EX033_LIVE_APPLY_REPORT.md`. **EX-033's live population is
+complete; no merge or push was performed, and none is authorized.**
+**No live database write beyond the approved 19-item population was
+made; the backup remains the rollback point.**
 
 ---
 
