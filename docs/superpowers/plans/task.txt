@@ -1,0 +1,32 @@
+SPARS — PHASE 3.5B: NORMALIZED FINANCIAL FOUNDATION
+
+Objective: Establish one verified financial foundation feeding SPARS diagnostics, forecasting, valuation and investment research.
+
+Pilot: Choice International Limited.
+
+Inputs:
+- Original Choice International Screener.in workbook.
+- Choice_International_Normalized_Financials_Pilot.xlsx.
+- Existing SPARS corpus, financial models and Phase 3 services.
+
+Tasks:
+1. Audit existing fin.raw.* schemas, financial diagnostics, forecast and valuation interfaces. Reuse what already exists.
+2. Map workbook P&L, Balance Sheet and Cash Flow items to existing SPARS fields. Identify genuine schema gaps.
+3. Independently reconcile FY2024–FY2026 figures with Choice's statutory filings. Preserve source document, page, accounting scope, units, period and publication-date lineage.
+4. Build a minimal normalized financial dataset in isolation. Keep reported values distinct from calculated values and analyst assumptions.
+5. Calculate and validate revenue growth, margins, ROE, ROCE, leverage, cash conversion and other appropriate financial-sector metrics. Mark inapplicable ratios explicitly.
+6. Demonstrate the existing Phase 3 diagnostics and forecasting services consuming these normalized inputs.
+7. Include accounting reconciliation checks, missing-data flags, and focused tests.
+8. Define a reusable company-onboarding normalization workflow, not a Choice-specific spreadsheet importer.
+
+No production writes, migrations, deployments or new infrastructure without approval. Do not divert into ingestion cleanup.
+
+Deliver:
+- Existing capability/gap audit
+- Financial-field mapping
+- Reconciled Choice financial statements
+- Calculated ratio results
+- Working Phase 3 integration demonstration
+- Exact remaining blockers to a valuation-backed investment verdict
+
+Stop for review before production integration.
