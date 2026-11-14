@@ -363,11 +363,12 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
-- **EX-035 R1/R2 at the approval gate (2026-11-14).** Same branch,
-  base `499a8c2`, on top of `460a4e4`; R1/R2 artefacts committed as
-  **`9d94261`** (branch tip, clean tree). Requirements 2–6 done; **no
-  live write, and that commit is unpushed** — the owner must approve
-  before any live application. Manifest:
+- **EX-035 R1/R2 applied to the live database (2026-11-14).** Same
+  branch, base `499a8c2`, on top of `460a4e4`; manifest/apply artefacts
+  as `9d94261`, the approved live apply and its evidence as
+  **`18275d9`** — branch tip, clean tree, **pushed to origin, not
+  merged**. The owner approved the exact audited manifest; the live
+  write is complete and verified. Manifest:
   `docs/ex035/EX035_R1_R2_MANIFEST.json` — 31 documents / 43 metadata
   fields (12 document-type changes, 0 sent to review; every period
   derived from the document's own text, resolved by period-end date and
@@ -400,21 +401,37 @@ uses the true date.
   2026-04-15, so that is an acquisition gap for R4, not factification.
   Deliberate exclusions: Chemplast `fin.raw.trade_receivables` (flattened
   text layer, mapping unconfirmable) and the rounded `fin.reported.*`
-  rows (left untouched; precise figures go to `fin.raw.*`). Test
-  evidence: **full suite 1270 passed in 613.76s** (two market-data
-  modules excluded — optional `duckdb` missing, pre-existing;
-  application code unchanged, scripts and docs only). Committed
-  evidence: journal `ex035_r1r2_journal_20261114T081113Z.json`, its
-  `.rollback.json`, and `ex035_r1r2_coverage_after.json` (20/36 VERIFIED,
-  15 SOURCE_MISSING, 1 EXTRACTION_FAILED) under `docs/ex035/evidence/`;
-  the isolated copy is left in the applied end state. Report:
-  `docs/ex035/EX035_R1_R2_DRY_RUN_REPORT_2026-11-14.md`.
+  rows (left untouched; precise figures go to `fin.raw.*`).
+  **Live apply (approved, done):** timestamped backup first
+  (`C:\GitHub\backendtest\instance\trading_app.db.bak_pre_ex035_r1r2_20261114T083138Z`,
+  SHA-256 `4340b644…`, 161,325,056 bytes, integrity ok); preflight plan
+  showed 43 will-set / 45 inserted / 0 drift; apply wrote 31 documents /
+  45 facts / 6 evidence / 0 conflicts. Live now **1,107 facts (1,060
+  current)**, 383 evidence, 1,136 fact_evidence, 2,313 documents,
+  integrity ok. Verified against the backup: provenance 45/45,
+  pre-existing rows **0 altered / 0 removed**, exactly the 31 documents
+  changed (R1 fields plus ORM `updated_at`), idempotent rerun 45/45
+  REUSED. The live file's byte hash moved after a WAL checkpoint
+  (`2be58880…` → `27b1d8a6…`); the full comparison was re-run on the
+  later file and is identical. Test evidence: **full suite 2,121
+  passed, 2 skipped, 0 failed in 959.79s** (two market-data modules
+  excluded — optional `duckdb` missing, pre-existing). The static
+  company-scope gate flagged four whole-corpus/primary-key SELECTs in
+  EX-035/EX-033 scripts; annotated with the documented
+  `financial-query-ok` marker (EX-022 precedent, no behavior change) —
+  gate now 0 violations. Committed evidence under
+  `docs/ex035/evidence/`: live journal
+  `ex035_r1r2_journal_20261114T083157Z.json`, idempotence run,
+  `ex035_live_apply_verification_20261114T083157Z.json`,
+  `ex035_r1r2_coverage_after_live.json` (20/36 VERIFIED; the dry-run
+  journal/rollback pair is also committed). Reports:
+  `docs/ex035/EX035_R1_R2_DRY_RUN_REPORT_2026-11-14.md` and
+  `docs/ex035/EX035_R1_R2_LIVE_APPLY_REPORT_2026-11-14.md`.
   **Open finding:** `CoverageLedgerService` does not filter superseded
   facts — UNO FY2027Q1 reads VERIFIED off a superseded `fin.raw.pat`
   306.72 — predates EX-035, needs its own exception.
-  **Next action:** owner approves or rejects the live apply (scoped
-  `--allow-live` addition to `_refuse_live` plus a timestamped backup,
-  then the same journal/rollback path), or asks for manifest changes.
+  **Next action:** none for EX-035; do not merge without a separate
+  instruction. Owner to triage the ledger finding.
 
 - **EX-035 audit complete (2026-11-14).** Branch
   `research/ex035-freshness-audit` in `C:\GitHub\backendtest-ex033`, base
