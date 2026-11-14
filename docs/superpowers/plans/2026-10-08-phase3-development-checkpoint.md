@@ -31,7 +31,9 @@ live staging and stays OPEN. Chemplast's February acquisition is
 **parked by the owner**; its COGS disagreement stays NEEDS_REVIEW. Next:
 the six-company priority-list change is **executed** under the owner's
 2026-11-15 approval of "edit and commit the line" — `9b2052e` on
-`release/market-data-service` (config file only, not pushed); the 8 GB
+`release/market-data-service` (config file only; pushed to origin at the
+owner's explicit request, creating the remote branch — no CI workflows
+exist in that repo); the 8 GB
 host memory question is **answered** (evidence in the P0 bullet below).
 EX-035
 closed end to end — the approved
@@ -541,8 +543,11 @@ uses the true date.
   `scripts/priority_companies.txt`. **Executed 2026-11-15 under the
   owner's explicit approval of "edit and commit the line":** that file
   now lists the six ids (the branch canonical copy), committed as
-  `9b2052e` on `release/market-data-service`, local, **not pushed**;
-  release working tree is clean again. The release reader itself
+  `9b2052e` on `release/market-data-service` — **pushed** to origin at
+  the owner's explicit request on 2026-11-15 as a new remote branch
+  (nothing was pushed before; no remote branch contained this history;
+  the repo has no push-triggered CI); release working tree is clean.
+  The release reader itself
   (`read_company_ids_file`) parsed all six. No code, task, schema or
   merge; the lane stays extraction-only (no staging, LLM or promotion),
   and the 6-hourly whole-universe cycle is untouched. Effective from the
