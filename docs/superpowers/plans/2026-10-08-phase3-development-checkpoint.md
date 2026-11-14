@@ -363,11 +363,64 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
-- **EX-035 complete (2026-11-14).** Branch
+- **EX-035 R1/R2 at the approval gate (2026-11-14).** Same branch,
+  base `499a8c2`, on top of `460a4e4`; R1/R2 artefacts committed as
+  **`9d94261`** (branch tip, clean tree). Requirements 2–6 done; **no
+  live write, and that commit is unpushed** — the owner must approve
+  before any live application. Manifest:
+  `docs/ex035/EX035_R1_R2_MANIFEST.json` — 31 documents / 43 metadata
+  fields (12 document-type changes, 0 sent to review; every period
+  derived from the document's own text, resolved by period-end date and
+  the filing date rather than hand-typed) and 45 `fin.raw.*` facts in
+  three statement groups (UNO FY2027Q2 16, Chemplast FY2027Q2 13, GP Eco
+  FY2027H1 16), all arithmetic-checked, all evidence snippets cut
+  verbatim from a named page anchor. **9 of the 45 are declared
+  `derived_values`** (3 per statement: `cost_of_goods_sold`,
+  `borrowings`, `trade_payables`; GP Eco `total_equity` instead of COGS)
+  — section sums whose subtotal is not printed in the flattened text
+  layer, computed from disclosed components; the builder hard-fails if a
+  derived value is not itself arithmetic-checked. The other 36 are
+  literal reads. Tools:
+  `scripts/ex035_r1_r2_manifest.py` (read-only builder),
+  `scripts/ex035_r1_r2_apply.py` (`--plan` / `--apply` / `--rollback`,
+  refuses the live path, journals every write). Dry run on a consistent
+  isolated backup copy (`%TEMP%/ex035/ex035_copy.db`): apply = 45 facts,
+  6 evidence, 31 documents, 0 conflicts; **second run 45/45 REUSED, 0
+  inserted** (idempotent); 45/45 provenance checks pass (verbatim snippet
+  on the right unit/page/document); **0 pre-existing facts altered** and
+  exactly the 31 proposed documents changed; **rollback restores content
+  hashes identical to the pristine copy** across `extracted_fact`,
+  `evidence`, `fact_evidence`, `document`. Coverage **19/36 → 20/36
+  VERIFIED**: UNO FY2027Q2 SOURCE_MISSING → VERIFIED (raw, 16 facts),
+  Chemplast FY2027Q2 reported(3) → raw(16), GP Eco FY2026Q4
+  SOURCE_MISSING → EXTRACTION_FAILED (a genuine Q4 filing is now
+  recognised as a source with no facts). GP Eco now has 16 audited H1
+  FY2027 facts that the quarterly ledger cannot express. UNO FY2026Q2–Q4
+  stay unreachable — **no documents at all** between 2025-10-01 and
+  2026-04-15, so that is an acquisition gap for R4, not factification.
+  Deliberate exclusions: Chemplast `fin.raw.trade_receivables` (flattened
+  text layer, mapping unconfirmable) and the rounded `fin.reported.*`
+  rows (left untouched; precise figures go to `fin.raw.*`). Test
+  evidence: **full suite 1270 passed in 613.76s** (two market-data
+  modules excluded — optional `duckdb` missing, pre-existing;
+  application code unchanged, scripts and docs only). Committed
+  evidence: journal `ex035_r1r2_journal_20261114T081113Z.json`, its
+  `.rollback.json`, and `ex035_r1r2_coverage_after.json` (20/36 VERIFIED,
+  15 SOURCE_MISSING, 1 EXTRACTION_FAILED) under `docs/ex035/evidence/`;
+  the isolated copy is left in the applied end state. Report:
+  `docs/ex035/EX035_R1_R2_DRY_RUN_REPORT_2026-11-14.md`.
+  **Open finding:** `CoverageLedgerService` does not filter superseded
+  facts — UNO FY2027Q1 reads VERIFIED off a superseded `fin.raw.pat`
+  306.72 — predates EX-035, needs its own exception.
+  **Next action:** owner approves or rejects the live apply (scoped
+  `--allow-live` addition to `_refuse_live` plus a timestamped backup,
+  then the same journal/rollback path), or asks for manifest changes.
+
+- **EX-035 audit complete (2026-11-14).** Branch
   `research/ex035-freshness-audit` in `C:\GitHub\backendtest-ex033`, base
   `feature/autonomous-research-pipeline` @ **`499a8c2`** (the merge tip
   carrying both EX-033 and EX-034; that ref is also what origin has),
-  commit **`460a4e4`**, clean tree, **unpushed**. Read-only six-company
+  commit **`460a4e4`**, clean tree, **pushed to origin**. Read-only six-company
   financial freshness audit as of 2026-11-14 across UNO Minda, Choice,
   Chemplast, Refex, GP Eco and Chemkart. Live DB unchanged throughout
   (SHA-256 `d8e74b83…`, 161,325,056 bytes, 1,062 facts / 1,015 current).
