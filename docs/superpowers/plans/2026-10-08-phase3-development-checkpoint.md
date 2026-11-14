@@ -19,7 +19,10 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-14 (EX-033 population dry run, isolated
+**Last updated:** 2026-11-14 (EX-034 complete — see its bullet in
+Session Recovery State; commit `46ffb8a` on
+`research/ex034-screener-reconciliation`, unpushed. Earlier today:
+EX-033 population dry run, isolated
 worktree `C:\GitHub\backendtest-ex033`, branch `research/ex033-population`,
 baseline `4f72835`, uncommitted): **the 19-item equity-basis/NCI
 population manifest is prepared and validated on isolated copies —
@@ -368,6 +371,43 @@ breaking cross-references **— read those as 2026-11-06; commit
 timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
+
+- **EX-034 complete (2026-11-14).** Worktree
+  `C:\GitHub\backendtest-ex034`, branch
+  `research/ex034-screener-reconciliation`, base `4f72835`, commit
+  **`46ffb8a`**, unpushed, clean tree. Six-company ROE/ROCE
+  reconciliation against Screener.in and company disclosures. Result:
+  **the SPARS ratio arithmetic is correct** — all 13 stored
+  `fin.norm.*` values reproduce except Chemkart FY2025 ROE (stored
+  45.5488 vs recomputed 45.5373 — a stale derived fact predating the
+  NCI −0.0135 fact). Chemplast (standalone −44.45% ROE / −28.45% ROCE,
+  note 47 definitions incl. the asset-revaluation-reserve exclusion)
+  and Refex (standalone 15.64% / 21.96%, note 41) close to ±0.004 pp
+  once each company's own basis and definitions are applied; Choice
+  closes on a total-group basis (−0.001 / +0.004). UNO ROE closes
+  (+0.03, disclosure rounding) but **UNO ROCE keeps a −1.10 pp
+  residual — EX-032 remains OPEN**. GP Eco's disclosed ROCE 43% is not
+  reproducible from its own statements: the documented definition gives
+  37.13%, an incoherent mixed denominator 42.89%; its ratio table is a
+  third-party compilation, not the AR — treat as unexplained pending a
+  primary source. Chemkart (FY2025 only, no FY2026 data) publishes no
+  ROCE level. New data-integrity findings: Refex `fin.raw.pat` holds
+  **total** profit (203.7210 vs owners 203.3531) and no NCI fact is
+  stored; GP Eco FY2026 has no owners' PAT fact; **Screener exports
+  exist for only 3 of the 6 pilot companies** (no Refex/GP Eco/Chemkart
+  workbook in Drive or locally — the assignment's premise of six
+  exports is wrong). Deliverables: harness
+  `scripts/ex034_screener_reconciliation.py`, report
+  `docs/ex034/EX034_SCREENER_ROE_ROCE_RECONCILIATION_2026-11-14.md`,
+  21 tests in `tests/research/test_ex034_roe_roce_reconciliation.py`
+  (43 passing together with EX-033's 22). No application code, schema,
+  migration, live DB write or shared equity-basis code was changed; the
+  recommended canonical formulas and separately-labelled
+  `fin.cmp.*` comparator slugs are in §7 of the report and await an
+  EX-033 coordination decision. Note for EX-033: the 14-marker
+  manifest, once applied, would let the strict average/tangible
+  capital-employed variants run for these companies for the first time —
+  none can run on the live corpus today.
 
 - **Active assignment:** **Phase 3.5B (ten-company Financial
   Normalization & Historical Backfill) is PAUSED here, 2026-11-03 --
