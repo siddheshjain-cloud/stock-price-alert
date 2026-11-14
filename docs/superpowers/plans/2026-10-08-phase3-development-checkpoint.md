@@ -365,6 +365,26 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
+- **Approved live sequence: halted after a partial write, database
+  restored — owner decision pending (2026-11-14).** The owner approved
+  all three live steps (R3 metadata corrections, staging-only corpus
+  reprocess, six-company priority list) with a verified backup first and
+  a stop-on-unexpected-change instruction. Backup
+  `trading_app.db.bak_pre_ex035_r3_20261114T103652Z.db` (SHA-256
+  `3c038908…`, integrity ok, logical fingerprint identical to live).
+  Step 1 committed **one** change (`a25ac7fd` GP_RESULTS_20_06_2026
+  QUARTERLY_RESULTS → OTHER) and then raised `KeyError: 'company'` on
+  the post-commit print; no journal was written. The change was
+  reverted through the same applier (`ex035_r3_partial_revert_journal_`
+  `20261114T103751Z.json`); post-revert the live database is logically
+  identical to the preflight (integrity ok, every count and target row
+  equal; only that row's `updated_at` records the touch). Manifest now
+  carries `company` on all six entries and the applier's print falls
+  back to the document id (`1a56a2c`, pushed; branch tip). **Steps 2
+  and 3 were not started.** Next action: owner decides whether to
+  re-run step 1 with the corrected manifest (dry-run now 6 will-set /
+  0 drift) and then steps 2–3.
+
 - **EX-035 RESOLVED; six-company pilot closed; final handover written
   (2026-11-14).** Worktree `C:\GitHub\backendtest-ex033`, branch
   `research/ex035-freshness-audit`, base `499a8c2`, nine local commits on
