@@ -19,14 +19,20 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-14 (P0 six-company directive — all 7 remaining
-quarters resolved on an isolated copy; no live write. Chemplast FY2026Q3
-is VERIFIED on the copy (835.14 / −119.20 consolidated, EX-051 OCR
-repair) and Chemkart's six cells are NOT_APPLICABLE (half-yearly cadence,
-EX-045 unit fix proved). EX-048 period inference, EX-050 listing-CIN gate
-and EX-051 extraction repaired with regression tests; suite 2,305 passed
-/ 2 skipped / 0 failed. Live DB unchanged at 23/30 — the promotions and
-the Chemplast February acquisition await explicit owner approval. EX-035
+**Last updated:** 2026-11-15 (owner-approved live promotion of Chemkart's
+H1 facts: 4 of the 5 copy-proved facts are now live — revenue 103.23,
+PAT 10.15, total assets 137.05, receivables 56.19, all CONSOLIDATED;
+backup `...bak_pre_chemkart_five_h1_facts_20261114T200544Z.db`, SHA-256
+`5edb2267…75761d8`. Live DB now **1,120 facts / 1,073 current**, ledger
+**23 V / 1 M / 12 N/A** — 24 applicable, 23 verified; Chemkart ×6 flipped
+M→N/A. The UNO Q3 pair was already live from §8.0, so it was not
+re-written. The fifth Chemkart fact (CFO 0.6735) was not reproduced by
+live staging and stays OPEN. Chemplast's February acquisition is
+**parked by the owner**; its COGS disagreement stays NEEDS_REVIEW. Next:
+the six-company priority-list change is **proposed, not executed** —
+release checkout untouched, awaiting the owner's approval of the
+mechanism; the 8 GB host memory question is **answered** (evidence in the
+P0 bullet below). EX-035
 closed end to end — the approved
 live sequence ran: six R3 document corrections applied and verified,
 a staging-only six-company cycle SUCCESS with 0 candidates / 0 facts
@@ -378,9 +384,8 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
-- **P0 SIX-COMPANY COMPLETION — all 7 remaining quarters resolved on the
-  isolated copy; live 23/30 unchanged, promotions await owner approval
-  (2026-11-14).** Worktree `C:\GitHub\backendtest-ex033`, branch
+- **P0 SIX-COMPANY COMPLETION — seven quarters resolved; Chemkart H1 facts
+  promoted live; live ledger now 23 V / 1 M / 12 N/A (2026-11-15).** Worktree `C:\GitHub\backendtest-ex033`, branch
   `research/ex035-freshness-audit`, tip **`344006c`** (not merged, not
   pushed; supersedes the `c46986b` state below — on the `37161b5` base:
   `ce25c6e` NSE acquisition fix, `ffc87cc` report + EX-036…EX-042,
@@ -417,9 +422,10 @@ uses the true date.
   EBITDA rows are stored UNDETERMINED (headline quote declares no
   basis); `_current_fact(scope=CONSOLIDATED)` excludes explicit foreign
   scopes, so no ratio consumes them.
-  **ACTIVE ASSIGNMENT (Desktop `task.txt`, 2026-11-14): COMPLETED ON THE
-  ISOLATED COPY — no live write made.** All seven remaining quarters are
-  now proved resolvable through the existing pipeline:
+  **ACTIVE ASSIGNMENT (Desktop `task.txt`, 2026-11-14): COMPLETED.** All
+  seven remaining quarters are now proved resolvable through the existing
+  pipeline, and the owner has since approved the live promotions recorded
+  below:
   (1) **Chemkart ×6 → NOT_APPLICABLE, cadence not gap.** Its one results
   filing is headed *"Half year ended September 30, 2025"* with three
   half-year columns and no quarter column (the cover letter's "quarter
@@ -445,6 +451,24 @@ uses the true date.
   NEEDS_REVIEW for a human. **Copy totals 23 V / 1 PARTIAL / 12 N/A**;
   the PARTIAL is UNO FY2026Q3 copy staleness (live PAT 277 promoted
   14:37, copy facts 11:30), not a regression.
+  **Owner-approved live promotion of Chemkart's H1 facts (2026-11-14
+  20:08 IST; report §8.1).** Fresh verified backup first
+  (`...bak_pre_chemkart_five_h1_facts_20261114T200544Z.db`, SHA-256
+  `5edb2267…75761d8`; 1,116 facts / 1,069 current before). The UNO Q3
+  pair was already live from §8.0 and was deliberately not re-written.
+  Two staging passes on live document `1f7073df` (15 pages) produced nine
+  H1 candidates; the dry run returned 4 AUTO_PROMOTE and the commit
+  **promoted 4 facts**: revenue **103.23**, PAT **10.15**, total assets
+  **137.05**, trade receivables **56.19** — all CONSOLIDATED. **The
+  fifth approved fact (CFO 0.6735 STANDALONE) was not reproduced**: live
+  staging offered 0.8983 UNDETERMINED and 5.8519 STANDALONE, plus
+  standalone revenue 102.09, standalone PAT 10.67 and COGS 10.05; all
+  five stay OPEN and unpromoted. Post-run live: **1,120 facts / 1,073
+  current / 2,650 candidates / 289 decisions**, integrity ok, quick_check
+  ok, 0 FK. **Ledger: 23 V / 1 M / 12 N/A** — Chemkart ×6 N/A on the live
+  ledger itself. **Chemplast's February acquisition is parked** at the
+  owner's direction; its deck-vs-statement COGS disagreement (275 vs
+  206.03) stays NEEDS_REVIEW for the owner to inspect.
   (3) **EX-048** reporting-period inference now reads presentation
   cover titles and quarter+nine-months titles and returns the latest
   named period (deck `0077d5fb` and statement `f3ef494d` both →
@@ -497,15 +521,35 @@ uses the true date.
   and a third Chemplast Q3-deck pass was killed twice, its 27 logged
   calls accepting consolidated COGS 573 and no PAT. Both copies'
   `integrity_check` is `ok`; neither is conclusive beyond that. Do not
-  loop-restart them on this machine. **Next action:** the Desktop-task
-  directive is complete on the isolated copy; code, tests and docs are
-  committed as `e06d093`/`344006c` and the suite is certified (2,305
-  passed). What
-  remains is the owner's decision on the live package — Chemplast
-  February statement + deck acquisition into the live DB and the Q3 pair
-  promotion, and the Chemkart five H1 fact promotions; both need
-  explicit approval before any live write. **Still unapproved
-  and untouched:**
+  loop-restart them on this machine. **Measured 2026-11-15 01:44 IST
+  (read-only, live DB + Task Scheduler):** there are **two** live
+  extraction lanes from the release checkout — `SPARS_PipelineCycle`
+  every 6 h (`run_pipeline_cycle.bat`, **no company file**, so whole
+  universe, `--limit 25`) and `SPARS_PriorityExtraction` at 14:25/20:25
+  IST (`run_priority_extraction.bat`, `--company-ids-file
+  scripts\priority_companies.txt`, `--limit 10`). Only the priority lane
+  is Choice-only; the six pilot companies are **already inside** the
+  6-hourly lane. Live pending-extraction backlog is **0 documents
+  universe-wide** (the same pending predicate as
+  `discover_pending_documents`, 73 companies), so a scope change has no
+  immediate effect — it changes which companies' *future* filings get
+  the faster twice-daily lane. All six branch-file ids resolve in the
+  live `company` table (Choice International, UNO Minda, Chemplast
+  Sanmar, Refex Industries, GP Eco Solutions, Chemkart India). The
+  release checkout is git-clean at `69dd692`; its
+  `scripts/priority_companies.txt` holds one id. **Proposed mechanism
+  (awaiting approval, not executed):** replace that one line with the
+  six ids — no other file, no task change, no code merge (the release
+  script already documents `--company-ids-file` as the configurable
+  mechanism). **Next action (owner's 2026-11-15 order):** the owner
+  approves or amends that mechanism; the 8 GB memory answer is delivered
+  (one-document sequential LLM passes plus sharded tests are the working
+  pattern on this host; a 16 GB host only if routine
+  multi-document/whole-suite runs are wanted — no code change either
+  way). Chemplast's February acquisition is **parked** — do not fetch
+  it unless explicitly asked. Code, tests and docs are committed as
+  `e06d093`/`344006c`; suite 2,305 passed / 2 skipped / 0 failed.
+  **Still unapproved and untouched:**
   report §8 Step 6 (Refex 11 `fin.norm.*` facts) and Step 7 (EX-046 PAT
   correction + Step 6 re-run); the release copy's priority list (branch
   copy validated against the production reader: 6 ids, all resolve); the
