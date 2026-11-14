@@ -29,10 +29,11 @@ M→N/A. The UNO Q3 pair was already live from §8.0, so it was not
 re-written. The fifth Chemkart fact (CFO 0.6735) was not reproduced by
 live staging and stays OPEN. Chemplast's February acquisition is
 **parked by the owner**; its COGS disagreement stays NEEDS_REVIEW. Next:
-the six-company priority-list change is **proposed, not executed** —
-release checkout untouched, awaiting the owner's approval of the
-mechanism; the 8 GB host memory question is **answered** (evidence in the
-P0 bullet below). EX-035
+the six-company priority-list change is **executed** under the owner's
+2026-11-15 approval of "edit and commit the line" — `9b2052e` on
+`release/market-data-service` (config file only, not pushed); the 8 GB
+host memory question is **answered** (evidence in the P0 bullet below).
+EX-035
 closed end to end — the approved
 live sequence ran: six R3 document corrections applied and verified,
 a staging-only six-company cycle SUCCESS with 0 candidates / 0 facts
@@ -536,13 +537,19 @@ uses the true date.
   the faster twice-daily lane. All six branch-file ids resolve in the
   live `company` table (Choice International, UNO Minda, Chemplast
   Sanmar, Refex Industries, GP Eco Solutions, Chemkart India). The
-  release checkout is git-clean at `69dd692`; its
-  `scripts/priority_companies.txt` holds one id. **Proposed mechanism
-  (awaiting approval, not executed):** replace that one line with the
-  six ids — no other file, no task change, no code merge (the release
-  script already documents `--company-ids-file` as the configurable
-  mechanism). **Next action (owner's 2026-11-15 order):** the owner
-  approves or amends that mechanism; the 8 GB memory answer is delivered
+  release checkout was git-clean at `69dd692` with one id in
+  `scripts/priority_companies.txt`. **Executed 2026-11-15 under the
+  owner's explicit approval of "edit and commit the line":** that file
+  now lists the six ids (the branch canonical copy), committed as
+  `9b2052e` on `release/market-data-service`, local, **not pushed**;
+  release working tree is clean again. The release reader itself
+  (`read_company_ids_file`) parsed all six. No code, task, schema or
+  merge; the lane stays extraction-only (no staging, LLM or promotion),
+  and the 6-hourly whole-universe cycle is untouched. Effective from the
+  next `SPARS_PriorityExtraction` run (2026-11-15 14:25 IST); with the
+  live backlog at 0 the visible output stays \"scanned 0\" until a new
+  filing for one of the six is registered. **Next action:** none blocking
+  on this item; the 8 GB memory answer is delivered
   (one-document sequential LLM passes plus sharded tests are the working
   pattern on this host; a 16 GB host only if routine
   multi-document/whole-suite runs are wanted — no code change either
@@ -551,10 +558,9 @@ uses the true date.
   `e06d093`/`344006c`; suite 2,305 passed / 2 skipped / 0 failed.
   **Still unapproved and untouched:**
   report §8 Step 6 (Refex 11 `fin.norm.*` facts) and Step 7 (EX-046 PAT
-  correction + Step 6 re-run); the release copy's priority list (branch
-  copy validated against the production reader: 6 ids, all resolve); the
-  UNO FY27Q1 chain / missing NCI fact (EX-042). Do not start Gemini
-  integration or the 50-company expansion.
+  correction + Step 6 re-run); the UNO FY27Q1 chain / missing NCI fact
+  (EX-042). Do not start Gemini integration or the 50-company
+  expansion.
 - **Approved live sequence: completed and verified (2026-11-14).**
   After a first attempt partial-wrote one document and was reverted
   (incident below, `1a56a2c`), the owner approved resuming all three
