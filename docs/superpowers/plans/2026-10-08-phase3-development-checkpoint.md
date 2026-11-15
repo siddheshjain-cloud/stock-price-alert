@@ -19,7 +19,10 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-16 — the 29 reviewed core `fin.raw.*`
+**Last updated:** 2026-11-16 — Corpus-Wide Deduplication Part A built,
+tested and committed (72 passed); Part B explicitly held for an owner
+go-ahead (full detail in the Session Recovery State). Prior note the
+same day: the 29 reviewed core `fin.raw.*`
 candidates are closed (19 facts, 6 duplicates, 4 rejects; 1,595 facts;
 full detail in the Session Recovery State). Prior note the same day:
 C4 lane closed end to end (0 open C4 candidates; 1,576 facts; full
@@ -406,6 +409,91 @@ breaking cross-references **— read those as 2026-11-06; commit
 timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
+
+- **CORPUS-WIDE DEDUPLICATION — Part A built, tested and COMMITTED
+  2026-11-16; Part B explicitly NOT started (owner hold).** Desktop
+  `task.txt` ("SPARS — Corpus-Wide Deduplication & Autonomous Backlog
+  Closure") directed Part A (detection + safeguards) then Part B
+  (autonomous validation/promotion of the remaining backlog) to run
+  "sequentially without stopping." Mid-session the owner issued a
+  correction overriding that: **stop after Part A; do not begin Part B
+  (validation, reconciliation or promotion of the 1,403/943/remaining
+  backlog) until explicitly told to go.** This hold is standing —
+  resume Part A only (see below) until the owner says otherwise.
+  **Part A, what shipped (`C:\GitHub\backendtest`, branch
+  `feature/autonomous-research-pipeline`, commit `8866604`, plus
+  `81bee0f` for the unrelated already-closed core-fin-raw tooling that
+  was also sitting uncommitted — neither pushed, nothing merged to
+  master):**
+  1. `extraction_unit.content_hash` (normalized SHA-256 per PAGE unit)
+     added via migration `20261116_01`, backfilled corpus-wide by
+     `scripts/backfill_page_content_hashes.py`. **Verified live:
+     38,670/38,675 PAGE units hashed; the 5 remaining are genuinely
+     empty-text pages, skipped by design** (confirmed by direct
+     read-only query — all 5 have `length(content_text) = 0`).
+  2. `document_content_overlap` table added (same migration): document
+     pairs, shared pages, overlap fractions, relationship type
+     (EXACT_DUPLICATE/NEAR_DUPLICATE/EMBEDS/PARTIAL_OVERLAP), method,
+     timestamp. **Live but still empty (0 rows) — no detection run has
+     been committed yet.**
+  3. `scripts/detect_document_content_overlap.py`: hash + token-shingle
+     fingerprint shortlisting so the ~38,675-page corpus never gets a
+     quadratic comparison; expensive similarity checks run only on
+     shortlisted pairs. Dry-run default; `--commit` persists rows.
+  4. `candidate_finding_decision.duplicate_of_fact_id` added via
+     migration `20261116_02`: a DUPLICATE decision can now target an
+     already-live `ExtractedFact` directly, not only another candidate
+     — closes the gap that forced the same-day GP Eco inventory
+     duplicate to be recorded as REJECTED for lack of a target. Check
+     constraint enforces exactly one of {candidate, fact} target.
+     **Live** (`alembic_version` = `20261116_02`, both migrations
+     applied). Added at the owner's explicit mid-session request as a
+     Part B dependency; it was already built when the request landed.
+  5. `ResearchCoverageService._find_equivalent_candidate`: staging-time
+     dedup across AI/segment/rule-based extraction — same document,
+     fact identity, period, scope, value and source content (same
+     extraction unit or normalized quote) collapses into the existing
+     open candidate; independent corroboration (same event, different
+     page/filing) stays a separate candidate by design.
+  **Tests:** 72 passed (candidate finding service, extraction unit
+  models, both new migrations, page dedup service, schema inventory,
+  core-fin-raw promotion regression). Full suite not rerun this round
+  (focused coverage judged sufficient for an additive schema change;
+  rerun before anything that builds on this if a long gap passes).
+  **Open from this round — do this first on resume:** a dry-run of
+  `detect_document_content_overlap.py` (no `--commit`, writes nothing)
+  was started twice. The first run (PID from the prior session, started
+  02:53:41) completed in ~13 minutes but its stdout was never captured
+  anywhere readable — no artifact survives it. The second run was
+  relaunched with `--json-out logs/document_content_overlap_dryrun_
+  20261116.json` and stdout redirected to `logs/document_content_
+  overlap_dryrun_20261116.out`, started 03:07:59, **still running at
+  session end** (confirmed progressing, not stalled: as of the last
+  check it had fingerprinted all 2,294 documents with page hashes and
+  was partway through the 19,702 shortlisted candidate pairs, ~125
+  overlaps found so far at pair 1000/19,702). It was launched detached
+  (`nohup ... &`) specifically so it keeps running after this session
+  ends — **check `logs/document_content_overlap_dryrun_20261116.out`
+  and `.json` first; if they show a finished summary, report it; only
+  re-run if they're still incomplete/stale.** One earlier attempt to
+  run the same script with `--commit` (to persist results straight to
+  `document_content_overlap`) was blocked by the permission system as
+  a shared-resource write and deliberately not forced — committing the
+  detection results to the live DB still needs the owner's explicit
+  go-ahead on that specific write, separate from the Part B hold above.
+  A pre-write backup was still taken out of caution:
+  `instance/trading_app.db.bak_pre_overlap_detection_
+  20261115T213654Z.db` (unused so far — nothing was written).
+  **Next action:** read the dry-run output, report the full corpus-wide
+  duplicate map + safeguards + test results to the owner (the
+  requested "Part A report"), then wait for explicit go-ahead before
+  either committing the overlap table or starting any Part B work.
+  **Also noted, harmless:** a stray empty (0-byte) `trading_app.db` at
+  the repo root (not `instance/trading_app.db`) was created by an
+  ad-hoc `flask db current` invocation during this session; left in
+  place untracked (not committed, not deleted — delete was blocked by
+  the permission system as irreversible local destruction, and it is
+  not worth pursuing further since it is empty and harmless).
 
 - **C4 DISCLOSURE BUILD — deterministic work complete; event lane
   PAUSED on the owner's AI policy (last LLM call 2026-11-15
