@@ -402,6 +402,78 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
+- **STAGE 2-6 AUDIT DIRECTIVE — Steps 1–3 executed, committed and pushed
+  2026-11-15; Step 4 (frontend) not started. Phase 2 directive in
+  progress.** Desktop `task.txt` (2026-11-15 12:02) directs Steps 1–4:
+  fix Stage 2 zero-staging with rule-based logic only; close the
+  `app/routes` gap with an in-code write policy; report content readiness
+  for UNO Minda / Chemplast / AXISCADES; stop before frontend. Branch
+  `feature/autonomous-research-pipeline` in `C:\GitHub\backendtest`,
+  now at **`966af0b`** (code `a015e62`, docs `966af0b`, pushed
+  `499a8c2..966af0b` to origin at the owner's explicit instruction).
+  Nothing merged to master, nothing deployed.
+  **Full suite: 2325 passed, 2 skipped, exit 0** (1046.89s, 2026-11-15)
+  with `tests/research/test_market_data_ingest.py` and
+  `test_market_data_service.py` excluded — `duckdb` is not installed in
+  this environment; both modules predate this work and are unaffected.
+  **Step 1 complete and verified.** Rule-level causes: the `_LABEL_PATTERNS`
+  gap rejected newline/non-space separators and could false-match an
+  `in` suffix; CFO label variants were missing. Fixed with rule-only logic
+  (no AI). Live resweep `2eee6952-5d8f-40bb-bc21-c3820bd88dbf` staged
+  **10** candidates from previously zero-staging documents; one
+  (`2ede6336-…`) was a false positive and was rejected append-only; a
+  fresh-copy simulation (`9bc8cace-…`) reproduced exactly **9** confirmed
+  candidates; remaining zero-staging documents each explained
+  (cover-letter-only, scanned/no-label, duplicate prevention). 16 focused
+  tests passed; pipeline suite **503 passed / 2 skipped**. Reviewer flag:
+  staged candidate `c31746a4` mixes standalone (u12) and consolidated
+  (u20) values — recorded in `PENDING_REVIEW.md` §A3.
+  **Step 2 complete in code (committed `a015e62`).** Audit confirmed: no
+  dedicated investment-case read/create route; forecasts write-only via
+  `POST …/forecast-revisions`; alerts admin read-only; no write policy in
+  code. Built: `app/policies/write_policy.py` (AUTOMATIC /
+  OWNER_APPROVAL / FORBIDDEN, configurable via `SPARS_WRITE_POLICY`,
+  fail-closed on unknown actions, approval via `X-Owner-Approval-Reference`,
+  verified-backup header for schema changes, `automatic_write` JSON
+  provenance on `spars.write_policy`); consumer routes
+  `GET /api/research/companies/<id>/investment-case[/history]` and
+  `GET /api/research/alerts` (recipient-scoped); admin routes
+  `POST …/investment-cases` and `POST …/scenario-forecasts`; existing
+  admin writes (company create/PATCH, research/forecast/valuation
+  revisions) now require the approval header; retry threshold now
+  `SPARS_MAX_TRANSIENT_EXTRACTION_RETRIES`. **116 focused tests passed**
+  (new `tests/api/test_write_policy.py`, 23 tests, and new consumer
+  investment-case/alerts tests; contract/boundary snapshots updated
+  deliberately). Full suite **2325 passed / 2 skipped / exit 0**, with the
+  two duckdb-dependent modules excluded (module not installed in this
+  environment); result recorded in `PENDING_REVIEW.md` §E.
+  **Step 3 complete (read-only live DB audit, no content generated).**
+  UNO Minda: 63 docs, 191 facts, 61 candidates (58 decided), research/
+  forecast/valuation revisions and 1 investment case (HOLD, r1,
+  2026-10-19). Chemplast: 34 docs, 112 facts, 15 candidates (2 decided),
+  **zero** research/forecast/valuation/case/proposition; requires
+  analyst-authored content (all owner-approval-gated). AXISCADES: 52
+  docs, 78 extraction runs, **0 facts / 0 candidates / 0 coverage review
+  passes** — candidate staging was never run for it (no staging run
+  included it in scope), and both scheduled batch files omit
+  `--stage-candidates`, so scheduled runs never stage at all. All three
+  have 0 disclosures.
+  **`PENDING_REVIEW.md` created at repo root** (A1–A3, B1–B8, C1–C5, D,
+  E) — every item proposed/pending, none committed. Backlog carries
+  **EX-052** (zero-staging rule fix) and **EX-053** (routes/write policy,
+  AXISCADES staging gap). Both files are committed and pushed with the
+  code. **The AXISCADES staging sweep was NOT run:** a verified backup
+  was taken
+  (`instance/trading_app.db.bak_pre_axiscades_staging_20261115T072638Z.db`,
+  integrity ok, 0 FK, SHA-256 `8d67a032…18e5c`), then the session's
+  auto-mode permission classifier blocked the live write twice; the exact
+  owner command is recorded in `PENDING_REVIEW.md` §C3.
+  Next action: owner runs the AXISCADES sweep and reviews
+  `PENDING_REVIEW.md`; Phase 2 directive (subagent incident, Chemkart
+  untraceable figure, ROE backfill lead, backtesting scaffolding, live
+  prices in valuations) is under way, sequenced after the full suite.
+  Step 4 (frontend) remains gated on owner approval of a layout.
+
 - **DESKTOP TASK ITEMS 1+2 CLOSED (2026-11-15). Item 2 — Chemplast
   February 2026 acquisition — executed live through the existing
   mechanism.** Verified backup first
