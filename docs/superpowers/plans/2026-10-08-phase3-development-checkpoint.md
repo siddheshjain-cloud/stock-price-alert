@@ -502,10 +502,93 @@ uses the true date.
   the FY2026 annual report (`de51ed40…`) has no `document_date` and is
   unstageable until that is filled; the Q1 FY2027 results PDF is
   image-only.
-  Next action: owner decides on the two staged AXISCADES candidates
-  (owner-approval fact writes) and reviews `PENDING_REVIEW.md` (Phase 2
-  items §G–§I added). Step 4 (frontend) remains gated on owner approval
-  of a layout.
+  **Superseded by the consolidated-decisions round below** — the owner
+  reviewed `PENDING_REVIEW.md` and issued task.txt's follow-up
+  directive acting on most of it.
+
+- **CONSOLIDATED-DECISIONS ROUND CLOSED (2026-11-15, same day).**
+  Desktop `task.txt` rewritten a second time with explicit decisions on
+  every item `PENDING_REVIEW.md` had raised. `C:\GitHub\backendtest`,
+  branch `feature/autonomous-research-pipeline`, now at **`5a4b5b4`**
+  (committed and pushed at the owner's explicit instruction, on top of
+  `28b0992`). Nothing merged to master, nothing deployed.
+  **Approved and done:**
+  (A3) Rule-based candidate staging (`stage_conservative_candidates`)
+  now calls the existing `page_declared_scope()` helper per unit and
+  refuses to mix a STANDALONE-sourced candidate with a
+  CONSOLIDATED-sourced one within one staging call — fixes the live
+  GP Eco Solutions FY2026Q4 case found during the audit (trade
+  receivables staged from the standalone balance sheet, inventory from
+  the consolidated one). 3 new tests; full `tests/pipeline` suite 506
+  passed/2 skipped; full canonical suite **2,383 passed, 2 skipped,
+  exit 0** (16m25s), up from 2,380 — exactly the new tests, zero
+  regressions. The original flagged candidate (GP Eco) stays staged,
+  untouched, as directed.
+  (B5) Header-based approval mechanism confirmed final; no ledger
+  table built.
+  (C3) AXISCADES staging-sweep gap marked **Resolved** (`EX-053`).
+  (C5) `--stage-candidates` added to both
+  `scripts/scheduled/run_pipeline_cycle.bat` and
+  `run_priority_extraction.bat` in this checkout — **does not take
+  effect on live scheduled runs** until released to the separate
+  `C:\SPARS-release\backendtest` worktree (both batches `cd` there
+  before running); that release step was not done.
+  (G) Chemkart FY2026 (`EX-054`): the already-registered
+  `CHEMKART_AR_25_08_2026` (112 extraction units, page 22) states a
+  clean native-text Standalone/Consolidated FY2026/FY2025 comparison
+  table — Consolidated FY2026 Total Revenues 21,549.41 lakh, PBT
+  2,688.87 lakh, PAT 1,965.46 lakh. PBT matches the independently-found
+  18-May-2026 filing exactly; PAT within 0.02%; revenue within 0.31%
+  (immaterial). **Facts recorded live** (`fin.raw.revenue` 215.4941,
+  `fin.raw.pbt` 26.8887, `fin.raw.pat` 19.6546 crore; period `FY2026`,
+  scope `CONSOLIDATED`) via the existing, unchanged
+  `ResearchBrainService.record_fact_idempotent`, all three `INSERTED`,
+  no conflict, verified backup taken first
+  (`instance/trading_app.db.bak_pre_chemkart_fy2026_facts_20261115T133138Z.db`,
+  integrity ok, 0 FK violations). Net Worth/Total Equity and the
+  derived ROE/ROCE were **not** found/recorded — flagged as an open
+  follow-up, not fabricated.
+  **Mid-session side request (Chemplast COGS, `EX-056`):** the
+  standalone-COGS "disagreement" carried since 2026-11-14 (275 vs
+  206.03) is resolved as a rollup, not a conflict — the Investor
+  Presentation's single COGS line reconciles to the REG30 filing's
+  "materials consumed + stock-in-trade purchases + inventory change"
+  sum across five independent periods. The two materials-consumed
+  candidates mislabeled as COGS were rejected live, append-only,
+  verified backup taken first; the deck's own COGS candidates remain
+  OPEN (promotion is a separate owner call).
+  **Investigated and reported, not acted on without further input:**
+  AXISCADES's two staged candidates — exact source passages/pages
+  pulled from `AXISCADES_AR_FY2025` (page 189 trade receivables, page
+  163 total assets) and reported for the owner's own verification;
+  confirm/reject still pending, as directed. AXISCADES FY2026 AR's
+  missing `document_date` — genuinely undeterminable under this
+  corpus's own convention (exchange-announcement date; this document
+  was a manual backfill with none captured), reported rather than
+  guessed. AXISCADES Q1 FY2027 "image-only" premise was **wrong** —
+  verified directly (downloaded via Drive, rendered, OCR'd): the real
+  results document (`f7b4a4e5…`, Drive title
+  `AXISCADES_RESULTS_Q1_FY2027`) has clean native text with correct
+  figures throughout; nothing needed OCR, nothing was fabricated;
+  staging it was out of scope for this item and not done.
+  C4 (disclosures scope): `company_disclosure.event_type` has no
+  controlled vocabulary at all (free text, no enum) — reported back.
+  Owner then defined scope: related-party transactions, contingent
+  liabilities/litigation, segment reporting, subsequent events, and
+  auditor qualifications, all five, not narrowed. **Build not yet
+  done** — scoped only: the Direct Event Extractor already covers
+  related-party/litigation live; contingent_liability, subsequent_event
+  and auditor_qualification need new event categories; segment
+  reporting needs a new table-aware numeric extractor (different shape
+  entirely), modeled on the rule-based `fin.raw.*` staging.
+  **Explicitly deferred, no action taken:** Chemplast's 13 undecided
+  candidates (owner's own review); backtesting's open design questions.
+  **Next action:** owner decision on (1) the two AXISCADES candidates
+  (§F1 in `PENDING_REVIEW.md`), (2) building the C4 disclosure
+  extraction (3 new event categories + segment-reporting extractor),
+  (3) whether to pursue Chemkart's Net Worth/ROE/ROCE follow-up, and
+  (4) the C5 release step to `C:\SPARS-release\backendtest`. Step 4
+  (frontend) remains gated on owner approval of a layout.
 
 - **DESKTOP TASK ITEMS 1+2 CLOSED (2026-11-15). Item 2 — Chemplast
   February 2026 acquisition — executed live through the existing
