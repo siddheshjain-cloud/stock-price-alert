@@ -19,7 +19,9 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-15 (owner-approved live promotion of Chemkart's
+**Last updated:** 2026-11-16 — C4 lane closed end to end (0 open C4
+candidates; 1,576 facts; full detail in the Session Recovery State).
+Prior note dated 2026-11-15: (owner-approved live promotion of Chemkart's
 H1 facts: 4 of the 5 copy-proved facts are now live — revenue 103.23,
 PAT 10.15, total assets 137.05, receivables 56.19, all CONSOLIDATED;
 backup `...bak_pre_chemkart_five_h1_facts_20261114T200544Z.db`, SHA-256
@@ -402,6 +404,326 @@ timestamps are authoritative throughout**. The system clock read
 2026-11-07 09:28 IST when this was verified. Anything added from here
 uses the true date.
 
+- **C4 DISCLOSURE BUILD — deterministic work complete; event lane
+  PAUSED on the owner's AI policy (last LLM call 2026-11-15
+  15:34:41).** `C:\GitHub\backendtest`, branch
+  `feature/autonomous-research-pipeline`, at **`7706461`** —
+  `feat(C4): close the disclosure-extraction lane end to end`
+  (2026-11-16), committing the whole C4 workstream: the modified
+  services/proposers/tests/policy docs, plus the new segment-reporting
+  extractor, C4 scripts, docs, tests and the evidence dry-runs/manifests
+  under `logs/`. Nothing merged to master, nothing deployed.
+  **Segment lane final:** 325 open (Refex 317, Choice 8); 37 withdrawn
+  append-only (AXISCADES 24, GP Eco 13 — no declared denomination);
+  genuine zeros UNO/Chemplast/Chemkart (transposed or absent tables);
+  46 pages gated with reasons; 2 documents undateable. 11 non-segment
+  `fin.raw.*` candidates were also staged today by earlier work.
+  **Event lane:** 6 candidates staged (5 Refex at 14:20, 1 UNO customs
+  appeal at 14:42), then stopped. Two defects found and fixed:
+  (1) period came from the raw filing date for the 529 of 573
+  documents without `reporting_period`; now derived stored → title → type-aware
+  filing date, validated 36/42 exact and 6 granularity-only;
+  (2) the financial preamble suppressed narrative pages; the event
+  lane now sends a narrative preamble (A/B on UNO AR page 231:
+  0 events old, 1 new). Pipeline suite **551 passed / 2 skipped**.
+  **AI decision made:** the owner authorised DeepSeek, raised the
+  monthly ceiling from $5 to $10 (one-line `llm_spend_service.py`
+  change), and a V4 DeepSeek sweep over all seven companies has been
+  running since 16:07 UTC (still in progress; 1,000+ calls, ~100 new
+  event candidates so far). The earlier "paused" state is superseded.
+  **Written this round:** `docs/C4_DISCLOSURE_EXTRACTION_2026-11-15.md`
+  (results and mechanics), `docs/direct_event_extractor/RULE_BASED_GAP_LIST.md`
+  (the owner's required "what rules can't catch" list, with measured
+  page counts: 300 related-party / 92 contingent / 37 subsequent /
+  60 auditor / 61 litigation out of 7,774 pages, and the finding that
+  period-prefix detection was a rules defect, not an AI item), and the
+  C4 section of `PENDING_REVIEW.md`.
+  **Promotion path (owner directive 2026-11-15, desktop `task.txt`):**
+  `scripts/promote_c4_staged_candidates.py` built to the
+  `promote_uno_completion.py` shape (citations from each candidate's own
+  stored quote; dry run default; conflicts listed and never overwritten;
+  `--commit` only after the owner sees the summary; duplicates collapsed
+  to corroborating evidence; DeepSeek tagged "AI-SOURCED, FIRST BATCH").
+  The required shape is now standing policy in `AGENTS.md`
+  ("Promotion scripts — REQUIRED shape"). Audit: 6 of the 11 older
+  `promote_*.py` scripts comply; `promote_choice_facts.py`,
+  `promote_refex_facts.py`, `promote_gpeco_financials.py`,
+  `promote_refex_quarterly.py` and `promote_refex_standalone.py` do not
+  (slot-existence checks only, generic snippets, silent skips).
+  **Precision-correction rule (owner directive, second `task.txt`):**
+  a differing live value within 0.5% that is the same filed figure at
+  another precision is classified `PRECISION_CORRECTION`, applied by
+  superseding (never rewriting) the old fact, and logged through
+  `record_automatic_write` as write action `precision_correction`
+  (AUTOMATIC in `app/policies/write_policy.py`; policy tests 23 passed).
+  Dry run now shows exactly one such correction: Refex
+  `fin.segment.green_mobility.revenue` FY2025Q4, 15.44 -> 15.45
+  (0.0648%, raw cell 1544.55 lakh).
+  **Committed 2026-11-15 17:15 UTC** after the owner approved the
+  prompt: Refex `fin.segment.green_mobility.revenue` FY2025Q4 was
+  superseded (15.44 -> 15.45, new fact `0f273209-557b-45eb-9bf5-
+  9b118b5edd4a` over `b6fd3b94-52dd-4454-b0c3-e16d5026d136`); both
+  page candidates (16 and 11) are PROMOTED to it with evidence
+  attached. The script then failed in its post-commit evidence check
+  (`fact_evidence` has no `id` column); the query was fixed and the
+  provenance line and manifest were reconstructed from database state
+  (`logs/direct_event_extractor/c4_precision_correction_manifest_
+  20261115T171546.json`) -- no additional writes were made. Diagnostics
+  now resolve the slot to 15.45; orphan check returns none.
+  **V4 sweep complete 2026-11-15 18:46 UTC.** Owner raised the DeepSeek
+  ceiling $10 -> $12 mid-run (`SPARS_LLM_MONTHLY_CEILING_USD` user env
+  var); the $10 process was stopped at a clean company boundary
+  (Chemplast finished, nothing refused) and resumed under $12. Scope
+  573 documents, 528 processed (AXISCADES 43 on the resume), month-to-date
+  spend **$10.10 of $12**, **0 budget refusals**.
+  **Final dry run** (`logs/c4_promotion_dryrun_final.out` / `...json`):
+  **646 open candidates — 500 NEW, 60 match, 74 duplicate, 12 batch
+  conflicts (6 same-slot DeepSeek pairs, wording-only), 0 live-value
+  conflicts, 0 precision corrections, 0 not-promotable.** By company:
+  Refex 410 (270 new/60 match/74 dup/6 batch), AXISCADES 59, UNO 51,
+  Choice 42, GP Eco 34, Chemplast 32, Chemkart 18. Nothing promoted.
+  **Reconciliation (owner directive, 2026-11-16, read-only against the
+  live DB; `logs/c4_reconciliation_quotes_2026-11-16.json`).**
+  *Counts (before the segment-identity fix below):* the NEW 500 is
+  **189 rule-based segment + 311 AI** (305 V4
+  DeepSeek + 5 V1 + 1 V3), not the earlier "305 AI + 195 rule-based"
+  stated in the delivered report; 323 RULE-BASED total = 189 new + 60
+  match + 74 dup. Of the 311 AI, **5 are outside the five categories**
+  (Refex management_governance/order_contract/other x2/partnership_jv);
+  the dry-run lists them separately and the commit guard now enforces
+  it: only rule-based segment rows and the five C4 categories can create
+  a fact, so `--commit` promotes 495 and leaves these 5 staged
+  (`FIVE_CATEGORIES` / `_promotion_eligible` / `_held_back_ids` /
+  `_selected_for_commit` in `scripts/promote_c4_staged_candidates.py`,
+  covered by `tests/pipeline/test_promote_c4_staged_candidates.py`).
+  The same guard applies in `--commit-precision-corrections` mode, and
+  the manifest records the held-back ids.
+  *Source validation:* all 189 rule-based candidates carry a structured
+  citation (segment row / column / raw cell) whose three elements are
+  present in the source page (189/189). 310 of 311 AI quotes are
+  contiguous verbatim substrings of their source extraction unit; the
+  1 exception (UNO customs HSN appeal, `b5f91925…`) **is** on its page
+  but fragmented by two-column table layout, so not a single contiguous
+  string — verified manually, not fabricated.
+  *Segment identity — OCR label variants (owner question, 2026-11-16):*
+  the Choice duplicate was **not** merged; it was the tip of a wider
+  defect. OCR-corrupted table labels produced several slugs for one
+  segment (Choice `advisoiv_seivices` vs `advisory_services`,
+  `nb_fc_services` vs `nbfc_services`; Refex power-trading ×3,
+  refrigerant ×6, solar ×2, unallocable ×2, wind ×2 — **165 staged rows**
+  in all). Fixed with `SEGMENT_SLUG_ALIASES` in
+  `app/services/segment_reporting_extractor.py` (applied by
+  `segment_slug` at staging and by `_canonical_segment_fact_type` at
+  promotion; the stored fact uses the alias, the staged row and its
+  `raw_quote` keep the original label, and the manifest records
+  `canonicalised_from`). Aliases were checked against the live segment
+  facts, whose overlapping periods carry identical figures, and target
+  the spelling already live. No residual fuzzy segment cluster remains.
+  Canonicalisation supersedes the earlier **495** figure: the dry run is
+  now **646 = 436 NEW + 143 match + 52 dup + 1 precision + 14 batch
+  conflicts**, **431 promotion-eligible** (436 − the same 5 held back).
+  *(Pre-commit, before the Choice period correction and the Refex
+  sign-loss rejection below; the final committed shape is 645 =
+  437/143/52/1/12.)*
+  The 83 newly-matching rows are segment candidates whose OCR slug now
+  resolves to the live identity; the 2 added batch conflicts are Refex
+  `refrigerant.result FY2026Q3` (-1.11 vs 11.11, OCR sign error); the
+  precision correction is Refex `solar_power.revenue FY2025Q4`
+  2.78 → 2.79 from raw cell 278.86 (auto-applied under the ≤0.5% rule).
+  *Choice period correction — RESOLVED 2026-11-16 (owner directive).*
+  The 6 Choice **flow** candidates (advisory/broking/nbfc/unallocable
+  revenue, advisory/nbfc result) carried the
+  *quarter-ended-30-Sep-2026* column but were labelled FY2027H1. Page 5
+  (unit `b7be4964`, doc `266d0349`) is denominated **₹ millions**, and
+  its headers resolve as Q2 FY2027 = 3,966.22, Q1 FY2027 = 3,327.30,
+  H1 FY2027 = 7,293.52, with 3,966.22 + 3,327.30 = 7,293.52 exactly. The
+  six staged values are the Q2 column ÷10 (million→crore): 1,445.26 →
+  144.53, 1,782.38 → 178.24, 462.49 → 46.25, 276.09 → 27.61, 453.30 →
+  45.33, 36.46 → 3.65 — so **only the period was wrong, never the
+  value**. Corrected period FY2027H1 → FY2027Q2 via
+  `CANDIDATE_CORRECTIONS` in the promotion script (staged rows are
+  immutable; the manifest records `period_corrected_from` alongside
+  `canonicalised_from` and the cited reason). The 2 assets rows stay at
+  FY2027H1 — they are point-in-time figures from the same page.
+  *Refex OCR sign conflict — RESOLVED 2026-11-16.* The pair was
+  `fin.segment.refrigerant.result FY2026Q3` −1.11 (page 6,
+  `(110.84)`) vs +11.11 (page 16, `1110.84)` — the opening parenthesis
+  misread as `1`). The parenthesised page-6 figure is the filed value;
+  candidate `e6ef7bba` was REJECTED through
+  `ResearchCoverageService.reject_candidate_finding` with that evidence,
+  and `f825376f` (−1.11) promoted.
+  *Promotion-eligible population:* **432 = 437 − 5 out-of-category**
+  (AXISCADES 59, Chemkart 18, Chemplast 30,
+  Choice 42, GP Eco 30, Refex 207, UNO 51; Refex's segment rows mostly
+  moved to match/duplicate). Preserved for separate
+  review: **12 batch-conflict candidates** (6 slots, after the sign fix
+  removed one pair) and the **29 core
+  `fin.raw.*` candidates** (AXISCADES 2, Chemplast 11, Chemkart 5,
+  GP Eco 2, Refex 6, UNO 3; incl. Chemplast revenue 835-vs-504 / COGS
+  573-vs-275 / PAT -119-vs-56 and UNO revenue 5557-vs-186 internal
+  disagreements).
+  *45 unprocessed documents:* 573 linked = 528 processed (485 first
+  run + 43 AXISCADES resume) + 45 unprocessed; the 45 = **16 documents
+  with zero PAGE units** (13 SAST/Reg30 attachments, Choice 1, GP Eco
+  4, Chemplast 3, AXISCADES 7; `process_document` returns None and they
+  count as neither processed nor gated) + **24 documents skipped as
+  already covered** by an earlier V4 pass (Chemkart 22, Choice 1,
+  Refex 1) + **5 documents gated on `document_date` NULL** (UNO AR
+  FY2025, GP Eco Equisense, Chemkart SAST, AXISCADES Cloud Wave Reg30
+  and AXISCADES AR FY2026 — all have PAGE units and could be processed
+  once dated). 573 = 528 + 16 + 24 + 5.
+  *AXISCADES contradictions resolved:* 52 linked documents = 45 with
+  PAGE units (43 processed + 2 date-NULL gated) + 7 with zero units,
+  all SAST Reg30 attachments, all date NULL. **No OCR status exists in
+  the database** (all 2,340 documents are `ingestion_status=STORED`;
+  no OCR flag/string anywhere) — the "7 documents marked
+  `OCR_REQUIRED`" note in `PENDING_REVIEW.md` §C3 is corrected to
+  "7 documents have zero extraction units". The Q1 FY2027 results PDF
+  is not image-only (already corrected later in §C3: it is a 1-page
+  cover letter; the figures are in
+  `AXISCADES_REG30_BOARD_MEETING_OUTCOME_13_08_2026`). AXISCADES
+  `extracted_fact` = 0 is consistent: 59 C4 V4 + 24 segment + 2 core
+  candidates exist, none promoted. No AXISCADES price file exists in
+  the market-data store.
+  *Pilot backlog characterized (staged 2026-11-04, before C4):* open
+  (undecided) **Choice 255, GP Eco 273, Refex 875 = 1,403** (all
+  TEXT; 203 earlier pilot candidates were already PROMOTED — Choice
+  42, GP Eco 53, Refex 108; the dimension also holds 943 open
+  candidates for Reliance 653 / SBI 261 / HDFC 29, outside the
+  seven-company scope). All 1,403 open, 1,374/1,403 quotes verbatim;
+  1,388 would be NEW against live facts and **15 conflict** (Refex 13,
+  Choice 1, GP Eco 1); 47 multi-candidate slots carry differing values
+  (Choice 8 slots/14 candidates, GP Eco 3/6, Refex 36/82). Only
+  **58 related-party + 63 litigation** open pilot candidates fall in
+  the C4 five categories (no contingent/subsequent/auditor).
+  *Overlap with today's C4 batch:* essentially disjoint — 32 of 286
+  pilot source documents also yielded a C4 candidate; **1 exact
+  same-slot pair** (`venwind_refex_material_rpt_approval` FY2026Q4,
+  both NEW; promoting both would make the second a text CONFLICT) and
+  **5 same-fact_type / same-event pairs**, all Refex C4-NEW; 4 of the
+  5 differ in period annotation (pilot FY2027Q2 / FY2027Q1 vs C4
+  FY2026 / FY2026Q4), which would create separate facts if both were
+  promoted. No identical quotes.
+  **C4 PROMOTION COMMITTED 2026-11-16 01:06 UTC** (owner directive,
+  "Complete C4 Promotion"). Final dry run before commit:
+  **645 open = 437 NEW + 143 match + 52 dup + 1 precision + 12
+  batch conflicts**, 0 live-value conflicts, 0 not-promotable,
+  **432 eligible**, 5 held back, 164 segment slugs canonicalised,
+  6 Choice rows corrected from source. Commit result: **628 decision
+  rows — 432 NEW + 143 MATCHES_LIVE + 52 DUPLICATE_IN_BATCH + 1
+  PRECISION_CORRECTION; 0 failures; 12 conflicts untouched; 5 held
+  back and still open.** Live effect: **433 new facts** (432 NEW + 1
+  superseding precision fact), every one with ≥1 `fact_evidence` row
+  (0 orphans), plus **195 corroborating evidence attachments**. The
+  precision correction: Refex `fin.segment.solar_power.revenue`
+  FY2025Q4 2.78 → 2.79 (0.3597%, raw cell 278.59), new fact
+  `4cc6acac` supersedes `06c79301`, logged as `precision_correction`.
+  Verified live: Choice's six flow facts at FY2027Q2 (144.53 / 178.24 /
+  46.25 / 27.61 / 45.33 / 3.65) and two asset facts at FY2027H1, with
+  one `advisory_services` identity (no duplicate segment); Refex
+  `fin.segment.refrigerant.result` FY2026Q3 = −1.11. Open C4
+  candidates remaining after the commit: **17 = 12 batch conflicts +
+  5 held back**.
+  **The 12 batch conflicts RESOLVED 2026-11-16 01:16 UTC** (owner
+  directive; no genuine disagreement was found). Five of the six slots
+  were the **same annual report ingested twice**: Refex's FY2026 AR and
+  its 8-Jul Reg 30 filing are the same 395-page document (all 395 page
+  texts identical, different file hashes), and GP Eco's 74-page FY2025
+  AR is reproduced verbatim inside the 101-page 5-Sep Reg 30 filing
+  (74/74 pages identical). The sixth (Chemplast) was two genuinely
+  different documents — the 4-Nov investor presentation and the 12-Nov
+  concall transcript — stating the same Madras HC provisional-assessment
+  order consistently. Dispositions: **6 facts promoted, 5 DUPLICATE
+  decisions, 1 independent corroboration**.
+  - Promoted leaders: Chemplast `a4d9c18a` → fact `706f2b88`;
+    GP Eco `68d3a147` → `914b3083`, `71fa1ee5` → `bddd1a4a`; Refex
+    `4b8c0e12` → `3e73ae12`, `c7ce094e` → `af411c75`, `8466878f` →
+    `0a65b795` (incl. the Note 34 slot, kept per owner decision).
+  - DUPLICATE: `c77f4b54`→`68d3a147`, `40750297`→`71fa1ee5`,
+    `4b7a1456`→`4b8c0e12`, `910ea588`→`c7ce094e`,
+    `59b0eb88`→`8466878f`, each reason citing the identical-page
+    evidence — recorded as duplicates, not corroboration, so evidence
+    counts are not inflated.
+  - Corroboration: Chemplast concall `f118252c` attached to fact
+    `706f2b88` as a second evidence row (presentation p5 + concall p3;
+    2 evidence rows on that fact).
+  Verification: 6 facts with the correct company/period/as_of_date, 6
+  cited evidence rows plus the corroborating one, 0 orphan facts,
+  decision totals DUPLICATE 12 / PROMOTED 916 / REJECTED 48, total
+  facts 1,571. **Open C4 candidates then 5** — only the Refex
+  out-of-category five (all 5 since promoted; see below).
+  Manifest:
+  `logs/direct_event_extractor/c4_conflict_resolution_manifest_
+  20261116T011601.json`; pre-write backup
+  `instance/trading_app_pre_c4_conflict_resolution_20261116.db`.
+  **STATUS: COMPLETE (2026-11-16).** All 12 batch-conflict candidates
+  have a terminal decision (6 PROMOTED, 5 DUPLICATE, 1 corroboration);
+  no conflict slot remains open.
+  Root cause worth logging separately: the same annual report is in
+  the corpus twice (different file hashes defeat sha256 dedupe) — this
+  is what manufactured the apparent conflicts. Recorded as EX-057 in
+  `docs/SPARS_EXCEPTION_BACKLOG.md` (Open/accepted: no dedup redesign,
+  no reprocessing, per owner instruction).
+  Artifacts: `logs/c4_promotion_dryrun_corrected.out`/`.json`,
+  `logs/c4_promotion_commit_20261116.out`,
+  `logs/direct_event_extractor/c4_promotion_manifest_20261116T010653.json`;
+  pre-commit backup `instance/trading_app_pre_c4_promotion_20261116.db`.
+  Tests: focused 27 passed; full `tests/pipeline` 560 passed, 2 skipped.
+  **The 5 out-of-category Refex candidates RESOLVED 2026-11-16**
+  (owner directive: classify under the four original alert routes in
+  Business Decisions Refined v1.1 — results/guidance, orders/capacity,
+  governance, capital actions — never a fifth catch-all, and hold
+  anything that fits none of them). **4 promoted, 1 held.**
+  - Governance: `abb68bc9` (`event.management_governance.refex_mobility_
+    rebrand_ceo_appointment`, FY2026Q2) → fact `dd701b7e`.
+  - Orders/capacity: `3f9000b3` (`event.order_contract.wind_turbine_
+    order_torrent`, FY2026Q1) → `dfb934da`; `5b5b2ecf` reclassified
+    from `event.other.green_mobility_phaseout` to
+    `event.business_closure.green_mobility_phaseout` (shutdown of
+    operating capacity) → `9fbd9e0c`; `eb7a2a86` reclassified from
+    `event.partnership_jv.fleet_expansion_ride_hailing` to
+    `event.capex_commissioning.fleet_expansion_ride_hailing` (fleet
+    expansion; same family as the live BS-VI fleet-upgrade fact) →
+    `1f70e073`.
+  - **Final C4 row RESOLVED 2026-11-16 (owner decision: "Use
+    event.other for this one").** `770539d1` — Venwind Refex Power
+    Services incorporation, FY2026Q1 — promoted as
+    `event.other.subsidiary_incorporation_venwind_services` → fact
+    `076cec9e`, with 1 evidence row (doc `1f753de8` page 3, unit
+    `e8cf452d`). Source verified verbatim: "Another step-down
+    subsidiary Venwind Refex Power Services Limited was incorporated
+    which will undertake O&M services for wind." The value was
+    restated in the source's terms (step-down subsidiary, not Refex
+    directly). No dedicated corporate-restructuring/subsidiary-
+    formation category exists; `event.other` was chosen explicitly by
+    the owner, matching the live `event.other.refex_mobility_wos_
+    incorporation` precedent.
+  Verification: 5 facts (4 + this one) each with 1 evidence row
+  (correct document/page), correct company/period/as_of_date,
+  **0 orphan facts**. Decisions are PROMOTED by `04d8223e`. Totals now
+  **1,576 facts; 981 decisions = 921 PROMOTED / 12 DUPLICATE /
+  48 REJECTED**.
+  Manifests: `logs/direct_event_extractor/refex_out_of_category_
+  promotion_manifest_20261115T195235.json` and
+  `.../refex_venwind_incorporation_promotion_manifest_
+  20261115T195919.json`; pre-write backups
+  `instance/trading_app_pre_refex_outofcategory_20261116.db` and
+  `instance/trading_app_pre_refex_venwind_incorporation_20261116.db`.
+  **Open C4 candidates now 0** — the C4 lane is fully closed.
+  **Next action:** the C4 batch, its 12 batch conflicts, and all 5
+  out-of-category rows are closed (C4 open = 0). Remaining, each
+  needing its own decision: the 29 core `fin.raw.*` candidates, the
+  1,403-candidate pilot backlog (Choice 255 / GP Eco 273 / Refex
+  875), the cross-batch overlap pairs noted above, then AXISCADES two
+  candidates (§F1), Chemkart Net Worth/ROE/ROCE, C5 release step,
+  Step 4 frontend. The
+  duplicated-annual-report ingestion is recorded as EX-057
+  (Open/accepted; no dedup redesign, no reprocessing). All C4 code
+  changes (`SEGMENT_SLUG_ALIASES`, `CANDIDATE_CORRECTIONS`, commit
+  guard, five-category lane, segment staging, precision policy) are
+  committed in `7706461`; this checkpoint update is committed in the
+  docs repo in the same round.
+
 - **STAGE 2-6 AUDIT DIRECTIVE — Steps 1–3 executed, committed and pushed
   2026-11-15; Step 4 (frontend) not started. Phase 2 directive executed,
   committed and pushed 2026-11-15.** Desktop `task.txt` (2026-11-15 12:02)
@@ -575,8 +897,9 @@ uses the true date.
   controlled vocabulary at all (free text, no enum) — reported back.
   Owner then defined scope: related-party transactions, contingent
   liabilities/litigation, segment reporting, subsequent events, and
-  auditor qualifications, all five, not narrowed. **Build not yet
-  done** — scoped only: the Direct Event Extractor already covers
+  auditor qualifications, all five, not narrowed. **Build done — see
+  the C4 bullet at the top of this section.** The Direct Event
+  Extractor already covers
   related-party/litigation live; contingent_liability, subsequent_event
   and auditor_qualification need new event categories; segment
   reporting needs a new table-aware numeric extractor (different shape
