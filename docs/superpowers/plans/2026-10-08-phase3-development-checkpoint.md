@@ -19,8 +19,11 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-16 — C4 lane closed end to end (0 open C4
-candidates; 1,576 facts; full detail in the Session Recovery State).
+**Last updated:** 2026-11-16 — the 29 reviewed core `fin.raw.*`
+candidates are closed (19 facts, 6 duplicates, 4 rejects; 1,595 facts;
+full detail in the Session Recovery State). Prior note the same day:
+C4 lane closed end to end (0 open C4 candidates; 1,576 facts; full
+detail in the Session Recovery State).
 Prior note dated 2026-11-15: (owner-approved live promotion of Chemkart's
 H1 facts: 4 of the 5 copy-proved facts are now live — revenue 103.23,
 PAT 10.15, total assets 137.05, receivables 56.19, all CONSOLIDATED;
@@ -561,7 +564,10 @@ uses the true date.
   `fin.raw.*` candidates** (AXISCADES 2, Chemplast 11, Chemkart 5,
   GP Eco 2, Refex 6, UNO 3; incl. Chemplast revenue 835-vs-504 / COGS
   573-vs-275 / PAT -119-vs-56 and UNO revenue 5557-vs-186 internal
-  disagreements).
+  disagreements). **Both preserved groups are now closed**: the 12
+  batch conflicts with the C4 lane, and the 29 core candidates reviewed
+  2026-11-16 (19 promoted / 6 duplicate / 4 rejected — closure record
+  below).
   *45 unprocessed documents:* 573 linked = 528 processed (485 first
   run + 43 AXISCADES resume) + 45 unprocessed; the 45 = **16 documents
   with zero PAGE units** (13 SAST/Reg30 attachments, Choice 1, GP Eco
@@ -710,18 +716,86 @@ uses the true date.
   `instance/trading_app_pre_refex_outofcategory_20261116.db` and
   `instance/trading_app_pre_refex_venwind_incorporation_20261116.db`.
   **Open C4 candidates now 0** — the C4 lane is fully closed.
-  **Next action:** the C4 batch, its 12 batch conflicts, and all 5
-  out-of-category rows are closed (C4 open = 0). Remaining, each
-  needing its own decision: the 29 core `fin.raw.*` candidates, the
-  1,403-candidate pilot backlog (Choice 255 / GP Eco 273 / Refex
-  875), the cross-batch overlap pairs noted above, then AXISCADES two
-  candidates (§F1), Chemkart Net Worth/ROE/ROCE, C5 release step,
-  Step 4 frontend. The
-  duplicated-annual-report ingestion is recorded as EX-057
-  (Open/accepted; no dedup redesign, no reprocessing). All C4 code
-  changes (`SEGMENT_SLUG_ALIASES`, `CANDIDATE_CORRECTIONS`, commit
-  guard, five-category lane, segment staging, precision policy) are
-  committed in `7706461`; this checkpoint update is committed in the
+  **The 29 core `fin.raw.*` candidates CLOSED 2026-11-16** (owner
+  directive: "Proceed with the corrections and promote", with the rule
+  that an annual source column is labelled FY2024 and never converted
+  into a fourth-quarter period). Every value was re-read against its
+  source page before writing. Dispositions on the 29 reviewed rows:
+  **19 PROMOTED / 6 DUPLICATE / 4 REJECTED — 0 open core candidates
+  remain.** The seven other open `fin.raw.*` rows belong to Asian
+  Energy / Bombay Dyeing / Cemindia / JITF and are outside this
+  population.
+  - **19 facts**, each carrying the candidate's own stored citation:
+    AXISCADES total assets 689.33 and trade receivables 80.80
+    (FY2025, as_of 2025-03-31); Chemkart CFO 0.8983 (consolidated),
+    PAT 10.67 and revenue 102.09 (standalone) for FY2026H1; Chemplast
+    COGS 573 / 275 (consolidated / standalone), EBITDA −57 / −14,
+    PAT −56.50 and revenue 504.34 (standalone, as_of 2026-02-07),
+    CFO 219.97 (standalone FY2027H1, as_of 2026-09-30); GP Eco trade
+    receivables 178.66 (standalone FY2026, as_of 2026-03-31 — its first
+    standalone balance-sheet fact); Refex FY2024 inventory 7.19 /
+    total assets 748.27 / trade receivables 305.41 and FY2026H1
+    8.46 / 1,793.06 / 583.51 (all standalone).
+  - **13 corrections applied at promotion time, every one recorded in
+    the dry run and the manifest with its source page and quoted
+    figure.** AXISCADES: filing-date as_of → the balance-sheet date.
+    Chemkart: CFO scope UNDETERMINED → CONSOLIDATED (p.4 consolidated
+    statement 89.83 lakh; p.7 standalone 67.35). Chemplast: two Reg30
+    as_of dates aligned to 2026-02-07; CFO period FY2027Q2 →
+    **FY2027H1** and as_of → 2026-09-30, scope → STANDALONE (p.5
+    "Unaudited Standalone Cash Flow Statement for the half-year ended
+    30th September 2026"). GP Eco: FY2026Q4 → **FY2026** and scope →
+    STANDALONE (p.12 audited standalone balance sheet as at
+    31-03-2026, 17,865.70 lakh; p.20 consolidated 19,511.04). Refex:
+    FY2025Q2 → **FY2024** with as_of 2024-03-31 (p.44 columns
+    FY24/FY23/FY22) and FY2026Q2 → **FY2026H1** with as_of 2025-09-30
+    (p.41 column H1FY26; its FY25 total assets 1,680.96 matches the
+    live standalone fact `dd2e3265`), scope → STANDALONE on all six.
+    The FY2026Q2 → FY2026H1 relabel is an extra application of the
+    owner's annual-column principle beyond the three FY2024 rows and
+    was reported to the owner as such.
+  - **6 duplicates recorded as DUPLICATE, no fact created**: Chemplast
+    presentation repeats `627e2242`, `e3d13d9b`, `7a4e3178`,
+    `10ec655f` (the last two pointing at the Reg30 candidates whose
+    facts the deck rounds), and UNO PAT 296 (`3aa139da`) / revenue
+    5,557 (`b512eb54`) pointing at the candidates that produced the
+    live facts.
+  - **4 REJECTED with source evidence**: Chemkart CFO 5.8519 (the
+    prior-year pre-tax "Cash generated from operations", not H1 net —
+    the H1 standalone net is 0.6735), Chemkart COGS 10.05 (material
+    cost only; full COGS 83.69), UNO revenue 186 (EV Systems segment,
+    not company revenue), and GP Eco inventory 56.64 — a duplicate of
+    live fact `2c22dc65` with **no originating candidate**, which the
+    decision schema's DUPLICATE state cannot express (it requires a
+    candidate target), so it is closed as rejected-with-reason and is
+    still never promoted.
+  Verification: **1,595 facts (+19); 1,010 decisions (+29) = 940
+  PROMOTED / 18 DUPLICATE / 52 REJECTED**; all 19
+  facts carry the corrected period/as_of/scope; **0 facts without
+  evidence**. One orphan `evidence` row (`051d1e9b`) remains from the
+  first commit attempt, which stopped mid-run on a SQLite date-type
+  error before that fact was inserted — the service's documented
+  commit-order limitation; the retry linked its own evidence row
+  (`88e36617`).
+  Script `scripts/promote_core_fin_raw_candidates.py` (cite-first; dry
+  run default; `--commit` only after the owner saw the summary; the
+  plan is pinned to the reviewed staged values so any drift aborts;
+  conflicts are listed and never overwritten) with tests
+  `tests/pipeline/test_promote_core_fin_raw_candidates.py` (8 passed).
+  Manifests `logs/core_fin_raw/core_fin_raw_promotion_manifest_
+  20261116T015458.json` (the two AXISCADES facts) and
+  `..._20261116T015549.json` (the remaining 27); pre-write backup
+  `instance/trading_app.db.bak_pre_core_fin_raw_20261116T015448Z.db`.
+  **Next action:** the core candidate set is closed. Remaining in the
+  research lane: the 1,403-candidate pilot backlog (Choice 255 /
+  GP Eco 273 / Refex 875), the cross-batch overlap pairs noted above,
+  AXISCADES two candidates (§F1), Chemkart Net Worth/ROE/ROCE, the C5
+  release step, then Step 4 frontend. EX-057 remains Open/accepted. All
+  C4 code changes (`SEGMENT_SLUG_ALIASES`, `CANDIDATE_CORRECTIONS`,
+  commit guard, five-category lane, segment staging, precision policy)
+  are committed in `7706461`; the promotion script and its tests are
+  **uncommitted** in `C:\GitHub\backendtest` (nothing committed or
+  pushed in this round). This checkpoint update is committed in the
   docs repo in the same round.
 
 - **STAGE 2-6 AUDIT DIRECTIVE — Steps 1–3 executed, committed and pushed
