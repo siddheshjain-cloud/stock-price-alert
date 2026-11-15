@@ -487,17 +487,25 @@ uses the true date.
   E) — every item proposed/pending, none committed. Backlog carries
   **EX-052** (zero-staging rule fix) and **EX-053** (routes/write policy,
   AXISCADES staging gap). Both files are committed and pushed with the
-  code. **The AXISCADES staging sweep was NOT run:** a verified backup
-  was taken
-  (`instance/trading_app.db.bak_pre_axiscades_staging_20261115T072638Z.db`,
-  integrity ok, 0 FK, SHA-256 `8d67a032…18e5c`), then the session's
-  auto-mode permission classifier blocked the live write twice; the exact
-  owner command is recorded in `PENDING_REVIEW.md` §C3.
-  Next action: owner runs the AXISCADES sweep and reviews
-  `PENDING_REVIEW.md`; Phase 2 directive (subagent incident, Chemkart
-  untraceable figure, ROE backfill lead, backtesting scaffolding, live
-  prices in valuations) is under way, sequenced after the full suite.
-  Step 4 (frontend) remains gated on owner approval of a layout.
+  code. **AXISCADES staging sweep RUN 2026-11-15 12:50 UTC on the
+  owner's explicit instruction.** A fresh verified online backup was
+  taken first (`instance/trading_app.db.bak_pre_axiscades_staging_20261115T125002Z.db`,
+  164,556,800 bytes, integrity ok, 0 FK, SHA-256 `c6e30bfa…86aca`; the
+  earlier 07:26Z backup is superseded). Sweep result: cycle
+  `cd858723-8c45-41b1-a3c7-86dc1a329f38` **SUCCESS**, 0 documents
+  extracted (all 52 already extracted), **2 candidates staged** from
+  `AXISCADES_AR_FY2025` — trade receivables 80.80 crore and total assets
+  689.33 crore, both FY2025, both rule-based — and coverage-review
+  passes for the company rose 0 → 5. `extracted_fact` for AXISCADES is
+  still **0**: nothing was promoted. Log:
+  `logs/axiscades_staging_sweep_20261115.log`. Remaining gaps unchanged:
+  the FY2026 annual report (`de51ed40…`) has no `document_date` and is
+  unstageable until that is filled; the Q1 FY2027 results PDF is
+  image-only.
+  Next action: owner decides on the two staged AXISCADES candidates
+  (owner-approval fact writes) and reviews `PENDING_REVIEW.md` (Phase 2
+  items §G–§I added). Step 4 (frontend) remains gated on owner approval
+  of a layout.
 
 - **DESKTOP TASK ITEMS 1+2 CLOSED (2026-11-15). Item 2 — Chemplast
   February 2026 acquisition — executed live through the existing
