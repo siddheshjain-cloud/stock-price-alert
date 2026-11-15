@@ -403,19 +403,42 @@ timestamps are authoritative throughout**. The system clock read
 uses the true date.
 
 - **STAGE 2-6 AUDIT DIRECTIVE — Steps 1–3 executed, committed and pushed
-  2026-11-15; Step 4 (frontend) not started. Phase 2 directive in
-  progress.** Desktop `task.txt` (2026-11-15 12:02) directs Steps 1–4:
-  fix Stage 2 zero-staging with rule-based logic only; close the
-  `app/routes` gap with an in-code write policy; report content readiness
-  for UNO Minda / Chemplast / AXISCADES; stop before frontend. Branch
-  `feature/autonomous-research-pipeline` in `C:\GitHub\backendtest`,
-  now at **`966af0b`** (code `a015e62`, docs `966af0b`, pushed
-  `499a8c2..966af0b` to origin at the owner's explicit instruction).
+  2026-11-15; Step 4 (frontend) not started. Phase 2 directive executed,
+  committed and pushed 2026-11-15.** Desktop `task.txt` (2026-11-15 12:02)
+  directs Steps 1–4: fix Stage 2 zero-staging with rule-based logic only;
+  close the `app/routes` gap with an in-code write policy; report content
+  readiness for UNO Minda / Chemplast / AXISCADES; stop before frontend.
+  The rewritten `task.txt` (Phase 2) then directs five items: the
+  early-November subagent incident, the Chemkart untraceable figure, the
+  ROE backfill lead, backtesting scaffolding, and read-only live prices
+  in valuations. Branch `feature/autonomous-research-pipeline` in
+  `C:\GitHub\backendtest`, now at **`28b0992`** (Steps 1–2 code
+  `a015e62`, docs `966af0b`; Phase 2 commit `28b0992`, pushed
+  `966af0b..28b0992` to origin at the owner's explicit instruction).
   Nothing merged to master, nothing deployed.
-  **Full suite: 2325 passed, 2 skipped, exit 0** (1046.89s, 2026-11-15)
-  with `tests/research/test_market_data_ingest.py` and
-  `test_market_data_service.py` excluded — `duckdb` is not installed in
-  this environment; both modules predate this work and are unaffected.
+  **Phase 2 complete (commit `28b0992`, pushed).** (1) Subagent incident
+  root-caused as EX-055 — fork scope inheritance plus non-uniform
+  permission enforcement; no repo code fix possible; a delegation rule
+  now lives in `AGENTS.md` § Safety Boundaries. (2) Chemkart's FY2026
+  Screener ratios (ROE 15.1546% / ROCE 27.6599%) had no corpus
+  provenance; the issuer's 18-May-2026 audited results filing was found
+  in local logs and reconciles to every workbook input and both ratios
+  exactly; the corpus never acquired it — EX-054, backfill proposal in
+  `PENDING_REVIEW.md` §G, **nothing written live**. (3) Same artefact as
+  (2); the ROE "backfill lead" is the missing FY2026 Chemkart filing,
+  not a calculation error. (4) `app/services/backtesting/` scaffolding
+  built (CSV + local-store loaders, empty `Strategy` protocol,
+  return/CAGR/drawdown/volatility/Sharpe with configurable risk-free,
+  bar-by-bar engine with no-lookahead execution, JSON/Markdown reports;
+  21 tests; no rules shipped, nothing wired to the API or scheduler).
+  (5) `GET /api/research/companies/<id>/valuation-view` built —
+  premium/admin only, returning the existing read-only `market_quote`
+  beside stored valuation and forecast; no trading logic, no automated
+  action; route snapshots updated deliberately; 4 tests.
+  **Full suite: 2380 passed, 2 skipped, exit 0** (927.84s, 2026-11-15)
+  under the canonical `C:\venvs\spa-m1` interpreter — both duckdb
+  modules included this time (`duckdb` 2.0.0 is installed there; the
+  earlier "not installed" note was a different-interpreter artefact).
   **Step 1 complete and verified.** Rule-level causes: the `_LABEL_PATTERNS`
   gap rejected newline/non-space separators and could false-match an
   `in` suffix; CFO label variants were missing. Fixed with rule-only logic
@@ -444,9 +467,11 @@ uses the true date.
   `SPARS_MAX_TRANSIENT_EXTRACTION_RETRIES`. **116 focused tests passed**
   (new `tests/api/test_write_policy.py`, 23 tests, and new consumer
   investment-case/alerts tests; contract/boundary snapshots updated
-  deliberately). Full suite **2325 passed / 2 skipped / exit 0**, with the
-  two duckdb-dependent modules excluded (module not installed in this
-  environment); result recorded in `PENDING_REVIEW.md` §E.
+  deliberately). Full suite **2325 passed / 2 skipped / exit 0** at that
+  point (two duckdb modules excluded under the non-canonical interpreter);
+  superseded by the Phase 2 run below — **2380 passed / 2 skipped / exit
+  0** with both modules included. Result recorded in `PENDING_REVIEW.md`
+  §E.
   **Step 3 complete (read-only live DB audit, no content generated).**
   UNO Minda: 63 docs, 191 facts, 61 candidates (58 decided), research/
   forecast/valuation revisions and 1 investment case (HOLD, r1,
