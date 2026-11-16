@@ -19,10 +19,17 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-16 — Corpus-Wide Deduplication Part A built,
-tested and committed (72 passed); Part B explicitly held for an owner
-go-ahead (full detail in the Session Recovery State). Prior note the
-same day: the 29 reviewed core `fin.raw.*`
+**Last updated:** 2026-11-16 — Corpus-Wide Deduplication Part B
+complete end to end: 743 overlap relationships persisted, 77 duplicate
+decisions resolved across 4 evidence-based batches, one-time promotion
+of the reconciled backlog executed (3 promoted, 2,279 correctly held by
+the preserved `ALLOW_EVENT_AUTO_PROMOTION=False` gate, 0 failed, 4
+financial candidates held pending statutory verification), and the
+event near-duplicate matcher's false-positive AND false-negative rates
+both measured and fixed with regression tests (full detail in the
+Session Recovery State, which now supersedes the Part-A-only entry
+below). Prior note the same day: Part A built, tested and committed (72
+passed). Prior note the same day: the 29 reviewed core `fin.raw.*`
 candidates are closed (19 facts, 6 duplicates, 4 rejects; 1,595 facts;
 full detail in the Session Recovery State). Prior note the same day:
 C4 lane closed end to end (0 open C4 candidates; 1,576 facts; full
@@ -396,6 +403,79 @@ without the user repeating instructions. `CLAUDE.md` step 2 now points
 every new session here before it touches code. Git/worktree state and
 test evidence are authoritative over this note if they ever disagree
 — reconcile before acting, don't just trust the prose below.
+
+- **CORPUS-WIDE DEDUPLICATION — Part B COMPLETE, 2026-11-16**
+  (`C:\GitHub\backendtest`, branch `feature/autonomous-research-
+  pipeline`; Part A detail is the entry immediately below this one,
+  still accurate for what it describes). Owner approvals and sequence,
+  in order: persist the 743 overlap relationships → reconcile 7
+  structural-overlap conflicts, then a 10+3=13-pair batch, then 22
+  independent-source-duplicate pairs, then 28 near-duplicate-of-live-
+  fact pairs (77 DUPLICATE decisions total, each cited with evidence,
+  via `scripts/resolve_structural_overlap_duplicates_20261116.py`,
+  `resolve_batch2_structural_overlap_duplicates_20261116.py`,
+  `resolve_batch3_independent_source_duplicates_20261116.py`,
+  `resolve_near_duplicate_of_live_fact_20261116.py`) → slot-key
+  reconciliation fix (distinct contracts/meetings/people/subsidiaries/
+  stages no longer collapse into one conflict slot just by sharing
+  company+quarter+generic fact type) → **one-time promotion authorized
+  and executed**: of 2,282 reconciled, promotion-eligible candidates,
+  **3 actually promoted, 2,279 correctly skipped/held by the preserved
+  `ALLOW_EVENT_AUTO_PROMOTION=False` policy gate, 0 failed**, 4 held
+  financial candidates (Asian Energy ×2, Cemindia ×2) excluded pending
+  statutory-results verification — backup, transaction and post-write
+  verification procedures used, nothing promoted outside the controlled
+  batch-write path.
+  **Matcher integrity work that followed** (owner pushed back on
+  trusting the "1,342/100% clean" conflict-check calls before further
+  action): confirmed `evaluate_candidate`'s live-fact-conflict check for
+  event.* candidates reuses `event_proposer._is_likely_duplicate`
+  (same function the near-duplicate false-positive sweep had already
+  found a 54% false-positive rate in) — yes, it could miss real
+  conflicts the same way. Fixed 4 demonstrated false-positive root
+  causes same day (boilerplate/role/month stopwords, a date-regex day-
+  vs-year bug, a scale-figure veto, a stage-marker veto; commits
+  `cc120ac`, `21af871`). Then measured the **false-negative** rate via
+  `scripts/measure_false_negative_rate_stratified.py` (stratified,
+  population-weighted sampling across Jaccard deciles, not a biased
+  "high-overlap suspects" list) and closed the dominant gap — citations
+  too short to carry any amount/date, leaving counterparty tokens the
+  only signal (commit `2adca32`, `_MIN_SHARED_COUNTERPARTY_TOKENS=3`
+  counterparty-only sufficiency check, carefully calibrated against two
+  confirmed-distinct real pairs before shipping). Re-measuring after
+  that fix surfaced two further real regressions (genuinely distinct
+  pairs the new check wrongly merged), each found via re-reviewing the
+  flipped sample for new false positives rather than assumed safe, each
+  fixed same day with its own regression test: an Assessment-Year date
+  pattern that neither existing date regex recognized (`_AY_PATTERN`,
+  commit `51ecae9`, Refex AY2021 vs AY2019 tax appeals), and two amount-
+  format gaps — claim amounts stated in lakh, and as raw comma-grouped
+  rupees with no unit word at all (`_AMOUNT_LAKH_PATTERN`,
+  `_AMOUNT_RAW_RUPEE_PATTERN`, commit `44878c9`, Refex NI-Act complaints
+  against Bharat Refrigeration Works vs. Atmos Industries vs.
+  Varalakshmi Traders — three different counterparties sharing generic
+  Fast-Track-Court/NI-Act boilerplate). An intermediate attempt to fix
+  the amount-format gap by loosening check 3's guard (from "amount
+  absent on both sides" to "not actively disagreeing") was tried,
+  caught re-opening the same false positive, and reverted in favor of
+  parsing the missing amount formats instead — the guard itself was
+  already correct. **Final verification: full `tests/pipeline` suite
+  621 passed, 2 skipped, 1 xfailed (documented, pre-existing: Jodhpur/
+  Raipur 2-shared-token gap). Final stratified re-measurement after all
+  three false-negative fixes: against live facts, 209,888 pairs the
+  matcher previously said "no match" on, of which 81 are now correctly
+  flipped to match (exhaustive population count, not sample-estimated)
+  and 209,807 remain unresolved; within-slot, 31 pre-false pairs, 6
+  flipped. Manually reviewed every flipped pair in the stratified
+  sample (23 pairs across both populations) for new regressions after
+  the final fix — none found.**
+  **No further event promotions have been authorized or executed since
+  the one-time batch above** — per standing owner instruction, this
+  matcher work was measurement/fix-only and promotion stays on hold
+  pending the owner's review of these results. **Next, on resume:**
+  report these final results to the owner (status: done, awaiting
+  owner review) and await further direction — no code or promotion
+  action is pending.
 
 **Dating correction (recorded 2026-11-07, verified against git).**
 Work in this section was previously stamped 2026-11-08. The commits
