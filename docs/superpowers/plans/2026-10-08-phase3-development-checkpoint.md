@@ -19,7 +19,53 @@ tested"); the registry is the structural map around it.
 implementation milestones, reserved for owner approval before any
 frontend implementation begins.
 
-**Last updated:** 2026-11-16 — Corpus-Wide Deduplication Part B
+**Last updated:** 2026-11-21 — **XBRL extraction deepened end to end,
+`C:\GitHub\backendtest`, branch `feature/autonomous-research-pipeline`
+(full detail in the Session Recovery State below, this is the
+summary). This is Phase 3.5B's own data-foundation lineage widened
+with a new, deterministic source (XBRL), not Phase 3.5A (evidence
+retrieval/briefs), which stays separately complete as recorded below.
+Starting point: the 2026-11-18 incident-follow-up XBRL fact proposer
+(2 fact types, revenue/PAT only, not wired into any live job). Over
+EX-067→EX-075 (full detail in `docs/SPARS_EXCEPTION_BACKLOG.md` in
+that repo, not duplicated here): widened the direct Ind-AS tag map,
+added the one derived (EBITDA, PBT+FinanceCosts+Depreciation, sourced
+from the real filing's own Arelle calculation-linkbase, not invented),
+added Camelot table extraction + a corrupted-text detector (additive,
+gated on real-fixture benchmarking, then measured again at a 25-
+document corpus scale with one new, confirmed-harmless false-positive
+shape found and deliberately not "fixed" against 2 examples), built
+the automated XBRL-vs-PDF reconciliation check the dual-sourcing
+design always needed (found, while building it, that the staging
+dedup gate was silently dropping a same-period value from the second
+source whenever the first source's value already existed for that
+fact_type — company-wide and **scope-blind**; fixed proactively,
+before any live incident, not after one), then widened again toward
+the Screener.in-shaped three-statement reconstruction (other income,
+depreciation, tax expense, total expenses, EPS basic/diluted, equity
+share capital, other equity, net fixed assets, CWIP, borrowings,
+investments, both cash-flow-activity totals, and finally the two
+balance-sheet residuals/catch-alls), wired seven, then three more,
+genuinely standard diagnostics onto the widened facts (and found/fixed
+a second real gap in passing: the Matrix Engine's own metric registry
+had silently never been updated for any of the first seven). **Net:
+2 → 30 `fin.raw.*` fact types extractable per XBRL filing, zero
+fabricated, each one either a direct real tag or an independently
+re-derived sum/residual/per-share figure — but as of this note, still
+not wired into any live scheduled job; every bit of this is dormant
+code+tests until that authorization happens.** Full regression
+throughout: `tests/pipeline/` 798 passed / 0 failed / 2 skipped / 1
+xfailed; `tests/research/` 879 passed / 0 failed (both excluding 2
+pre-existing/unrelated `duckdb`-import-error files, environmental, not
+this work). Branch also merged forward against `origin` the same day
+(see Session Recovery State) — it had quietly drifted 16 commits
+behind on real, already-PR-merged market-data/CI work (NIFTY index
+expansion to Microcap 250, futures/currency/MCX tracking, the
+windows-latest CI fix) while accumulating this session's XBRL commits;
+reconciled via one ordinary merge (one trivial add/add conflict in
+the CI workflow file, resolved by taking `origin`'s already-more-
+complete version); full regression re-run post-merge before push, see
+Session Recovery State for the exact outcome. Prior note dated 2026-11-16 — Corpus-Wide Deduplication Part B
 complete end to end: 743 overlap relationships persisted, 77 duplicate
 decisions resolved across 4 evidence-based batches, one-time promotion
 of the reconciled backlog executed (3 promoted, 2,279 correctly held by
@@ -403,6 +449,82 @@ without the user repeating instructions. `CLAUDE.md` step 2 now points
 every new session here before it touches code. Git/worktree state and
 test evidence are authoritative over this note if they ever disagree
 — reconcile before acting, don't just trust the prose below.
+
+- **XBRL EXTRACTION DEEPENED END TO END (EX-067→EX-075), branch merged
+  forward against `origin` and re-verified — 2026-11-21**
+  (`C:\GitHub\backendtest`, branch `feature/autonomous-research-pipeline`).
+  Full detail lives in that repo's own `docs/SPARS_EXCEPTION_BACKLOG.md`
+  (EX-067 through EX-075) — this entry is the cross-repo pointer and
+  summary, not a duplicate ledger.
+  - **What changed:** the 2026-11-18 incident-follow-up XBRL fact
+    proposer (`app/services/xbrl_fact_proposer.py`) went from 2
+    extractable fact types (revenue, PAT only) to **30** — every new
+    one either a direct, confirmed-present Ind-AS tag, or an
+    independently re-derived sum/residual/per-share figure, never an
+    invented formula. Added along the way: `fin.raw.ebitda` (the one
+    derived figure, sourced from the real filing's own Arelle
+    calculation-linkbase via a one-time research run, Arelle itself
+    NOT a runtime dependency); Camelot table extraction +
+    `corrupted_text_detector.py` (additive, benchmarked against real
+    fixtures, then again at a 25-document corpus scale — one new,
+    confirmed-harmless false-positive shape found, a title/divider
+    slide misread as a tiny table, deliberately not "fixed" against 2
+    examples); `xbrl_pdf_reconciliation_service.py` (the automated
+    XBRL-vs-PDF reconciliation check the dual-sourcing design always
+    needed — read-only, no new source of truth); the Screener.in-
+    shaped widening (other income, depreciation, tax expense, total
+    expenses, EPS basic/diluted, equity share capital, other equity,
+    net fixed assets, CWIP, borrowings, investments, both cash-flow-
+    activity totals, and the two balance-sheet residuals/catch-alls);
+    ten new, genuinely standard diagnostics in
+    `financial_diagnostics_service.py`, registered in both
+    `FinancialMetricDefinition` and the Matrix Engine's own
+    `_METRIC_COMPUTE_METHODS` registry (a second real gap found and
+    fixed in passing: that registry had silently never been updated
+    for the first seven of the ten).
+  - **One real bug found and fixed proactively, before any live
+    incident:** while building the reconciliation check, found that
+    `ExtractionPipelineService.stage_xbrl_candidates`'s duplicate-
+    prevention gate was company-wide and **scope-blind** — a
+    STANDALONE Fact already existing for a (company, fact_type,
+    period) would silently block a genuinely different CONSOLIDATED
+    XBRL value for the same identity from ever being staged, not just
+    an exact duplicate. Fixed to key on `(fact_type, scope)`.
+  - **Still not live:** none of this is wired into any scheduled task
+    (same standing gap as EX-064/EX-066) — every fact type, every
+    diagnostic, every check above is dormant code+tests until that
+    authorization happens. That wiring is the concrete, immediate next
+    step if XBRL extraction is to produce any real data.
+  - **Full regression, this repo, throughout the work:**
+    `tests/pipeline/` 798 passed / 0 failed / 2 skipped / 1 xfailed;
+    `tests/research/` 879 passed / 0 failed (both exclude 2 pre-
+    existing/unrelated `duckdb`-import-error files — an environmental
+    gap in this machine's dependencies, not caused by this work).
+  - **Branch reconciliation (2026-11-21, same day):** this branch had
+    quietly drifted 16 commits behind `origin` while accumulating the
+    XBRL work above (ahead 64) — the 16 were real, already-PR-merged
+    market-data/CI work (PRs #13-16: NIFTY index expansion to
+    Microcap 250, futures/currency/MCX tracking, the windows-latest CI
+    fix; see the MARKET-DATA entry below, which predates and is
+    unrelated to the XBRL work). Reconciled via one ordinary merge, not
+    a rebase or force-push: one trivial add/add conflict in
+    `.github/workflows/tests.yml` (this branch had independently
+    re-authored the same CI file `origin` already fixed; resolved by
+    taking `origin`'s already-more-complete version; a stale,
+    uncommitted local duplicate of that same fix was stashed, not
+    committed — `git stash list` on this branch, not yet dropped).
+    Full `tests/pipeline` + `tests/research` regression re-run against
+    the merged tree before push: **1677 passed, 0 failed, 2 skipped,
+    1 xfailed** (9m05s). Merge commit `2063887`, pushed to
+    `origin/feature/autonomous-research-pipeline`
+    (`8732665..2063887`, a clean fast-forward of the merge, not a
+    force-push).
+  - **Exact next action** if resuming this specific thread: either (a)
+    author the live-scheduling wiring for XBRL extraction (the
+    concrete unblock for all of EX-067→075), or (b) continue widening
+    Phase 3.5B's data foundation some other way — re-confirm which with
+    the owner before assuming, per this checkpoint's own standing rule
+    of not resuming scope automatically.
 
 - **MARKET-DATA SCOPE EXPANSION & FULL DATA-LOCATION AUDIT — resumed
   2026-11-20, inventory re-given per the standing request below, owner
