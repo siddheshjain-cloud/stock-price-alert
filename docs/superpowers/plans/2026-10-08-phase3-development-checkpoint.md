@@ -99,10 +99,23 @@ the same day:** a supervised, Chemplast-scoped recovery cycle
 12 queued rows to `STORED`, each with a real, distinct Drive file ID
 and a content SHA256 verified against the production manifest to
 match the execution log exactly. EX-077's verification criteria are
-now fully met. Only one thing remains open on this thread:
-still-separate, still-undecided question of enabling `enable_nse_xbrl`
-on the unsupervised 2 AM schedule. Full detail in the Session Recovery
-State below.**
+now fully met.**
+
+**Then, 2026-11-22 — coverage-expansion pilot (EX-078): 6 companies
+now verified end to end, not just Chemplast.** Supervised,
+per-company testing widened to UNO Minda, Choice International, Refex
+Industries, Reliance Industries, and State Bank of India — all pass:
+company-identity matching, XBRL validation, Drive storage, SHA256
+integrity, and deduplication all correct. Confirmed (now 3 times) that
+NSE's XBRL archive domain transiently blocks the same way its main
+endpoints do — self-heals via a plain retry, not a code defect. Found
+that 3 of the originally-requested 8 companies (Larsen & Toubro, Tata
+Motors, Sun Pharmaceutical Industries) aren't onboarded in the SPARS
+universe at all — a separate decision, not started. `enable_nse_xbrl`
+remains disabled on the unsupervised schedule. Recommendation on
+record: enable it scoped to the 6 verified companies next — not yet
+approved or deployed. Full detail in the Session Recovery State
+below.**
 Prior note dated 2026-11-16 — Corpus-Wide Deduplication Part B
 complete end to end: 743 overlap relationships persisted, 77 duplicate
 decisions resolved across 4 evidence-based batches, one-time promotion
@@ -729,16 +742,73 @@ test evidence are authoritative over this note if they ever disagree
     (discovery -> promotion -> ingestion -> Drive storage) is proven
     end to end for real XBRL filings, not just the staging/extraction
     half proven earlier the same day by the Chemplast pilot.
-  - **Still outstanding:** only the separate, still-undecided question
-    of flipping `enable_nse_xbrl` on for the unsupervised 2 AM
-    `spa-discovery-daily` schedule.
-  - **Exact next action** if resuming this specific thread: decide
-    whether/when to flip `enable_nse_xbrl` on for the live Cloud Run
-    job's unsupervised schedule (starting with the Chemplast-only scope
-    `nse_xbrl_company_keys` already supports), or continue widening
-    Phase 3.5B's data foundation some other way -- re-confirm which
-    with the owner before assuming, per this checkpoint's own standing
-    rule of not resuming scope automatically.
+  **UPDATE, 2026-11-22 — coverage-expansion pilot (EX-078): 6 companies
+  now verified end to end, not just Chemplast.** Full detail:
+  `docs/SPARS_EXCEPTION_BACKLOG.md` EX-078 in the backendtest repo.
+  Entirely supervised, per-company `gcloud run jobs execute` calls;
+  `enable_nse_xbrl` stayed disabled on the unsupervised schedule
+  throughout.
+
+  - **Round 1 (discover, 5 companies):** UNO Minda, Choice
+    International, Refex Industries all produced real new items (38
+    total); GP Eco Solutions and Chemkart India produced zero,
+    independently confirmed genuine (queried NSE's live endpoint
+    directly outside the pipeline — the raw response is empty for
+    both, not a filter artifact). One attempt failed outright on a
+    transient full NSE block; the job's own `--max-retries 1` recovered
+    automatically on the next attempt.
+  - **Round 2 (ingest, UNO Minda/Choice/Refex):** rows needed
+    per-company promotion first (an unscoped global promotion was
+    correctly **blocked by the Claude Code auto-mode classifier** as
+    "Modify Shared Resources" — the right call, since the task was
+    scoped to 3 named companies). UNO Minda stored clean first try.
+    Choice and Refex **both failed 100% on the first ingestion
+    attempt** (`http_403;no_configured_url`, queued to Manual Upload)
+    — confirmed via a direct out-of-pipeline download that the real
+    files were genuinely fetchable moments later, i.e. a transient
+    block at the file-download layer, not a structural gap. An
+    unmodified retry of the same scoped command cleared both
+    completely. Verified against the Documents tab: every `STORED` row
+    across all 3 companies has a distinct Drive file ID and SHA256.
+  - **Round 3 (Reliance Industries, State Bank of India):** the
+    user's original 5-company ask also named Larsen & Toubro, Tata
+    Motors, and Sun Pharmaceutical Industries — **none of the 3 exist
+    in the SPARS Universe tab**, checked under every naming variant,
+    zero matches among 96 tracked companies. Onboarding a new company
+    is a separate, larger action; not done. Proceeded with the 2 that
+    do exist (both have a blank `Company Key` cell; the manifest
+    reader already falls back to the raw company name as the
+    effective key — same mechanism, no code change). Discovery: 24
+    new items, zero errors. Reliance stored clean first try (13/13);
+    SBI hit the same transient block (all 20 rows queued) and cleared
+    completely on one retry (20/20 stored).
+  - **Confirmed operational characteristic, now observed 3 times:**
+    NSE's XBRL archive domain transiently blocks the same way its main
+    endpoints already do. At discovery, a full block crashes the
+    process and the job's existing retry recovers automatically. At
+    ingestion, a blocked download is caught per-row and queued for
+    manual upload instead of crashing — safe, but not auto-retried;
+    a human or another supervised run clears it. On the unsupervised
+    schedule, affected rows self-heal within roughly a day via the
+    daily job's own queued-row retry, not lost.
+  - **Net result:** 6 companies fully verified end to end — Chemplast,
+    UNO Minda, Choice International, Refex Industries, Reliance
+    Industries, State Bank of India — spanning small/mid/large-cap,
+    company-identity matching exercised against 6 distinct real legal
+    names, zero structural failures.
+  - **Still outstanding:** (1) whether to enable `enable_nse_xbrl` on
+    the unsupervised 2 AM schedule, scoped to these 6 companies —
+    recommended, not yet approved; (2) whether to onboard Larsen &
+    Toubro, Tata Motors, and Sun Pharmaceutical Industries as new
+    companies before any XBRL coverage can include them — a separate,
+    unstarted decision.
+  - **Exact next action** if resuming this specific thread: get the
+    owner's explicit decision on enabling `enable_nse_xbrl` for the
+    unsupervised schedule scoped to the 6 verified companies (the
+    recommended next step, not yet actioned), and separately whether
+    to onboard the 3 missing companies — re-confirm with the owner
+    before assuming, per this checkpoint's own standing rule of not
+    resuming scope automatically.
 
 - **MARKET-DATA SCOPE EXPANSION & FULL DATA-LOCATION AUDIT — resumed
   2026-11-20, inventory re-given per the standing request below, owner
