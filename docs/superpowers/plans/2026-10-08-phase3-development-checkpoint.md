@@ -93,8 +93,13 @@ forever, on every future cycle, never reaching the already-correct
 `ingest_one`/`validate_xbrl` dispatch. Found, fixed (one line + 5 new
 tests for `validate_xbrl`, previously zero coverage), and deployed
 with a tested rollback (forward → rollback → forward again, 3 confirmed
-digest changes, config unchanged throughout). Still outstanding: proof
-that a future cycle actually lands these rows at `STORED`, and the
+digest changes, config unchanged throughout). **Confirmed end to end
+the same day:** a supervised, Chemplast-scoped recovery cycle
+(`--mode ingest-all --company "Chemplast Sanmar Ltd"`) processed all
+12 queued rows to `STORED`, each with a real, distinct Drive file ID
+and a content SHA256 verified against the production manifest to
+match the execution log exactly. EX-077's verification criteria are
+now fully met. Only one thing remains open on this thread:
 still-separate, still-undecided question of enabling `enable_nse_xbrl`
 on the unsupervised 2 AM schedule. Full detail in the Session Recovery
 State below.**
@@ -709,17 +714,25 @@ test evidence are authoritative over this note if they ever disagree
     Config (`--mode daily --lookback-days 7 --limit 100`, env vars,
     service account, resources, maxRetries, timeoutSeconds) confirmed
     unchanged across all three deploys.
-  - **Still outstanding, explicitly not done yet:** whether the 12
-    queued rows now actually reach `STORED` on a future cycle (the fix
-    removes the permanent gate, but no cycle has run since the fix went
-    live); and the separate, still-undecided question of flipping
-    `enable_nse_xbrl` on for the unsupervised 2 AM `spa-discovery-daily`
-    schedule.
-  - **Exact next action** if resuming this specific thread: run (or
-    wait for) one more cycle and confirm via the Documents tab that the
-    12 Chemplast rows reach `STORED` with a real Drive file ID and
-    content SHA256 -- that is the remaining proof this specific EX-077
-    fix actually closes the loop. Only after that, decide
+  - **Recovery cycle run and confirmed, same day:** a supervised,
+    Chemplast-scoped `--mode ingest-all --company "Chemplast Sanmar
+    Ltd"` execution (`spa-ingestion-live-test-zld5b`) processed exactly
+    the 12 queued rows -- `{"processed": 12, "stored": 12,
+    "duplicates": 0, "other_issues": 0, "quarantined": 0}` -- and
+    `SPA_PREFLIGHT` read clean afterward (`{"errors": [], "ready":
+    true}`) across the whole manifest, not just these rows. Verified
+    directly against the production Documents tab, not just the log:
+    all 12 now show `STORED`, each with a real, distinct Drive file ID
+    (same Chemplast Drive folder) and a Content SHA256 matching the
+    execution log's own reported hash for that row, exactly. EX-077's
+    verification criteria are now fully met -- the complete chain
+    (discovery -> promotion -> ingestion -> Drive storage) is proven
+    end to end for real XBRL filings, not just the staging/extraction
+    half proven earlier the same day by the Chemplast pilot.
+  - **Still outstanding:** only the separate, still-undecided question
+    of flipping `enable_nse_xbrl` on for the unsupervised 2 AM
+    `spa-discovery-daily` schedule.
+  - **Exact next action** if resuming this specific thread: decide
     whether/when to flip `enable_nse_xbrl` on for the live Cloud Run
     job's unsupervised schedule (starting with the Chemplast-only scope
     `nse_xbrl_company_keys` already supports), or continue widening
