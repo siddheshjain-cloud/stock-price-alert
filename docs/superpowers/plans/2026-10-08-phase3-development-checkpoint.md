@@ -51,21 +51,37 @@ a second real gap in passing: the Matrix Engine's own metric registry
 had silently never been updated for any of the first seven). **Net:
 2 → 30 `fin.raw.*` fact types extractable per XBRL filing, zero
 fabricated, each one either a direct real tag or an independently
-re-derived sum/residual/per-share figure — but as of this note, still
-not wired into any live scheduled job; every bit of this is dormant
-code+tests until that authorization happens.** Full regression
+re-derived sum/residual/per-share figure.** Full regression
 throughout: `tests/pipeline/` 798 passed / 0 failed / 2 skipped / 1
 xfailed; `tests/research/` 879 passed / 0 failed (both excluding 2
 pre-existing/unrelated `duckdb`-import-error files, environmental, not
 this work). Branch also merged forward against `origin` the same day
-(see Session Recovery State) — it had quietly drifted 16 commits
-behind on real, already-PR-merged market-data/CI work (NIFTY index
-expansion to Microcap 250, futures/currency/MCX tracking, the
-windows-latest CI fix) while accumulating this session's XBRL commits;
-reconciled via one ordinary merge (one trivial add/add conflict in
-the CI workflow file, resolved by taking `origin`'s already-more-
-complete version); full regression re-run post-merge before push, see
-Session Recovery State for the exact outcome. Prior note dated 2026-11-16 — Corpus-Wide Deduplication Part B
+— it had quietly drifted 16 commits behind on real, already-PR-merged
+market-data/CI work (NIFTY index expansion to Microcap 250, futures/
+currency/MCX tracking, the windows-latest CI fix) while accumulating
+this session's XBRL commits; reconciled via one ordinary merge (one
+trivial add/add conflict in the CI workflow file, resolved by taking
+`origin`'s already-more-complete version); 1677 passed / 0 failed
+post-merge, pushed.
+
+**Then, same day, later — taken all the way live: promoted to the
+production release worktree (excluding the new diagnostics/Matrix
+Engine, same existing policy as before), XBRL staging wired into the
+scheduled pipeline (EX-076, a real silent dead-end found and fixed:
+extraction would have worked but staging never would have),
+Cloud Run discovery deployed for real (one real deploy-script landmine
+found and fixed first; the rollback path was not just written but
+actually exercised live before finishing), and the Chemplast end-to-
+end pilot run for real against the live database — PASSED. 19 new
+facts promoted for Chemplast Sanmar's real Q2 FY2027 filing; the other
+11 of 30 fact types already lived there from the PDF path and were
+correctly recognized as duplicates, not re-staged; the XBRL-vs-PDF
+reconciliation check scored 11/11 exact matches against those 11,
+zero mismatches. `extracted_fact` 1598 → 1617. XBRL discovery itself
+stays off in the live Cloud Run job (`enable_nse_xbrl` still defaults
+False) — only the chain's capability is proven, not switched on for
+every company. Full detail in the Session Recovery State below.**
+Prior note dated 2026-11-16 — Corpus-Wide Deduplication Part B
 complete end to end: 743 overlap relationships persisted, 77 duplicate
 decisions resolved across 4 evidence-based batches, one-time promotion
 of the reconciled backlog executed (3 promoted, 2,279 correctly held by
@@ -490,11 +506,6 @@ test evidence are authoritative over this note if they ever disagree
     period) would silently block a genuinely different CONSOLIDATED
     XBRL value for the same identity from ever being staged, not just
     an exact duplicate. Fixed to key on `(fact_type, scope)`.
-  - **Still not live:** none of this is wired into any scheduled task
-    (same standing gap as EX-064/EX-066) — every fact type, every
-    diagnostic, every check above is dormant code+tests until that
-    authorization happens. That wiring is the concrete, immediate next
-    step if XBRL extraction is to produce any real data.
   - **Full regression, this repo, throughout the work:**
     `tests/pipeline/` 798 passed / 0 failed / 2 skipped / 1 xfailed;
     `tests/research/` 879 passed / 0 failed (both exclude 2 pre-
@@ -520,12 +531,113 @@ test evidence are authoritative over this note if they ever disagree
     `origin/feature/autonomous-research-pipeline`
     (`8732665..2063887`, a clean fast-forward of the merge, not a
     force-push).
-  - **Exact next action** if resuming this specific thread: either (a)
-    author the live-scheduling wiring for XBRL extraction (the
-    concrete unblock for all of EX-067→075), or (b) continue widening
-    Phase 3.5B's data foundation some other way — re-confirm which with
-    the owner before assuming, per this checkpoint's own standing rule
-    of not resuming scope automatically.
+
+  **UPDATE, same day, later: promoted to the production release
+  worktree, staging wired, Cloud Run deployed, and the Chemplast pilot
+  run end to end for real — this thread is no longer "still not live."**
+
+  - **Release-copy promotion (`C:\SPARS-release\backendtest`, branch
+    `release/market-data-service`, now `e29d613`):** rehearsed first in
+    an isolated worktree (zero changes to the real release checkout
+    until the rehearsal was fully green), then applied for real.
+    Deliberately excludes the 10 new diagnostics and
+    `matrix_engine_service.py` (stays deleted there) — same "new
+    research/valuation capability, separate decision from the
+    extraction-pipeline backlog" policy this branch's own 4e91e24
+    commit already applied to the prior ROE/ROCE-average-basis/Matrix
+    Engine work; this is a continuation of that existing precedent, not
+    a new one. Verified against the REAL production venv
+    (`C:\venvs\spa-m1`, not just dev's system Python) and the real
+    scheduled-task database path: 1580 passed / 0 failed across
+    `tests/pipeline` + the standalone XBRL unit tests + `tests/research`
+    (batched — this machine OOM-kills one giant pytest run). Caught one
+    real pre-existing data gap while checking the pipeline lock before
+    touching anything: a `pipeline_cycle_run` row stuck at `RUNNING`
+    since 2026-11-04 (17 days, 0 documents processed, a crashed/
+    abandoned cycle) — confirmed via the live OS process list that
+    nothing was actually running, closed out afterward (`status` ->
+    `FAILED`, honest `error_summary`, `finished_at` left `NULL` since
+    the actual stop time is genuinely unknown — not fabricated).
+  - **XBRL staging wired into the scheduled pipeline (EX-076):**
+    `stage_candidates_for_document` (what `run_pipeline_cycle`'s own
+    `stage_candidates=True` path calls for every pending document) now
+    branches to a new `_stage_xbrl_candidates_for_document` for an XBRL
+    instance instead of unconditionally running the PDF-shaped
+    contiguous-page-run logic against it. Without this, the already-
+    promoted XBRL extraction would have silently extracted every real
+    filing and staged zero candidates from any of them, forever — found
+    by reading the real call chain, not assumed. The fix reuses the
+    exact same `dimension_id` the PDF path uses (load-bearing: a
+    different one would make every XBRL document look permanently
+    pending and get rediscovered/re-staged every cycle). 4 new tests
+    against the real Chemplast fixture; `tests/pipeline/` 802 passed /
+    0 failed.
+  - **Cloud Run discovery deployed for real
+    (`spa-ingestion-live-test`, project `spa-ingestion`,
+    `asia-south1`):** investigated first, not assumed -- found the
+    production source was a byte-identical snapshot of dev's own
+    baseline commit `78c0b49`, 4 commits behind (3 real NSE/BSE
+    discovery bug fixes + the new NSE XBRL discovery source), and found
+    a real landmine before deploying: `Deploy-V6.ps1` is hard-coded to
+    `deploy-v6.yaml` (`--mode discover`, no limit, 0 retries, 900s
+    timeout), but the job's actual live configuration matches
+    `deploy-daily.yaml` instead (`--mode daily --lookback-days 7
+    --limit 100`, 1 retry, 2400s timeout) -- running the existing
+    script as-is would have silently regressed the live job. Built a
+    corrected `Deploy-Daily.ps1` instead (same structure, correct flags
+    file) and a rollback script, then **actually exercised the
+    rollback once, live, before finishing** -- deployed new code
+    (confirmed via a changed image digest), rolled back to the
+    untouched old source (confirmed via a different digest again, same
+    config), then redeployed the new code as the final state. XBRL
+    discovery itself stays off: `enable_nse_xbrl` defaults to `False`
+    and isn't passed in either flags file -- already built, on
+    2026-11-18, as an explicit, deliberate off-by-default switch, not
+    something this deploy needed to add. Only the 3 unflagged bug
+    fixes go live on the existing `spa-discovery-daily` Cloud Scheduler
+    job's next run (02:00 UTC daily, unaffected/untouched by any of
+    this).
+  - **Chemplast end-to-end pilot, run for real against the live
+    database (not a rehearsal) -- PASSED:** registered the real Q2
+    FY2027 XBRL filing against the real, live Chemplast Sanmar company
+    (document `4af9d57b-...`), extracted, staged. The real live
+    corpus already had 11 of the 30 XBRL-derivable fact types promoted
+    from the PDF path months earlier -- the scope-aware dedup fix
+    (EX-073) correctly skipped exactly those 11 as genuine duplicates
+    (its first real-world exercise, not just a fixture test) and
+    staged the other 19 as new candidates. Ran the XBRL-vs-PDF
+    reconciliation check (EX-072, also its first real-world exercise)
+    against the 11 overlaps: **11/11 exact matches, zero mismatches**
+    -- the independent XBRL extraction agrees to the decimal with the
+    PDF-extracted statutory figures. All 19 new candidates evaluated
+    `AUTO_PROMOTE`; **promoted** on explicit instruction (one
+    reporting-code bug in the promotion script caught immediately
+    after the first candidate -- the real write had already succeeded
+    correctly; verified the exact state before continuing rather than
+    guessing, then promoted the remaining 18 with the fix). Final
+    verification: `extracted_fact` 1598 -> 1617 (exactly +19), all 19
+    decisions `PROMOTED`, zero orphaned evidence, zero duplicate
+    `(company, fact_type, period, scope)` identities anywhere in
+    Chemplast's data, `PRAGMA integrity_check` `ok`, 0 FK violations.
+    Pre-write backups taken and checksum-verified at every stage
+    (`trading_app.db.bak_pre_chemplast_xbrl_pilot_20261121.db`,
+    `...bak_pre_chemplast_xbrl_promotion_20261121.db`).
+  - **Net effect:** the complete NSE XBRL processing chain -- discovery-
+    equivalent registration, extraction, staging, structural
+    verification, promotion -- is now demonstrated end to end on one
+    real filing for one real company, with independent cross-source
+    validation (XBRL vs. PDF) at zero mismatches. XBRL discovery itself
+    remains off in the live Cloud Run job pending a separate, explicit
+    decision to flip `enable_nse_xbrl` on; the scheduled backendtest
+    pipeline can now stage (and, on request, promote) an XBRL document
+    the moment one is registered, by any route.
+  - **Exact next action** if resuming this specific thread: decide
+    whether/when to flip `enable_nse_xbrl` on for the live Cloud Run
+    job (starting with the Chemplast-only scope `nse_xbrl_company_keys`
+    already supports), or continue widening Phase 3.5B's data
+    foundation some other way -- re-confirm which with the owner before
+    assuming, per this checkpoint's own standing rule of not resuming
+    scope automatically.
 
 - **MARKET-DATA SCOPE EXPANSION & FULL DATA-LOCATION AUDIT — resumed
   2026-11-20, inventory re-given per the standing request below, owner
