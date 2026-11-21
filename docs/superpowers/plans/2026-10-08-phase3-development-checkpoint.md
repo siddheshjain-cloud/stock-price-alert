@@ -511,8 +511,9 @@ test evidence are authoritative over this note if they ever disagree
     `.github/workflows/tests.yml` (this branch had independently
     re-authored the same CI file `origin` already fixed; resolved by
     taking `origin`'s already-more-complete version; a stale,
-    uncommitted local duplicate of that same fix was stashed, not
-    committed — `git stash list` on this branch, not yet dropped).
+    uncommitted local duplicate of that same fix was stashed, confirmed
+    fully superseded, then dropped — `git stash list` on this branch
+    is empty).
     Full `tests/pipeline` + `tests/research` regression re-run against
     the merged tree before push: **1677 passed, 0 failed, 2 skipped,
     1 xfailed** (9m05s). Merge commit `2063887`, pushed to
