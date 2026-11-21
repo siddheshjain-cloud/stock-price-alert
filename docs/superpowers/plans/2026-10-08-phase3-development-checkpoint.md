@@ -80,7 +80,24 @@ reconciliation check scored 11/11 exact matches against those 11,
 zero mismatches. `extracted_fact` 1598 → 1617. XBRL discovery itself
 stays off in the live Cloud Run job (`enable_nse_xbrl` still defaults
 False) — only the chain's capability is proven, not switched on for
-every company. Full detail in the Session Recovery State below.**
+every company.**
+
+**Then, same day, later still — supervised, Chemplast-scoped manual
+Cloud Run test with `enable_nse_xbrl` actually on for the first time:
+discovery worked (12 real items, written correctly to the production
+manifest), but a second real bug (EX-077) blocked ingestion
+permanently — `QUARTERLY_RESULTS_XBRL` was never registered in
+`validation.py`'s `SUPPORTED_DOCUMENT_TYPES`, so the per-record
+preflight gate in `_process_batch` would have rejected every XBRL row
+forever, on every future cycle, never reaching the already-correct
+`ingest_one`/`validate_xbrl` dispatch. Found, fixed (one line + 5 new
+tests for `validate_xbrl`, previously zero coverage), and deployed
+with a tested rollback (forward → rollback → forward again, 3 confirmed
+digest changes, config unchanged throughout). Still outstanding: proof
+that a future cycle actually lands these rows at `STORED`, and the
+still-separate, still-undecided question of enabling `enable_nse_xbrl`
+on the unsupervised 2 AM schedule. Full detail in the Session Recovery
+State below.**
 Prior note dated 2026-11-16 — Corpus-Wide Deduplication Part B
 complete end to end: 743 overlap relationships persisted, 77 duplicate
 decisions resolved across 4 evidence-based batches, one-time promotion
@@ -631,13 +648,84 @@ test evidence are authoritative over this note if they ever disagree
     decision to flip `enable_nse_xbrl` on; the scheduled backendtest
     pipeline can now stage (and, on request, promote) an XBRL document
     the moment one is registered, by any route.
-  - **Exact next action** if resuming this specific thread: decide
+
+  **UPDATE, same day, later still: supervised Cloud Run discovery +
+  ingestion test run for real, Chemplast-scoped, `enable_nse_xbrl` on
+  for the first time ever in a live execution -- found and fixed one
+  more real bug (EX-077) before the chain actually worked end to end.**
+
+  - **Phase 1 (`--mode discover`, Chemplast-scoped, lookback 30 days):**
+    the dedicated NSE XBRL source fetched 12 real items, zero errors,
+    and (confirmed by arithmetic: per-source `accepted` 311+12+5 = the
+    summary's own `discovered: 328`) all 12 flowed into the real
+    discovered-candidates count -- not silently dropped. A separate,
+    unrelated, pre-existing `xbrl_captured`/`xbrl_items` field
+    (filters the generic announcement feed for XBRL-shaped attachment
+    URLs into a disconnected legacy `finance_db`) read `0` and looked
+    alarming at first glance; read the code, confirmed it is
+    deliberately disconnected from the new source (the new source is
+    added to `pdf_items`, specifically kept out of the `is_xbrl_url`
+    filter that feeds that other path) and genuinely unrelated. 12 real
+    rows were written to the production Sheets manifest
+    (`Ingestion Status: DISCOVERED`) for Chemplast's last 4 quarters,
+    Consolidated + Standalone each -- confirmed by reading the actual
+    Documents tab, not assumed from the log summary alone.
+  - **Phase 2 (`--mode daily`, same scoping):** ran for real
+    (`spa-ingestion-live-test-ln4mb`, succeeded, 22m48s) -- `discover()`
+    correctly deduped all 12 as already-known (re-confirms Phase 1's
+    write), `_promote_discovered` promoted all 12 (plus 316 other,
+    unrelated backlog rows) to `AWAITING_UPLOAD`, but `_run_ingest_all`
+    never reached them within the run's `limit=100` (they're the
+    newest of a 328-row promotion batch, processed oldest-first by
+    design). Confirmed via the Documents tab that they sat safely at
+    `AWAITING_UPLOAD`, not lost or corrupted.
+  - **EX-077 found and fixed:** `_process_batch` runs
+    `preflight_manifest` per record before ever calling `ingest_one`;
+    `QUARTERLY_RESULTS_XBRL` was never added to `validation.py`'s
+    `SUPPORTED_DOCUMENT_TYPES`, so every one of these rows would fail
+    that gate **permanently**, on every future cycle, not just this
+    one -- confirmed by reading `_process_batch` directly, not inferred
+    from the backlog-ordering explanation alone. The rest of the XBRL
+    ingestion path was already correctly built on 2026-11-18
+    (`ingest_one`'s dispatch to `validate_xbrl`, the official-host check
+    for `nsearchives.nseindia.in`) -- this was the one missing
+    registration. Fixed (one line); added the first-ever test coverage
+    for `validate_xbrl` (5 new tests, real Chemplast fixture: HTML
+    payload, non-XBRL XML, real valid filing, wrong-company identity
+    failure, non-authoritative-attachment type/period failure). Full
+    Cloud Run dev suite: 386 passed, same 8 pre-existing unrelated
+    failures as baseline (`git stash` before/after comparison) -- zero
+    new regressions. Commit `442eb22`
+    (`C:\SPA\cloudrun_fixed_v7_5_dev_2026-11-02`, branch
+    `feature/nse-no-attachment-sentinel`). Full detail:
+    `docs/SPARS_EXCEPTION_BACKLOG.md` EX-077 in the backendtest repo.
+  - **Deployed with a tested rollback, same pattern as before:**
+    deployed the fix forward (digest `sha256:17aae404...` ->
+    `sha256:af11ff09...`), reverted the working tree to the prior
+    commit (`eb0fd42`, today's already-tested pre-fix state) via a
+    clean git checkout and redeployed to prove the rollback path
+    (digest -> `sha256:7d763525...`), then restored and redeployed the
+    fix forward as the final live state (digest -> `sha256:32ef285d...`).
+    Config (`--mode daily --lookback-days 7 --limit 100`, env vars,
+    service account, resources, maxRetries, timeoutSeconds) confirmed
+    unchanged across all three deploys.
+  - **Still outstanding, explicitly not done yet:** whether the 12
+    queued rows now actually reach `STORED` on a future cycle (the fix
+    removes the permanent gate, but no cycle has run since the fix went
+    live); and the separate, still-undecided question of flipping
+    `enable_nse_xbrl` on for the unsupervised 2 AM `spa-discovery-daily`
+    schedule.
+  - **Exact next action** if resuming this specific thread: run (or
+    wait for) one more cycle and confirm via the Documents tab that the
+    12 Chemplast rows reach `STORED` with a real Drive file ID and
+    content SHA256 -- that is the remaining proof this specific EX-077
+    fix actually closes the loop. Only after that, decide
     whether/when to flip `enable_nse_xbrl` on for the live Cloud Run
-    job (starting with the Chemplast-only scope `nse_xbrl_company_keys`
-    already supports), or continue widening Phase 3.5B's data
-    foundation some other way -- re-confirm which with the owner before
-    assuming, per this checkpoint's own standing rule of not resuming
-    scope automatically.
+    job's unsupervised schedule (starting with the Chemplast-only scope
+    `nse_xbrl_company_keys` already supports), or continue widening
+    Phase 3.5B's data foundation some other way -- re-confirm which
+    with the owner before assuming, per this checkpoint's own standing
+    rule of not resuming scope automatically.
 
 - **MARKET-DATA SCOPE EXPANSION & FULL DATA-LOCATION AUDIT — resumed
   2026-11-20, inventory re-given per the standing request below, owner
