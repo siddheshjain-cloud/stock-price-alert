@@ -404,6 +404,507 @@ every new session here before it touches code. Git/worktree state and
 test evidence are authoritative over this note if they ever disagree
 — reconcile before acting, don't just trust the prose below.
 
+- **MARKET-DATA SCOPE EXPANSION & FULL DATA-LOCATION AUDIT — resumed
+  2026-11-20, inventory re-given per the standing request below, owner
+  approved, two pending files committed, PR branch pushed separately,
+  live daily catch-up run, and the deferred index backfill completed**
+  (`C:\GitHub\backendtest`, branch `feature/autonomous-research-pipeline`,
+  now `74b4870` — local, **not pushed to this branch's origin ref**;
+  unrelated to and does not touch the EX-058→062 / corpus-dedup work
+  below). The commit was instead pushed on its own branch
+  `feature/market-data-index-expansion` (cherry-pick `5782cda` onto
+  `origin/feature/autonomous-research-pipeline`'s then-current tip,
+  since this branch itself was 31 commits ahead of origin and the owner
+  did not want the other 30 unreviewed commits pushed) — PR not yet
+  opened, link: github.com/siddheshjain-cloud/backendtest/pull/new/
+  feature/market-data-index-expansion. **Not yet merged.**
+
+  **Live catch-up run 2026-11-20 (backups taken both times —
+  `daily.bak_pre_catchup_20261120T153427` and
+  `daily.bak_pre_index_backfill_20261120T154207`):**
+  1. Default run (`--start 2026-11-10`, no flags): caught up all 95
+     companies and all 23 indices to 2026-11-20, `DONE ok=95 failed=0` /
+     `INDEX DONE ok=23 failed=0`. CSVs confirmed deleted post-ingest.
+  2. **Deferred index backfill, now done:** `--indices-only --start
+     2015-01-01 --end 2026-10-18` (end capped the day before the
+     existing window to avoid re-fetching Oct19→Nov20). **23/23
+     resolved, 23/23 ingested, 0 failures.** Verified post-run: every
+     index now spans 2015-01-01→2026-11-20 (2,910–2,946 rows each,
+     fewer for younger indices e.g. NIFTYHEALTHCARE/NIFTYOILANDGAS at
+     2,934), zero duplicate dates on spot-check, 0 leftover CSVs, and
+     the 95-company Parquet partitions (checked REFEX) untouched.
+
+  **Before this backfill, a reuse question was raised and resolved:**
+  found `D:\SPARS-Data\historical\canonical_v2\Indices\daily` already
+  had deep index history (NIFTY back to 2007, several to 2010/2019)
+  through 2026-11-18 — built by previously-undocumented scripts
+  (`update_canonical_v2_incremental.py`,
+  `update_canonical_v2_from_bhavcopy.py`) that ran in a one-off session
+  on 2026-11-18, **not recorded anywhere in this checkpoint until now**.
+  That session's stocks-side run also hit a DuckDB `BinderException`
+  partway through (a separate corp-action validation afterward confirmed
+  the Stocks Parquet was byte-identical before/after, so nothing was
+  corrupted, but the run itself wasn't clean). Decision made: **don't
+  reuse/convert that data for this task** — only 15/23 index symbols
+  matched by name at all, the D-drive schema/naming differs, some rows
+  may be VWAP30-reconstructed rather than native, and the live Kite
+  re-pull for just 23 symbols took minutes, not hours, so a one-off
+  converter would have cost more engineering time than it saved. The
+  D-drive's incremental-updater discovery **does** change the calculus
+  for the still-open full-NIFTY-500 stocks expansion below — there the
+  payoff from reusing D-drive history would be much larger (500+
+  companies, years of minute data) and is worth designing properly, not
+  bolted onto this smaller index task.
+
+  **Code changes, committed (`74b4870` / pushed as `5782cda`):**
+  - `scripts/market_data/download_watchlist_daily.py`: added
+    `INDEX_CANDIDATES` (NIFTY50 + 7 broad-market + 13 NSE sectoral
+    indices + BSE SENSEX = 23 total), resolved/fetched in a section
+    separate from the 95-company watchlist with its own
+    `indices_requested/ok/failed` manifest.json keys — deliberately
+    kept separate so the existing "ok=95 failed=0" signature (already
+    used by Pilot 01B Gate 5-style checks) is unaffected. Added a
+    `--indices-only` flag (skips the Sheets-tab read/company loop) plus
+    a manifest.json merge-safeguard so an indices-only run can't
+    clobber a real company run's recorded counts with zeros. Also:
+    once a CSV is successfully ingested into its Parquet partition it
+    is now deleted (applies to both the company loop and the new index
+    loop, going forward only — not retroactive) — DuckDB only ever
+    reads the Parquet, the CSV was always a disposable intermediate.
+  - `app/services/market_data_service.py`: added `INDEX_SYMBOLS`
+    frozenset (all 23 clean index symbols) and fixed `latest_close()`'s
+    `is_watchlist` flag, which previously only excluded the single
+    `BENCHMARK` ("NIFTY50") and so mis-tagged every other index as a
+    watchlist stock. `BENCHMARK` itself is unchanged (still NIFTY50,
+    still used for relative-strength comparisons).
+  **Live action taken (owner-directed, Kite login used):** ran
+  `--indices-only --start 2026-10-19` — real Kite historical-data
+  calls, last ~1 month (21 trading days) for all 23 indices. **23/23
+  resolved on the first try (including the uncertain spellings — Nifty
+  Smallcap 100, Healthcare, Consumer Durables, Oil & Gas), 23/23
+  fetched/ingested, 0 failures.** Raw CSVs confirmed deleted after
+  ingest; `symbol=NIFTY50` etc. Parquet partitions confirmed present;
+  `is_watchlist` fix confirmed working via direct query. **Owner
+  explicitly deferred the remaining 2015→Oct-2026 backfill for these
+  23 indices to a later session ("we will download remaining period
+  later") — not done, do this when told.**
+
+  **Full data-location audit, this session (the inventory the owner
+  wants repeated on resume):**
+  - `C:\GitHub\backendtest\instance\`: **1 file SPARS uses**
+    (`trading_app.db`, 176MB, the live app database) vs **197 files
+    SPARS does not use** (181 `trading_app*.db*` one-off safety
+    backups + 16 other scratch/rehearsal `.db` files).
+  - `C:\SPARS_marketdata\daily\` (the live, 18:30-IST-daily-refreshed
+    store DuckDB/the app actually reads): **118 `symbol=` Parquet
+    folders in use** (95 watchlist stocks + the 23 indices above) vs
+    **95 leftover pre-cleanup `.csv` files + 3 report/manifest files
+    not used** by anything.
+  - `D:\SPARS-Data\historical\` (a one-time Oct-2026 research project,
+    frozen since Oct 23–31, **63,308 files / 12,120 directories /
+    ~103GB**): **effectively none of it is operationally used by
+    SPARS** — the single closest thing is one sentence in
+    `scripts/market_data/release_check.py` *documenting*
+    `canonical_v2\Stocks\daily` (official NSE bhavcopy) as a manual
+    fallback if Kite ever fails; no code actually reads it. Confirmed
+    `canonical_v2\Stocks\daily` already has 500/501 official NIFTY 500
+    constituents (cross-checked against
+    `staging_parquet/index_reporting/index_constituent_membership.
+    parquet`, a Sept-2026 GitHub mirror of NSE's list) — so NIFTY 500
+    daily history essentially already exists, just frozen and
+    disconnected from the live app.
+  - **Google Drive backup — correction of an earlier wrong statement
+    made in this same session:** a real, already-authenticated rclone
+    `gdrive:` remote exists on this machine (`rclone.conf` under
+    `%APPDATA%\rclone`, binary at `C:\Tools\rclone\rclone.exe`) and a
+    real working script, `D:\SPARS-Data\historical\scripts\
+    backup_build_and_upload_archives.py`, produced the partial Drive
+    backup found: `validated/parquet` fully mirrored as real files;
+    `canonical_v2` only as 19 dated ZIP snapshots (and the Stocks zip
+    predates that day's dedup fixes, so may be slightly stale);
+    `reports/` only has 1 of ~30 local report files; `checkpoints/`
+    backed up as an empty folder. `pilot/` (21GB), `raw/` (1.6GB) and
+    `staging_parquet/` (34GB, including an orphaned, validated-but-
+    never-merged 15GB `kite_minute_backfill` dataset) were **never**
+    backed up at all. The originally-designed `crypt`-encrypted remote
+    (`gdrive_encrypted`) was never actually created — **the real Drive
+    backup is unencrypted**, contrary to the design doc
+    (`checkpoints/DR_DESIGN_google_drive_backup.md`), which is now
+    known to be stale/inaccurate on this point.
+  **NIFTY 500 expansion — DONE, 2026-11-20** (same session as the
+  index backfill above). Scoped precisely before touching anything:
+  official NIFTY 500 has 501 members; the live watchlist only overlapped
+  11 of them (it is a separate custom research list, not a NIFTY-500
+  subset); 490 were missing. Checked the whole D-drive Stocks/daily
+  dataset's `source_dataset` column exhaustively — **zero rows anywhere
+  are VWAP30/reconstructed; 100% are genuine** (`kite_daily_backfill*`,
+  `nse_bhavcopy_official`) — so the build log's stocks "NOT_TRUSTED"
+  warning evidently led to the estimate being discarded, not used; real
+  gaps, not wrong numbers. Resolved all 5 initially-missing symbols
+  before migrating: `ARE&M`/`J&KBANK`/`M&M`/`M&MFIN` are on D-drive
+  under URL-encoded folder names (`&`->`%26`); `DUMMYHEG` is a non-
+  tradeable NSE index-list placeholder for HEG Ltd.'s demerger (ISIN
+  prefix "DUM", not real) and was excluded — its real successor HEGAM
+  was already in the other 485. One more resolution issue found and
+  fixed: `ICICIPRULI` doesn't exist under that name on Kite's live
+  instrument dump — confirmed via ISIN (INE726G01019) it's really
+  `ICICILIFE` there; stored under the canonical name regardless.
+  Built `scripts/market_data/migrate_nifty500_from_ddrive.py`
+  (uncommitted): migrates each symbol's D-drive history as-is
+  (preserving real per-row provenance in the `source` column, not
+  relabeled), through the same `MarketDataService.ingest_csv` atomic/
+  dedup path every other writer uses, then does a short live-Kite
+  catch-up from D-drive's last date to today. Validated against a
+  5-symbol test batch and two independent live-Kite spot-checks
+  (exact match) before running the full batch. **Backed up first
+  (`daily.bak_pre_nifty500_migration_20261120T161451`); full run:
+  489/489 migrated, 0 failures; final full-dataset integrity sweep
+  (all 607 partitions): 0 flagged for duplicate dates or staleness;**
+  4 independent spot-checks against fresh Kite pulls all exact-matched.
+  Live watchlist now covers all 501 NIFTY 500 members (minus the one
+  fake placeholder) with full history through 2026-11-20.
+
+  **Off-machine backup of the live store — DONE, same session.** Until
+  this point the entire `C:\SPARS_marketdata\daily` live store (now 607
+  companies/indices) had never been backed up anywhere off this
+  machine. Created: a plain-folder mirror at
+  `D:\SPARS-Data\backups\c_drive_live_backup\daily_20261120T164225\`
+  (1,218 files, exact structure) and a zipped copy uploaded to Google
+  Drive at `gdrive:spars_c_drive_live_backup/daily_20261120T164225.zip`
+  via the already-authenticated rclone `gdrive:` remote — **SHA-256
+  verified identical, local vs. remote** (`569a4f1...6733`). Zipped
+  rather than uploaded file-by-file: a direct per-file `rclone copy` of
+  the 1,218 small files was started, observed crawling (same slow-many-
+  small-files problem the project's own `backup_build_and_upload_
+  archives.py` was built to avoid), stopped after 77/1,218 files, and
+  that incomplete partial folder was deleted from Drive to avoid it
+  being mistaken for a real backup later. The zip-then-upload path took
+  ~30s end to end. **This was a one-time snapshot, not a recurring
+  job** — no scheduled task backs this live store up going forward yet;
+  that would be new work if wanted.
+
+  `migrate_nifty500_from_ddrive.py` committed `a8a30f2` on
+  `feature/autonomous-research-pipeline`, then cherry-picked as
+  `5d143b2` onto the already-pushed `feature/market-data-index-
+  expansion` branch (now 2 commits: the index expansion + this
+  migration) and pushed — same reasoning as before, kept off the 39-
+  commits-ahead main branch ref.
+
+  **Index constituent lists fetched, saved, and cross-checked against
+  live data — DONE, same session, 2026-11-20.** Owner asked how many
+  total constituents exist across the 23 tracked indices, with and
+  without overlap. Fetched all 22 NSE indices' official constituent
+  CSVs fresh (`nsearchives.nseindia.com/content/indices/`) plus SENSEX
+  from Wikipedia (BSE blocks direct automated scraping — flagged as
+  the one less-verified source). Results: **1,381 total listed
+  (summed with overlap), 508 unique companies** (ISIN-deduplicated;
+  SENSEX contributed zero new names — full overlap with the other 22).
+  Saved persistently at `C:\SPARS_marketdata\index_constituents\
+  2026-11-20\` (22 raw CSVs) and `...\index_constituents\
+  membership.json` (index->symbols, symbol->indices, symbol->ISIN,
+  plus a `known_identity_notes` section — see below).
+
+  Cross-checking fresh membership against the live store (seeded from
+  the older 2026-10-26 D-drive NIFTY 500 snapshot) found **29 real
+  gaps** — genuine index drift in ~3-4 weeks, not a bug. Resolved:
+  `DUMMYHEG` excluded (placeholder, as before); `ICICILIFE` is the
+  same company as the already-stored `ICICIPRULI` (renamed, same ISIN
+  INE726G01019) — no fetch needed, recorded as an alias note instead;
+  20 were on D-drive and migrated via a new `--symbols` override added
+  to `migrate_nifty500_from_ddrive.py`; the remaining 7 (BAGMANE,
+  BIRET, CLEANMAX, EMBASSY, FRACTAL, VISL, VOGL) aren't on D-drive at
+  all (recent listings/REITs it predates) — fetched via a new script,
+  `scripts/market_data/fetch_new_listings.py`, a plain full Kite pull
+  for symbols with no D-drive seed. Both scripts committed `bbb08b3`
+  on `feature/autonomous-research-pipeline`, cherry-picked `b73b2b8`
+  onto `feature/market-data-index-expansion` (now 3 commits) and
+  pushed.
+
+  One identity trap caught while verifying: **EMBASSY** (the real
+  index constituent, Embassy Office Parks REIT, confirmed via ISIN
+  INE041025011 and Kite instrument data, series RR) is a **different
+  company** from **EMBASSY DEVELOPMENTS / EMBDL** (formerly Indiabulls
+  Real Estate Ltd., renamed after merging with the Embassy Group's
+  real-estate business) — owner flagged this ambiguity directly;
+  EMBDL is confirmed NOT a current member of any of the 23 indices, so
+  no action was needed, but it's recorded in `membership.json`'s
+  `known_identity_notes` as a concrete example motivating the next
+  item below.
+
+  **Final state: 640 live partitions** (613 after the NIFTY 500
+  migration + 27 from this pass), full integrity sweep 0 issues, all
+  507 real (non-placeholder) constituents across all 23 indices now
+  have live price data.
+
+  **Mid-task incident: C: drive hit 100% full (0-80MB free out of
+  195GB) during this work**, crashing one migration run partway
+  (`DBCORP.csv` left as a 0-byte leftover, cleaned up; no data
+  corruption — the atomic ingest design held, the crash happened in a
+  plain CSV write before any ingest call). Root-caused by folder-size
+  survey: `C:\Users` 70GB, `C:\Windows` 25GB, `C:\GitHub` 12.7GB,
+  `Program Files`+`(x86)` 19GB, `ProgramData` 9.5GB, `C:\SPARS_
+  marketdata` 5GB — none individually abnormal; **~32GB remains
+  unaccounted for and is almost certainly Windows System Restore /
+  Volume Shadow Copy storage**, which requires Administrator privileges
+  to inspect or clean (`vssadmin` confirmed: permission denied in this
+  session). Pagefile is on D:, not C:, ruled out. Free space recovered
+  on its own to ~18-19GB shortly after (consistent with a VSS snapshot
+  spike from the heavy write/delete activity, self-pruned by Windows).
+  `cleanmgr.exe` was launched (non-blocking) for the owner to run
+  manually with "Clean up system files" + System Restore/Shadow Copy
+  cleanup checked, since that needs an elevated interactive session
+  this harness doesn't have. **Not resolved — owner-side follow-up,
+  not blocking any SPARS work at 18-19GB free.**
+
+  **Permanent index-drift-tracking routine — DESIGNED, BUILT, AND
+  VALIDATED, same session, 2026-11-20.** `scripts/market_data/
+  index_constituents.py` (shared fetch module: 22 NSE indices live,
+  SENSEX from the now-tracked `sensex_manual.json` with a dated
+  "as_of" field — BSE confirmed to block automated access at the
+  CDN/edge level, both the public page and the internal API return
+  HTTP 403 from Akamai, so this one source stays manual with a loud
+  staleness warning rather than being silently trusted) and
+  `scripts/market_data/check_index_drift.py` (the drift engine).
+  Deliberately **read-only** — never writes to the live price store or
+  fetches market data itself, only reports and names the exact
+  follow-up command, so it's safe to run unattended. Detects three
+  distinct kinds of change per run, matched by ISIN (not symbol text):
+  (1) membership change — added/removed from a specific index; (2)
+  rename — same ISIN, different symbol/name (the ICICIPRULI/ICICILIFE
+  case); (3) possible identity change via new ISIN — an ISIN
+  disappears while a brand-new, similarly-named ISIN appears in the
+  same run (token-overlap heuristic) — the shape a demerger produces,
+  never auto-resolved, always flagged for manual review (directly
+  targets the EMBASSY/EMBDL trap). **Validated before trusting it**:
+  built a synthetic test (simulated rename, removal, and a fake
+  demerger-shaped identity change in an isolated scratch directory) —
+  all three detection paths fired correctly. First real run against
+  live data established the baseline (508 ISINs, 23 indices, no prior
+  snapshot yet — real drift detection starts next run). Also cleaned
+  up a duplicate-naming mess in the snapshot folder (old ad-hoc
+  filenames from the manual fetch earlier the same session vs. the
+  routine's own `ind_*list.csv` naming — old ones deleted, 23 files
+  remain: 22 CSVs + the SENSEX manual snapshot). Committed `4a97e2d` on
+  `feature/autonomous-research-pipeline`, cherry-picked `19c799e` onto
+  `feature/market-data-index-expansion` (now 4 commits) and pushed.
+
+  **Scheduling — owner approved daily, DEPLOYED TO PRODUCTION same
+  session, 2026-11-20.** Timing measured first (3.3s for a full
+  drift-check run, negligible next to the existing job's Kite login +
+  price-data pull) — owner chose daily given the near-zero cost.
+
+  **Critical discovery made before deploying:** the actual scheduled
+  task (`SPARS_MarketDataDailyRefresh`, daily 18:30, Windows Task
+  Scheduler) runs from `C:\SPARS-release\backendtest` —
+  **a completely separate checkout from `C:\GitHub\backendtest`**,
+  where this entire session's work had been done. That release
+  checkout had **none** of today's changes (confirmed: 0 matches for
+  `INDEX_CANDIDATES`). Also: `download_watchlist_daily.py`'s company
+  loop reads a 95-row Google Sheet and its index loop is a hardcoded
+  23-entry list — **neither knows about the 522 NIFTY-500-expansion
+  companies**, so even deploying the index-expansion script alone
+  would have left those 522 silently going stale starting tomorrow.
+  Built `scripts/market_data/catchup_all_live_symbols.py` to close
+  that gap (reads each partition's own stored instrument_token/
+  exchange, catches up only what's behind today) before deploying
+  anything, committed `316d8a5`.
+
+  **Deployed:** cherry-picked all 6 dev-branch market-data commits
+  (`74b4870`, `a8a30f2`, `bbb08b3`, `4a97e2d`, `316d8a5`, plus a
+  same-session exit-code fix) onto `release/market-data-service` in
+  `C:\SPARS-release\backendtest`. One real merge conflict in
+  `download_watchlist_daily.py` — the release checkout had
+  independently hardened error handling (per-failure `stage`/`source`
+  fields, a `successful` list, non-zero exit code on any failure, an
+  explicit "Universe sheet returned zero rows = failure" guard) that
+  the dev-branch version never had. Resolved by hand, preserving
+  release's hardening while adding the index logic — and caught two
+  real bugs introduced by the merge itself before they could reach
+  production: the "zero companies = failure" guard would have
+  misfired on every legitimate `--indices-only` run (fixed in two
+  separate spots — the dry-run early-return and the main path), both
+  confirmed fixed via `--indices-only --dry-run` returning exit 0.
+  Also found `catchup_all_live_symbols.py` always returned exit 0
+  regardless of failures — fixed (`03895eb`/`8b002da`) before wiring
+  it into the schedule, where its exit code now actually matters.
+  Tested in the release checkout before trusting it: normal dry-run,
+  indices-only dry-run, and one real minimal-scope `--indices-only`
+  execution (manifest.json structure verified correct afterward).
+
+  Updated `scripts\scheduled\run_market_data_refresh.bat` (committed
+  `288e053`) to run, in order: `check_index_drift.py` (read-only,
+  logged but never fails the job), `download_watchlist_daily.py`
+  (unchanged invocation), `catchup_all_live_symbols.py` (new). Final
+  exit code reflects a failure in either of the latter two. **The
+  Windows Scheduled Task itself was not touched** — it already points
+  at this `.bat` file, so tonight's 18:30 run picks up everything
+  automatically with no further action. Release checkout is 9 commits
+  ahead of `origin/release/market-data-service`, **not pushed** —
+  consistent with this branch's established pattern of only pushing on
+  explicit owner request (pushing isn't required for tonight's
+  scheduled run either way; it reads local disk, not a git pull).
+
+  **First real production run, 18:30 same evening: SUCCESS.** Verified
+  via `C:\GitHub\backendtest\logs\market_data_refresh.log`: drift-check
+  ran and established baseline (exit 0), main download refreshed all
+  95 companies + 23 indices (exit 0), catch-up-all correctly found 0
+  stale (exit 0, since the main download already covered everything
+  that existed in the live store at that time). The whole pipeline
+  built this session proved itself end to end on its first real
+  automated run.
+
+  **NIFTY Microcap 250 added as a 24th tracked index — DONE, same
+  evening.** Owner-directed after reviewing a D-drive check. Kite's
+  own tradingsymbol for the index itself is "NIFTY MICROCAP250" (token
+  290569); NSE's constituent-list filename for this one index differs
+  from the pattern (`ind_niftymicrocap250_list.csv`, with an
+  underscore) — the first filename guess returned a fake-200 HTML
+  error page from NSE, not a 404, a silent-failure trap worth
+  remembering. Found a second DUMMY-prefix placeholder while scoping
+  this (`DUMMYINXGN`, "Dummy Inox Green Ltd.", same pattern as
+  DUMMYHEG) — added to `EXCLUDE_SYMBOLS`. Migrated all 223 real new
+  constituents (199 from D-drive — one, `GMRP&UI`, was initially
+  misclassified as absent due to the same URL-encoding gotcha as the
+  earlier ampersand cases, caught and corrected before migrating — 24
+  via a fresh Kite pull) plus the index's own full 2015-2026 history
+  (2,934 rows). Backed up first; full integrity sweep across all 864
+  resulting partitions: 0 issues; all 251 Microcap 250 constituents
+  cross-checked against live data: 0 missing. Committed `c102bd0` on
+  dev, cherry-picked `6e36686` onto `feature/market-data-index-
+  expansion` (pushed) and `82ba33e` onto `release/market-data-service`
+  (clean auto-merge, no conflicts this time).
+
+  **Found during this deployment: a separate, concurrent production
+  merge on the SAME release branch tonight, by a different session —
+  not documented anywhere in this checkpoint.** Commits `d8f1ab3`
+  (merge), `4e91e24` ("chore(catchup): exclude Group D ... from the
+  A+B+C production catch-up"), `ed9397c` (merge into
+  `release/market-data-service`), timestamped 17:46-18:11, same
+  `siddheshjain-cloud` git identity as every other commit in this
+  project. Commit message reasoning (Groups A/B/C/D, citing
+  `ALLOW_EVENT_AUTO_PROMOTION=False` gating) reads as a careful,
+  charter-consistent Claude Code session's work, not an error — very
+  likely the long-pending "EX-058→062 / Pilot 01 production catch-up"
+  that earlier notes flagged as still needing separate Level 3
+  authorization, finally executed. **Confirmed zero file overlap**
+  with anything market-data-related via diff; this session's
+  cherry-picks landed cleanly on top with no conflicts, full syntax/
+  dry-run health check passed afterward. **Owner confirmed same
+  evening: this was them running a separate session** — expected,
+  no further action needed.
+
+  **PR #13 (the full market-data expansion) merged into
+  `feature/autonomous-research-pipeline` — owner-approved, same
+  evening.** No CI existed on this repo at merge time, so there was
+  nothing to gate on; merged on the strength of this session's manual
+  verification (integrity sweeps, synthetic drift test, live spot-
+  checks, the real production run).
+
+  **CI added for future PRs — owner-directed, same evening, PR #14
+  merged.** `.github/workflows/tests.yml`: runs on every PR + pushes
+  to the main branches, on `windows-latest` (not `ubuntu-latest` —
+  switched after the first real run failed 38 tests, all tracing to
+  `evidence_storage.py`'s `SPA_EVIDENCE_ROOT` defaulting to a
+  hardcoded `C:\` path that Python correctly reports as not absolute
+  on POSIX; this codebase is Windows-native by design throughout, so
+  matching that was the right fix, not touching application code).
+  Installs Tesseract via Chocolatey (the one non-pip system
+  dependency, for `ocrmypdf`'s OCR fallback), then
+  `requirements.txt`/`requirements-dev.txt`, then `pytest -q`. Also
+  found and fixed a real pre-existing test bug while verifying this,
+  unrelated to CI itself: `tests/research/test_market_data_
+  ingest.py`'s `test_a1`/`test_a2` asserted `quote.stale is False`
+  against a trading date hardcoded at authoring time (2026-11-13) --
+  `MarketDataService.is_stale()`/`latest_close()` (and the
+  `research_query_service._market_quote()` path wrapping it) always
+  use real `date.today()` with no way to inject a test date (unlike
+  `freshness()`, which already takes an explicit `now=` for exactly
+  this reason), so both tests only kept passing by coincidence while
+  real wall-clock time stayed within `MAX_QUOTE_AGE_DAYS` of that
+  date -- by 2026-11-20 the gap exceeded the threshold and both
+  failed for real. Fixed test-only (froze `date.today()` as seen by
+  `market_data_service` to the test's own `simulated_today`, no
+  application code touched) -- verified the freeze is genuinely
+  working, not coincidental, since it passes even though real today
+  is still well past the hardcoded date. Full verification before
+  merging: targeted file 12/12 passed locally, `tests/research/`
+  broadly 903/903 passed locally, full suite on the actual CI runner
+  2,435 passed / 0 failed / 4 skipped. PR #14 merged into
+  `feature/autonomous-research-pipeline`.
+
+  **Futures: identity cleanup + live tracking built from scratch, same
+  session, PR #15/#16 merged.** The old `canonical_v2/Futures` D-drive
+  snapshot (437 symbols, 2008-2023) had 20 years of unresolved identity
+  drift — cleaned up: 16 symbols deleted (fully absorbed into entities
+  already tracked, e.g. HDFC into HDFCBANK, RANBAXY into SUNPHARMA, or
+  genuinely delisted with no successor), 4 renamed (e.g. MCDOWELL-N ->
+  UNITDSPR, CENTURYTEX -> ABREL per owner-supplied correction).
+  `scripts/market_data/download_futures_daily.py` (new) tracks the
+  near-month live contract for the full current universe Kite exposes:
+  **259 underlyings** — 218 stocks + 6 indices (NFO), 4 currency pairs
+  (CDS, excluding the bond/T-bill futures CDS also lists), 31 MCX
+  commodities. NCDEX (agri commodities) confirmed unreachable —
+  AccessDenied on this Kite account's subscription, not fixable from
+  here. Hard Kite limitation designed around: expired contracts vanish
+  from Kite's instrument master entirely, so there is no way to
+  backfill years of historical futures through Kite — this captures
+  each live contract's trading history so far and rolls forward daily.
+  Two real bugs found and fixed before trusting the final runs: a
+  missing CHUNK_DAYS chunking call (hit Kite's 2000-day request cap,
+  failed all 224 on the first attempt) and a missed expired-contract
+  filter (currency derivatives expire on a different calendar than
+  equity F&O). Stored separately at `C:\SPARS_marketdata\futures\daily`
+  using the same Parquet convention `MarketDataService`/the
+  backtesting module's `LocalStorePriceLoader` already use, as raw
+  material for an owner-planned backtesting/strategy module. Deployed
+  to `release/market-data-service` as a 4th daily schedule step
+  (logged, never blocks the job). PRs #15 and #16 merged without
+  waiting on CI per owner instruction (CI is a GitHub-hosted check,
+  confirmed to touch zero local resources either way).
+
+  **D-drive cleanup — DONE, same session.** After the futures/index
+  work, did a full leftover-data audit and cleanup pass, owner
+  approving each item individually rather than a blanket "delete all
+  dead weight": deleted ~10.8GB of unambiguous junk (old storage-
+  layout experiments, a stray Python venv, raw download intermediates,
+  unused canonical_v2 Futures-dedup-fix backups, the superseded
+  canonical_v2/Indices copy). Kept `canonical_v2/Futures` after the
+  owner asked for its specifics (437 symbols, 2008-2023, genuine F&O
+  minute+daily history, not junk). Investigated `pilot` (20.87GB) and
+  `staging_parquet` (33.46GB) far more carefully before touching them
+  -- an initial quick read suggested `kite_nifty500_2019gap` (12.76GB)
+  was still unmerged into `canonical_v2`, which turned out to be wrong
+  (traced to picking a bad test case, a date with genuinely no data
+  anywhere, not a missed merge) -- corrected via direct row-count
+  verification across 29 symbols total (0 mismatches) proving an
+  undocumented session (likely the same 2026-11-18 one flagged
+  earlier) had already fully merged essentially everything in both
+  folders into `canonical_v2`. One exception honestly flagged as
+  unverifiable: `kite_index_minute_backfill` (0.61GB), whose likely
+  merge destination (`canonical_v2/Indices`) had already been deleted
+  earlier in this same cleanup pass, before this nuance was known --
+  owner approved deleting it anyway given its low stakes (superseded
+  by the live Kite-built index pipeline either way). Both `pilot` and
+  `staging_parquet` deleted in full (54.33GB); `canonical_v2` itself
+  verified untouched and intact afterward (spot-checked RELIANCE
+  minute row count unchanged). **D-drive free space: ~124GB -> ~182GB
+  over the full cleanup arc tonight.**
+
+  **Not yet done / open for next session (none authorized yet, no
+  Level 2/3 action implied by this note):** (a) bring `D:\SPARS-Data`
+  current going forward — **partially stale**: `build_canonical_v2.py`
+  itself still only does a full from-scratch rebuild ("Nothing here
+  downloads anything"), but `update_canonical_v2_incremental.py` +
+  `update_canonical_v2_from_bhavcopy.py` now exist and did a one-off
+  incremental update on 2026-11-18 (stocks-side run crashed partway
+  with a DuckDB BinderException — worth a root-cause look before
+  relying on it again; did not affect the NIFTY 500 migration above,
+  which read the data directly and verified it independently);
+  `check_canonical_v2_freshness.py` still only flags staleness, never
+  rebuilds; (c) decide whether the Drive-backup encryption gap needs
+  closing; (d) open the PR for `feature/market-data-index-expansion`
+  and merge it once reviewed.
+
 - **CORPUS-WIDE DEDUPLICATION — Part B COMPLETE, 2026-11-16**
   (`C:\GitHub\backendtest`, branch `feature/autonomous-research-
   pipeline`; Part A detail is the entry immediately below this one,
@@ -3367,6 +3868,132 @@ made; the backup remains the rollback point.**
 
 ---
 
+## EX-058 → EX-062 Workstream — Event Review Track Record, Candidate
+Quality Phases 1–3, Targeted Remediation (2026-11-16 16:49 →
+2026-11-17 15:11 IST, `C:\GitHub\backendtest`, branch
+`feature/autonomous-research-pipeline`, HEAD `8bc891f`)
+
+**Event Review Track Record Batches 1–2 (diagnostic baseline, 58
+candidates reviewed):** Batch 1, 28 candidates, commit `4e8bd09`;
+Batch 2, 30 candidates, commit `dbb4d80`. Four defects found in Batch
+1 remediated in commit `7d01415`; sibling-matcher precision fixed in
+`8822c69`; a final sibling-identity gap fixed in `b86c38d`.
+
+**EX-058 through EX-062** (`docs/SPARS_EXCEPTION_BACKLOG.md`,
+"Last updated: 2026-11-17", lines 3537–3883):
+- **EX-058** — three routine-disclosure classes (routine
+  investor/analyst-meeting schedule notice; nil/no-action disclosure
+  outside the already-named class; non-substantive concall filler)
+  not yet named in the materiality rubric. Found in commit `2d24425`.
+  **Status: Open** — no `_ROUTINE_PATTERNS` entries added, no fix
+  implemented (backlog lines 3537–3582).
+- **EX-059** — four extraction-stage root causes (citation narrower
+  than the claim it supports; outcome-polarity blindness on
+  nil/negative disclosures; tense/certainty blindness on
+  forward-looking plans; speaker-attribution blindness on concall
+  transcripts). Found in commit `2d24425`. **Status: Open** — no
+  prompt change; root cause D partially mitigated one layer
+  downstream (promotion-time only) by `quote_is_unconfirmed_question`,
+  commit `7d01415` (backlog lines 3586–3649).
+- **EX-060** — GP Eco's "AN3 Techno" / "ACM Techno" transcription
+  inconsistency. Found in commit `2d24425`. **Status: Resolved**
+  (2026-11-17) — owner confirmed the canonical name "AN3 Techno Power
+  Ltd"; both candidates (`1808330b`, `ddd58472`) corrected via
+  supersession (new `CandidateFinding` staged per candidate, original
+  marked `DUPLICATE`; a direct value UPDATE was attempted first and
+  correctly rejected by the ORM's immutability guard; DB backup taken
+  first: `instance/trading_app.db.bak_pre_an3_techno_name_correction_
+  20261116T174538Z.db`), commit `09b4ca6`, script
+  `scripts/correct_an3_techno_candidate_names_20261117.py`. Both new
+  candidates remain OPEN, unpromoted (backlog lines 3653–3714).
+- **EX-061** — the semantic verifier (Phase 2) can itself be fooled by
+  implicit-confirmation attribution; one reproducible false `pass` (1
+  of 13 real verification calls) on candidate `a03fce4b`. Found in
+  commit `666e147`. **Status: Open** — advisory-only, no prompt or
+  threshold change; every `pass`/`review` candidate still requires
+  human review before promotion (backlog lines 3718–3763).
+- **EX-062** — six new findings from Post-Remediation Qualification
+  Round 1 (malformed `capacity_commissioning` category string;
+  acquisition filed under `partnership_jv`; two new routine-disclosure
+  classes beyond EX-058's three; a bare-heading weak citation; an
+  OCR-corrupted citation independent of the value it supports; a
+  percentage-sum grounding false positive). Found in commit `0dc1db8`.
+  **Status: Resolved** (2026-11-17) — all six fixed, commit `5262936`
+  (category normalization; an advisory-only acquisition/JV
+  miscategorization flag, never auto-correcting at staging; two new
+  `_ROUTINE_PATTERNS` entries; a bare-heading weak-citation check;
+  I/l OCR first-letter tolerance; percentage-sum/decimal-OCR grounding;
+  a new `citation_numbers_match_page` detector) — 17 new regression
+  tests, full `tests/pipeline` suite 722 passed (backlog lines
+  3767–3883).
+
+**Candidate Quality Phase 1** (deterministic triage — citation
+reprioritization, deterministic status/polarity correction,
+pre-staging triage) — commit `1b96951`. **Phase 2** (selective
+semantic verification) — commit `666e147`.
+
+**Phase 3 Qualification** — two distinct, non-overlapping cohorts:
+- Legacy benchmark `logs/direct_event_extractor/
+  post_remediation_qualification_20261117/batch_001_reviews.json` — 30
+  candidates, committed as-is in `0dc1db8`, frozen and unedited since;
+  reclassified `LEGACY_BACKLOG_TOOLING_BENCHMARK` (measures PRE-EX-062
+  tooling; does not count toward live qualification progress) per that
+  directory's `COHORT_STATUS.json`, written under the "EX-062
+  Remediation and Qualification Correction" directive, item 1.
+- Live cohort `logs/direct_event_extractor/
+  post_remediation_qualification_v2_20261117/batch_001_reviews.json`
+  — reset to 0/200 (directive item 2), then re-run with 30 fresh real
+  extraction calls (Groq backend) against the EX-062-fixed tooling,
+  committed in `5262936`. **Currently 30/200** per that file's own
+  `progress_note` field.
+
+**Targeted Remediation follow-up, commit `8bc891f`** (2026-11-17
+12:18 IST) — three further root-cause fixes from a separate
+"Candidate Generation Root-Cause Audit" not yet logged as its own
+exception-backlog entry: (1) prompt-level routine-event exclusions
+added to `_EVENT_SYSTEM_PROMPT` (`app/services/event_proposer.py`);
+(2) a deterministic Indian-grouping/scale-conversion check,
+`indian_grouping_conversion_mismatches` (`app/services/
+event_claim_grounding.py`); (3) a financial-reporting-calendar
+`_ROUTINE_PATTERNS` entry (`app/services/event_materiality.py`). 11
+new regression tests; full `tests/pipeline` suite **733 passed**
+(722 + 11, no regressions). Validated against 5 real Groq calls,
+7.7s total latency, $0 cost (`logs/
+validate_targeted_remediation_20261117_results.json`); confirmed the
+new exclusions suppress the targeted routine classes at the source
+while a genuine material fact in the same filing (a declared
+dividend, stress-tested) is still correctly extracted.
+
+**DB writes in this window:** only the EX-060 supersession above (2
+new `CandidateFinding` rows staged, 2 marked `DUPLICATE`; no
+promotion; backup taken first). That write's timestamp is the last
+one in either `candidate_finding` or `candidate_finding_decision`
+(`created_at` 2026-11-16 17:51:11) — everything from EX-058's
+discovery onward, both Qualification cohorts, and both remediation
+commits (`5262936`, `8bc891f`) are confirmed read/measure-only: no
+further rows, no promotions, no schema change. `alembic_version`
+unchanged at `20261116_02`.
+
+**State as of HEAD:** `feature/autonomous-research-pipeline` @
+`8bc891f`. `ALLOW_EVENT_AUTO_PROMOTION` unchanged (`False`). All four
+historical/record ledgers (the original 58-review baseline, both
+qualification cohorts) verified byte-identical as of this commit per
+its own message.
+
+**Cross-reference, not merged into this entry:** a separate, parallel
+thread (Gate A/Gate B exchange-discovery and XBRL research) is in
+progress and tracked independently in `backendtest`'s `docs/
+open_source_extraction_research/` and `docs/
+checkpoint_reconciliation_20261117.md`.
+
+**Sources:** `docs/SPARS_EXCEPTION_BACKLOG.md` (backendtest, "Last
+updated: 2026-11-17", lines 3537–3883) and direct `git log`/`git show`
+against `C:\GitHub\backendtest` commits `4e8bd09`…`8bc891f`, per a
+read-only recovery audit this session; evidentiary standard matches
+`docs/checkpoint_reconciliation_20261117.md`.
+
+---
+
 ## Repository state (verified at last checkpoint)
 
 - **Code repository:** `C:/github/backendtest`
@@ -6179,3 +6806,154 @@ re-measured numbers — the counts in this historical section are as of
 **Not done:** no production deployment, no live DB write or migration,
 no LLM synthesis, no vector database/new service, no Bear/Base/Bull
 valuation (no current market price or normalized multi-year inputs).
+
+---
+
+## NSE Discovery Redirect Incident & Recovery — RESOLVED except one
+open residual (2026-11-17, Cloud Run job `spa-ingestion-live-test`,
+project `spa-ingestion`, source `C:\SPA\cloudrun_fixed_v7_5` /
+`C:\SPA\research\cloudrun_v7_7_nse_redirect_fix_20261117`; this
+workstream lives in the Cloud Run job's own source tree, not in
+`backendtest`, and is tracked here because no equivalent checkpoint
+exists closer to that code)
+
+**Trigger:** NSE's `corporate-announcements` endpoint began
+301-redirecting `www.nseindia.com` → `www.nseindia.in` (same path/query)
+starting the 2026-11-14 02:00 UTC scheduled run, stacking on BSE-AJAX's
+already-known block (EX-006, `backendtest/docs/SPARS_EXCEPTION_BACKLOG.md`).
+4 consecutive daily runs failed before being caught; the GCP alert
+built for exactly this (`SPA Discovery - unexpected source failure`)
+fired once on day 1 and then stayed silent for days 2–4 — explained,
+not a delivery bug: `alertStrategy` had `autoClose: 604800s` but no
+`notificationChannelStrategy.renotifyInterval`, so a continuously-true
+condition only notifies on open/close, not on every re-evaluation.
+**Fixed live**, `renotifyInterval: 86400s` added, verified before/after
+in `backendtest/logs/incident_2026-11-17_nse_validation/alert_policy_{BEFORE,AFTER}.json`.
+
+**Root cause confirmed legitimate, not a lookalike domain:** one
+authorized, tightly-bounded live call (2 requests total: one warm-up +
+one real call to `www.nseindia.in`, logged in
+`backendtest/logs/incident_2026-11-17_nse_validation/nse_in_live_validation_20261117T105940Z.json`)
+returned HTTP 200 with the correct JSON schema, and NSE's own
+Content-Security-Policy header already whitelists `*.nseindia.in`
+alongside `*.nseindia.com` — NSE's own infrastructure, not a
+third-party domain.
+
+**Three deployment rounds, each verified by pulling the actual
+deployed image layer from Artifact Registry and diffing it
+byte-for-byte against the patched source (not inferred from mtimes):**
+1. `discovery.py` — `PoliteFetcher.get_json` now follows a redirect
+   only to an explicit, reviewed allowlist (`ADDITIONAL_TRUSTED_REDIRECT_HOSTS
+   = {"www.nseindia.in"}`), capped at 1 hop, https-only, query preserved.
+   Image `sha256:378e8e32...`.
+2. `production_ingestion.py` (`_is_official_exchange_attachment`) +
+   `rss.py` (`match_rss_item`, `discover_rss_items` — the actual
+   blocker: this one rejected 113/114 real NSE items as
+   `skipped_non_exchange_url` on the first recovery attempt) both
+   needed the same `nsearchives.nseindia.in` exact-host recognition;
+   discovered by auditing every exchange-host check in the source tree
+   (3 identical-pattern occurrences fixed, 3 non-identical ones —
+   `discovery.py`'s `_candidate_source` stats attribution,
+   `xbrl_capture.py` (inactive mode), `read_only_benchmark.py`
+   (unreachable script) — deliberately left untouched and reported).
+   Also found and fixed in the same round: `discover_bse_rss()` was
+   **unconditional** in `discover()` — the new `skip_bse` recovery flag
+   never gated it, so both prior "NSE-only" test runs had actually made
+   one live BSE RSS request each despite the flag; now genuinely gated.
+   Image `sha256:23a41027...`.
+3. Drive-folder failure classification — root cause (via the existing
+   read-only `audit-folders` mode) was exactly 3 of 96 universe
+   companies (Reliance Industries Ltd, State Bank of India, HDFC Bank
+   Ltd — large-cap additions outside SPARS's normal small/mid-cap
+   universe, likely from the 2026-11-04 manual watchlist adds) with no
+   Drive folder at all, causing every document row for them to fail
+   preflight forever and the whole job's status logic to collapse any
+   `other_issues > 0` into `FAILED` regardless of real successes.
+   Added `other_issues_drive_folder_missing` classification
+   (`_daily_status`, extracted into a testable function) so a run whose
+   only issues are this known gap reports `PARTIAL`, not `FAILED`, while
+   a genuinely new/unexplained failure still correctly forces `FAILED`.
+   Image `sha256:16847edf...`. Folders then created via the existing
+   idempotent `create-company-folders` mode (3 created, 0 duplicates,
+   independently re-verified via `audit-folders`: `missing_folder: []`,
+   96/96 linked).
+
+All three rounds: full regression suite run against the unpatched
+original as an explicit baseline first (11 pre-existing, unrelated
+failures — `test_cloud_entrypoint.py`, `test_discovery.py` ×2,
+`test_manual_inbox_processor.py`, `test_production_ingestion.py` ×2,
+`test_rss_discovery.py`, `test_validation.py` ×2 — never touched or
+masked), then the patched copy compared against that exact baseline
+(byte-identical failure set each round, confirmed by diff, not
+estimate). Final: 315 passed / 11 failed (the same 11), 26 new
+incident-specific tests added across the three rounds, all passing.
+Config diffs after every deploy showed only the image digest changing
+— secrets, service account, resources, timeout, scheduler args all
+preserved. Rollback chain, oldest to newest:
+`sha256:b6136bc6...` (pre-incident) → `sha256:378e8e32...` →
+`sha256:23a41027...` → `sha256:16847edf...` (current).
+
+**Recovery executed, NSE-only (`--skip-bse`), through the managed job
+(no manual credential handling):** canary (1-day lookback, limit 5)
+proved the mechanism at full scale first — 76/76 NSE companies
+succeeded live, BSE/BSE_RSS both `attempted: 0`. Full recovery
+(`--lookback-days 5 --limit 200`, covering 12–17 Nov inclusive — no
+explicit date-range argument exists in `cloud_entrypoint.py`, verified
+by exhaustive grep, so the rolling lookback is the only mechanism and
+was confirmed sufficient): 101 new candidates discovered and promoted,
+of which 58 stored, 32 exact-binary duplicates correctly suppressed (0
+revisions), 11 hit the (at-the-time-still-open) Drive-folder gap.
+Reconciliation of the discovery-stage numbers:
+120 total items = 101 discovered + 18 filtered as routine (pre-existing,
+unrelated filter) + 1 duplicate — holds exactly, confirmed from the raw
+`SPA_DISCOVER` log line, not re-derived.
+
+**Open residual, NOT resolved, explicitly not attempted further:**
+after the Drive-folder fix, a retry of the 39 outstanding rows (11 new
++ 28 historical) plus 10 more older rows swept in by the same
+unfiltered retry (48 total) came back **2 STORED, 46
+`QUEUED_FOR_MANUAL_UPLOAD` with reason `http_403;no_configured_url`**
+— verified, not assumed, by parsing the actual per-row JSON (all 48
+show the identical reason string). Traced in `production_ingestion.py`:
+`"http_403"` can only appear if a real fetch of the record's own
+`original_source_url` returned 403 — so every one of the 48 *does*
+have a stored source URL; this is a genuine access-control response on
+the document-download step (`http_fetch.py`'s bare, non-browser
+request — no Referer, no session warm-up, unlike the discovery-stage
+client that works fine), not a missing-URL data gap, and structurally
+independent of the host-allowlist fix above (`_is_official_exchange_attachment`
+is only ever reached after a 200 response, never for these rows).
+Whether this is the same Akamai-class block seen on the `nseindia.in`
+warm-up 403 is **inferred, not confirmed** — no further live request
+was made to check, per the standing "no bot-protection workaround under
+any framing" boundary. **Decision needed from the owner, not taken
+here:** accept these as a permanent manual-queue residual, or
+separately authorize investigating a browser-equivalent request
+pattern for the download step — explicitly flagged as the one thing
+left before this incident can be called fully closed.
+
+**Also not touched, explicitly out of scope throughout:** EX-002 (the
+Drive-download retry fix) remains an unapplied patch file only — not
+merged into this branch, not merged into the production checkout
+`C:\SPARS-release\backendtest`, not deployed; BSE's own discovery
+capability is unimproved (confirmed via multi-day historical
+`BSE_RSS` stats: `items_fetched` in the hundreds-to-thousands daily but
+`accepted` ≈0 on every day but one — RSS can only confirm a filing
+SPARS already expects, it cannot discover one nobody knew to look for,
+so BSE has had no real independent discovery since the AJAX block
+began ~2026-11-02, not a working degraded fallback as the original
+framing implied); no scheduler, database schema, or canonical
+manifest-rewrite changes of any kind.
+
+**Evidence root:** `backendtest/docs/incident_2026-11-17_spa_discovery_failure.md`
+(full incident narrative) and `backendtest/logs/incident_2026-11-17_nse_validation/`
+(every before/after config snapshot, manifest diff, and live-call
+record cited above).
+
+**Separately, same day:** a Part B research thread (structured XBRL
+acquisition, PDF table extraction benchmarking, pre-extraction dedup
+audit vs. DiffIQ-style techniques, source-acquisition-hierarchy
+review) was dispatched to an isolated background fork per a
+cross-session handoff; its output, when complete, lands at
+`backendtest/docs/open_source_extraction_research/report5_partB_dedup_extraction_optimization.md`.
+Not yet reconciled into this checkpoint as of this entry.
