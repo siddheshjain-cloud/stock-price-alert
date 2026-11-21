@@ -1,0 +1,660 @@
+[CmdletBinding()]
+param()
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+$repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
+$devTools = Join-Path $repoRoot 'dev-tools'
+$spaRun = Join-Path $devTools 'spa-run.ps1'
+$stateTools = Join-Path $devTools 'm1-state.ps1'
+$seedState = Join-Path $devTools 'state\m1-state.json'
+$routingPath = Join-Path $devTools 'm1-model-routing.psd1'
+$expectedBranch = 'feature/investment-operating-system-m1'
+$failures = New-Object System.Collections.Generic.List[string]
+
+function Assert-True {
+    param([bool]$Condition, [string]$Message)
+    if ($Condition) { Write-Host "PASS: $Message" }
+    else { $script:failures.Add($Message); Write-Host "FAIL: $Message" }
+}
+
+function Assert-Match {
+    param([string]$Text, [string]$Pattern, [string]$Message)
+    Assert-True ([regex]::IsMatch($Text, $Pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) $Message
+}
+
+function Assert-FinalSessionSummary {
+    param(
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][string]$Message
+    )
+
+    $sessionCount = @([regex]::Matches($Text, '(?m)^SPA SESSION SUMMARY\r?$')).Count
+    $allSummaryCount = @([regex]::Matches($Text, '(?m)^SPA (?:TASK|SESSION) SUMMARY\r?$')).Count
+    $summaryAtEnd = [regex]::IsMatch($Text, '(?ms)^={60}\r?\nSPA SESSION SUMMARY\r?\n={60}\r?\n.*^={60}\s*\z')
+    Assert-True ($sessionCount -eq 1 -and $allSummaryCount -eq 1 -and $summaryAtEnd) $Message
+}
+
+function Invoke-SpaRun {
+    param([string[]]$Arguments)
+    $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $spaRun @Arguments 2>&1 | Out-String
+    [pscustomobject]@{ Code = $LASTEXITCODE; Output = $output }
+}
+
+function Invoke-Git {
+    param([string]$Path, [string[]]$Arguments)
+    $output = & git -C $Path @Arguments 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0) { throw "git failed in ${Path}: git $($Arguments -join ' ')`n$output" }
+    $output.Trim()
+}
+
+function Initialize-RemotePair {
+    param([string]$Root, [string]$Name)
+    $remote = Join-Path $Root ($Name + '-remote.git')
+    $office = Join-Path $Root ($Name + '-office')
+    $homeRepo = Join-Path $Root ($Name + '-home')
+    & git init --bare -q $remote
+    if ($LASTEXITCODE -ne 0) { throw "git init --bare failed for $remote" }
+    & git init -q $office
+    if ($LASTEXITCODE -ne 0) { throw "git init failed for $office" }
+    Invoke-Git $office @('config', 'user.email', 'spa-resume-test@example.com') | Out-Null
+    Invoke-Git $office @('config', 'user.name', 'SPA Resume Test') | Out-Null
+    Set-Content -LiteralPath (Join-Path $office 'README.md') -Value 'initial' -NoNewline
+    Invoke-Git $office @('add', '-A') | Out-Null
+    Invoke-Git $office @('commit', '-q', '-m', 'initial') | Out-Null
+    Invoke-Git $office @('branch', '-M', $expectedBranch) | Out-Null
+    Invoke-Git $office @('remote', 'add', 'origin', $remote) | Out-Null
+    Invoke-Git $office @('push', '-q', '-u', 'origin', $expectedBranch) | Out-Null
+    & git clone -q --branch $expectedBranch $remote $homeRepo
+    if ($LASTEXITCODE -ne 0) { throw "git clone failed for $homeRepo" }
+    Invoke-Git $homeRepo @('config', 'user.email', 'spa-resume-test@example.com') | Out-Null
+    Invoke-Git $homeRepo @('config', 'user.name', 'SPA Resume Test') | Out-Null
+    [pscustomobject]@{ Remote = $remote; Office = $office; Home = $homeRepo; Sha = (Invoke-Git $homeRepo @('rev-parse', 'HEAD')) }
+}
+
+function New-TestTask {
+    param(
+        [string]$Id,
+        [string]$Status,
+        [string]$BackendSha,
+        [string]$FrontendSha,
+        [bool]$ReviewRequired = $false,
+        [string]$ReviewRoute = '',
+        [string]$Action = 'IMPLEMENT'
+    )
+    # A REVIEW-only task (e.g. M1-FINAL-SOL/M1-FINAL-CLAUDE) never goes
+    # through an IMPLEMENT stage, so implementationSucceeded/testsSucceeded/
+    # relevantCommitsPushed are never set true by any real completion path --
+    # default them to false here regardless of status, matching reality,
+    # rather than the IMPLEMENT-task status-based defaults below.
+    $isReviewOnly = $Action.Equals('REVIEW', [System.StringComparison]::OrdinalIgnoreCase)
+    [ordered]@{
+        id = $Id
+        action = $Action
+        status = $Status
+        implementationProvider = 'deepseek'
+        implementationModel = 'deepseek-v4-flash'
+        reviewerProvider = if ($ReviewRequired) { 'deepseek' } else { $null }
+        reviewerModel = if ($ReviewRequired) { 'deepseek-v4-pro' } else { $null }
+        reviewRoute = if ($ReviewRequired) { $ReviewRoute } else { $null }
+        remediationRoute = $Id
+        lastVerifiedBackendSha = $BackendSha
+        lastVerifiedFrontendSha = $FrontendSha
+        implementationCommitSha = $BackendSha
+        remediationCommitSha = $null
+        lastSuccessfulReviewVerdict = $null
+        remediationAttempts = 0
+        evidence = [ordered]@{
+            implementationSucceeded = (-not $isReviewOnly) -and ($Status -eq 'COMPLETE' -or $Status -eq 'REVIEW_PENDING')
+            testsSucceeded = (-not $isReviewOnly) -and ($Status -eq 'COMPLETE' -or $Status -eq 'REVIEW_PENDING')
+            reviewRequired = $ReviewRequired
+            reviewSucceeded = ($Status -eq 'COMPLETE')
+            relevantCommitsPushed = (-not $isReviewOnly) -and ($Status -eq 'COMPLETE' -or $Status -eq 'REVIEW_PENDING')
+        }
+        updatedUtc = '2026-09-06T00:00:00Z'
+    }
+}
+
+function New-TestState {
+    param([object[]]$Tasks)
+    [ordered]@{
+        schemaVersion = 1
+        milestone = 'M1'
+        branch = $expectedBranch
+        repositories = [ordered]@{
+            backend = [ordered]@{ lastVerifiedSha = $null }
+            frontend = [ordered]@{ lastVerifiedSha = $null }
+        }
+        tasks = $Tasks
+    }
+}
+
+function New-DeferralReviewState {
+    param(
+        [Parameter(Mandatory = $true)][string]$BackendSha,
+        [Parameter(Mandatory = $true)][string]$FrontendSha,
+        [string]$Status = 'REVIEW_PENDING',
+        [bool]$ReviewRequired = $true
+    )
+
+    $reviewRoute = if ($ReviewRequired) { 'P2T4-REVIEW' } else { $null }
+    $state = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status $Status -BackendSha $BackendSha -FrontendSha $FrontendSha -ReviewRequired $ReviewRequired -ReviewRoute $reviewRoute),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $state.tasks[0].implementationCommitSha = $BackendSha
+    $state.tasks[0].remediationCommitSha = $BackendSha
+    $state.tasks[0].evidence.implementationSucceeded = $true
+    $state.tasks[0].evidence.testsSucceeded = $true
+    $state.tasks[0].evidence.relevantCommitsPushed = $true
+    return $state
+}
+
+foreach ($required in @($stateTools, $seedState)) {
+    Assert-True (Test-Path -LiteralPath $required -PathType Leaf) "required resumability artifact exists: $required"
+}
+if (-not (Test-Path -LiteralPath $stateTools -PathType Leaf)) {
+    Write-Host ''
+    Write-Host 'RED: resumability helper is not implemented yet.'
+    exit 1
+}
+
+. $stateTools
+
+$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('spa-resume-test-' + [guid]::NewGuid().ToString('N'))
+try {
+    New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
+    $backend = Initialize-RemotePair -Root $tempRoot -Name 'backend'
+    $frontend = Initialize-RemotePair -Root $tempRoot -Name 'frontend'
+
+    $atomicPath = Join-Path $tempRoot 'state\atomic.json'
+    $atomicState = New-TestState @((New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null))
+    Write-M1StateAtomic -State $atomicState -Path $atomicPath
+    $atomicRead = Read-M1State -Path $atomicPath
+    Assert-True ($atomicRead.tasks[0].id -eq 'P2T5') 'state atomic write/read preserves task data'
+    Assert-True (@(Get-ChildItem -LiteralPath (Split-Path -Parent $atomicPath) -Filter '*.tmp' -Force).Count -eq 0) 'atomic state write leaves no temporary file'
+
+    $malformedPath = Join-Path $tempRoot 'malformed.json'
+    Set-Content -LiteralPath $malformedPath -Value '{ definitely not json'
+    $malformedFailed = $false
+    try { Read-M1State -Path $malformedPath | Out-Null } catch { $malformedFailed = ($_.Exception.Message -match 'malformed') }
+    Assert-True $malformedFailed 'malformed state fails closed'
+
+    $safeState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $safeState.tasks[0].remediationCommitSha = $backend.Sha
+    Complete-M1ReviewTransition -State $safeState -TaskId 'P2T4' -ReviewRoute 'P2T4-REVIEW' -Verdict 'SAFE' `
+        -ReviewerProvider 'deepseek' -ReviewerModel 'deepseek-v4-pro' `
+        -BackendHead $backend.Sha -FrontendHead $frontend.Sha -ReviewedCommitSha $backend.Sha | Out-Null
+    Assert-True (([string]$safeState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'accepted SAFE review completes the task'
+    Assert-True ([string]$safeState.tasks[0].lastSuccessfulReviewVerdict -eq 'SAFE') 'accepted SAFE review records the exact verdict'
+    Assert-True (([string]$safeState.tasks[0].reviewerProvider -eq 'deepseek') -and ([string]$safeState.tasks[0].reviewerModel -eq 'deepseek-v4-pro')) 'accepted review preserves reviewer metadata'
+    Assert-True ((Get-M1NextUnit -State $safeState).RouteId -eq 'P2T5') 'accepted SAFE review advances to P2T5'
+
+    $observedState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $observedState.tasks[0].remediationCommitSha = $backend.Sha
+    Complete-M1ReviewTransition -State $observedState -TaskId 'P2T4' -ReviewRoute 'P2T4-REVIEW' -Verdict 'SAFE WITH NON-BLOCKING OBSERVATIONS' `
+        -ReviewerProvider 'deepseek' -ReviewerModel 'deepseek-v4-pro' `
+        -BackendHead $backend.Sha -FrontendHead $frontend.Sha -ReviewedCommitSha $backend.Sha | Out-Null
+    Assert-True (([string]$observedState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'accepted SAFE WITH NON-BLOCKING OBSERVATIONS review completes the task'
+    Assert-True ([string]$observedState.tasks[0].lastSuccessfulReviewVerdict -eq 'SAFE WITH NON-BLOCKING OBSERVATIONS') 'observed accepted review records the exact verdict'
+    Assert-True ((Get-M1NextUnit -State $observedState).RouteId -eq 'P2T5') 'accepted observed review advances to P2T5'
+
+    $rejectedState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $rejectedState.tasks[0].remediationCommitSha = $backend.Sha
+    Complete-M1ReviewTransition -State $rejectedState -TaskId 'P2T4' -ReviewRoute 'P2T4-REVIEW' -Verdict 'CHANGES REQUIRED' `
+        -ReviewerProvider 'deepseek' -ReviewerModel 'deepseek-v4-pro' `
+        -BackendHead $backend.Sha -FrontendHead $frontend.Sha -ReviewedCommitSha $backend.Sha | Out-Null
+    Assert-True (([string]$rejectedState.tasks[0].status).Equals('REMEDIATION_REQUIRED', [System.StringComparison]::OrdinalIgnoreCase)) 'CHANGES REQUIRED review marks remediation required'
+    Assert-True ([string]$rejectedState.tasks[0].lastSuccessfulReviewVerdict -eq 'CHANGES REQUIRED') 'rejected review preserves the verdict'
+    Assert-True ((Get-M1NextUnit -State $rejectedState).RouteId -eq 'P2T4') 'CHANGES REQUIRED review does not advance to P2T5'
+
+    $inconsistentState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $inconsistentState.tasks[0].remediationCommitSha = $backend.Sha
+    $inconsistentFailed = $false
+    try {
+        Complete-M1ReviewTransition -State $inconsistentState -TaskId 'P2T4' -ReviewRoute 'P2T4-OTHER' -Verdict 'SAFE' `
+            -BackendHead $backend.Sha -FrontendHead $frontend.Sha -ReviewedCommitSha $backend.Sha | Out-Null
+    }
+    catch {
+        $inconsistentFailed = ($_.Exception.Message -match 'does not match mapped review route')
+    }
+    Assert-True $inconsistentFailed 'inconsistent review route fails closed'
+
+    # Human acceptance with deferrals: a reviewed CHANGES REQUIRED task may close
+    # only through an explicit human acceptance carrying a reason and deferrals.
+    $closedState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Status 'COMPLETE'
+    $closedState.tasks[0].evidence.reviewSucceeded = $false
+    $closedState.tasks[0].lastSuccessfulReviewVerdict = 'CHANGES REQUIRED'
+    $closedFailed = $false
+    try { Assert-M1State -State $closedState | Out-Null } catch { $closedFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $closedFailed 'reviewRequired task without human acceptance still fails closed'
+
+    $deferralState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha
+    Complete-M1HumanAcceptanceTransition -State $deferralState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' `
+        -Reason 'Residual review findings accepted as deferred; no concrete production/security defect remains.' `
+        -Deferrals @('Deferred end-to-end stale-JWT proof.', 'Optional fixture optimization.') | Out-Null
+    Assert-True (([string]$deferralState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'valid human acceptance completes the task'
+    Assert-True ([bool]$deferralState.tasks[0].humanAcceptedWithDeferrals) 'valid human acceptance records the deferral flag'
+    Assert-True ([string]::IsNullOrWhiteSpace([string]$deferralState.tasks[0].activeRoute)) 'valid human acceptance clears activeRoute'
+    Assert-True (@($deferralState.tasks[0].humanDeferrals).Count -eq 2) 'valid human acceptance records explicit deferrals'
+    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$deferralState.tasks[0].humanAcceptanceReason)) 'valid human acceptance records the reason'
+    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$deferralState.tasks[0].humanAcceptedAtUtc)) 'valid human acceptance records an acceptance timestamp'
+    Assert-True (-not [bool]$deferralState.tasks[0].evidence.reviewSucceeded) 'human acceptance does not mutate reviewSucceeded to true'
+    Assert-True ([string]$deferralState.tasks[0].lastSuccessfulReviewVerdict -eq 'CHANGES REQUIRED') 'human acceptance preserves the CHANGES REQUIRED verdict'
+    Assert-True ([string]$deferralState.tasks[0].implementationCommitSha -eq $backend.Sha -and [string]$deferralState.tasks[0].remediationCommitSha -eq $backend.Sha) 'human acceptance preserves implementation and remediation commit SHAs'
+    Assert-True ((Get-M1NextUnit -State $deferralState).RouteId -eq 'P2T5') 'human-accepted task advances to the next task'
+    $validDeferralState = $true
+    try { Assert-M1State -State $deferralState | Out-Null } catch { $validDeferralState = $false }
+    Assert-True $validDeferralState 'human-accepted CHANGES REQUIRED task is a valid COMPLETE state'
+
+    $noReasonState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha
+    $noReasonFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $noReasonState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason '   ' -Deferrals @('Deferred item.') | Out-Null
+    }
+    catch { $noReasonFailed = ($_.Exception.Message -match 'acceptance reason') }
+    Assert-True $noReasonFailed 'human acceptance without a reason is rejected'
+
+    $noDeferralState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha
+    $noDeferralFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $noDeferralState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason 'Accepted.' -Deferrals @() | Out-Null
+    }
+    catch { $noDeferralFailed = ($_.Exception.Message -match 'explicit deferral') }
+    Assert-True $noDeferralFailed 'human acceptance without deferrals is rejected'
+
+    $blankDeferralState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha
+    $blankDeferralFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $blankDeferralState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason 'Accepted.' -Deferrals @('   ') | Out-Null
+    }
+    catch { $blankDeferralFailed = ($_.Exception.Message -match 'explicit deferral') }
+    Assert-True $blankDeferralFailed 'human acceptance with only blank deferrals is rejected'
+
+    $unreviewedState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Status 'RUNNING_LOCAL' -ReviewRequired $false
+    $unreviewedFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $unreviewedState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason 'Accepted.' -Deferrals @('Deferred item.') | Out-Null
+    }
+    catch { $unreviewedFailed = ($_.Exception.Message -match 'requires review') }
+    Assert-True $unreviewedFailed 'human acceptance cannot close an unreviewed task'
+
+    $wrongVerdictState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha
+    $wrongVerdictFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $wrongVerdictState -TaskId 'P2T4' -ReviewVerdict 'SAFE' -Reason 'Accepted.' -Deferrals @('Deferred item.') | Out-Null
+    }
+    catch { $wrongVerdictFailed = ($_.Exception.Message -match 'CHANGES REQUIRED') }
+    Assert-True $wrongVerdictFailed 'human acceptance refuses a SAFE verdict'
+
+    $routeState = New-DeferralReviewState -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Status 'RUNNING_LOCAL'
+    $routeState.tasks[0].activeRoute = 'P2T4-REVIEW'
+    $routeFailed = $false
+    try {
+        Complete-M1HumanAcceptanceTransition -State $routeState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason '' -Deferrals @('Deferred item.') | Out-Null
+    }
+    catch { $routeFailed = $true }
+    Assert-True ($routeFailed -and ([string]$routeState.tasks[0].activeRoute -eq 'P2T4-REVIEW')) 'failed human acceptance does not clear activeRoute'
+    Complete-M1HumanAcceptanceTransition -State $routeState -TaskId 'P2T4' -ReviewVerdict 'CHANGES REQUIRED' -Reason 'Accepted.' -Deferrals @('Deferred item.') | Out-Null
+    Assert-True ([string]::IsNullOrWhiteSpace([string]$routeState.tasks[0].activeRoute)) 'valid human acceptance clears activeRoute'
+
+    $advanceState = New-TestState @(
+        (New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha),
+        (New-TestTask -Id 'P2T6' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $advance = Get-M1NextUnit -State $advanceState
+    Assert-True ($advance.RouteId -eq 'P2T6') 'completed task advances to the next task'
+
+    $runningState = New-TestState @((New-TestTask -Id 'P2T7' -Status 'RUNNING_LOCAL' -BackendSha $backend.Sha -FrontendSha $frontend.Sha))
+    $running = Get-M1NextUnit -State $runningState
+    Assert-True ($running.RouteId -eq 'P2T7' -and $running.IsRecovery) 'RUNNING_LOCAL resumes the same task from its checkpoint'
+
+    $missingState = New-TestState @((New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha ('f' * 40) -FrontendSha $frontend.Sha))
+    $missingFailed = $false
+    try { Test-M1RecordedShas -State $missingState -BackendPath $backend.Home -FrontendPath $frontend.Home -Branch $expectedBranch } catch { $missingFailed = ($_.Exception.Message -match 'missing|visible') }
+    Assert-True $missingFailed 'recorded SHA missing fails closed'
+
+    Set-Content -LiteralPath (Join-Path $backend.Home 'dirty.txt') -Value 'dirty' -NoNewline
+    $dirtyFailed = $false
+    try { Sync-M1Repository -Name 'Backend' -Path $backend.Home -ExpectedBranch $expectedBranch | Out-Null } catch { $dirtyFailed = ($_.Exception.Message -match 'dirty') }
+    Assert-True $dirtyFailed 'dirty repository fails closed'
+    Remove-Item -LiteralPath (Join-Path $backend.Home 'dirty.txt') -Force
+
+    Invoke-Git $backend.Home @('checkout', '-q', '-b', 'wrong-branch') | Out-Null
+    $branchFailed = $false
+    try { Sync-M1Repository -Name 'Backend' -Path $backend.Home -ExpectedBranch $expectedBranch | Out-Null } catch { $branchFailed = ($_.Exception.Message -match 'branch') }
+    Assert-True $branchFailed 'wrong branch fails closed'
+    Invoke-Git $backend.Home @('checkout', '-q', $expectedBranch) | Out-Null
+
+    Set-Content -LiteralPath (Join-Path $backend.Office 'remote.txt') -Value 'remote' -NoNewline
+    Invoke-Git $backend.Office @('add', '-A') | Out-Null
+    Invoke-Git $backend.Office @('commit', '-q', '-m', 'remote advance') | Out-Null
+    Invoke-Git $backend.Office @('push', '-q', 'origin', $expectedBranch) | Out-Null
+    $remoteSha = Invoke-Git $backend.Office @('rev-parse', 'HEAD')
+    $syncResult = Sync-M1Repository -Name 'Backend' -Path $backend.Home -ExpectedBranch $expectedBranch
+    Assert-True ($syncResult.FastForwarded -and (Invoke-Git $backend.Home @('rev-parse', 'HEAD')) -eq $remoteSha) 'clean behind repository permits ff-only recovery'
+
+    Set-Content -LiteralPath (Join-Path $backend.Home 'home.txt') -Value 'home' -NoNewline
+    Invoke-Git $backend.Home @('add', '-A') | Out-Null
+    Invoke-Git $backend.Home @('commit', '-q', '-m', 'home divergence') | Out-Null
+    Set-Content -LiteralPath (Join-Path $backend.Office 'office.txt') -Value 'office' -NoNewline
+    Invoke-Git $backend.Office @('add', '-A') | Out-Null
+    Invoke-Git $backend.Office @('commit', '-q', '-m', 'office divergence') | Out-Null
+    Invoke-Git $backend.Office @('push', '-q', 'origin', $expectedBranch) | Out-Null
+    $divergedFailed = $false
+    try { Sync-M1Repository -Name 'Backend' -Path $backend.Home -ExpectedBranch $expectedBranch | Out-Null } catch { $divergedFailed = ($_.Exception.Message -match 'diverg') }
+    Assert-True $divergedFailed 'divergence fails closed'
+
+    $powerState = New-TestState @(
+        (New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha $remoteSha -FrontendSha $frontend.Sha),
+        (New-TestTask -Id 'P2T6' -Status 'COMPLETE' -BackendSha $remoteSha -FrontendSha $frontend.Sha),
+        (New-TestTask -Id 'P2T7' -Status 'RUNNING_LOCAL' -BackendSha $remoteSha -FrontendSha $frontend.Sha),
+        (New-TestTask -Id 'P2T8' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $powerResume = Get-M1NextUnit -State $powerState
+    Assert-True ($powerResume.RouteId -eq 'P2T7' -and $powerResume.IsRecovery) 'Office-to-Home power failure resumes P2T7 only'
+
+    $now = [datetimeoffset]'2026-09-06T12:00:00+05:30'
+    $maxDeadline = Get-M1Deadline -Now $now -MaxMinutes 10
+    Assert-True (Test-M1ShouldSoftStop -Now $now -Deadline $maxDeadline -SafetyBufferMinutes 15) 'MaxMinutes inside safety buffer does not start the next unit'
+    $untilDeadline = Get-M1Deadline -Now $now -Until '12:10'
+    Assert-True (Test-M1ShouldSoftStop -Now $now -Deadline $untilDeadline -SafetyBufferMinutes 15) 'Until inside safety buffer does not start the next unit'
+
+    $clock = [pscustomobject]@{ Now = $now }
+    $executed = New-Object System.Collections.Generic.List[string]
+    $checkpointed = New-Object System.Collections.Generic.List[string]
+    $engineResult = Invoke-M1SequentialEngine -UnitIds @('P2T7', 'P2T8') -Deadline ($now.AddMinutes(20)) -SafetyBufferMinutes 15 `
+        -NowProvider { $clock.Now } `
+        -ExecuteUnit { param($unitId) $executed.Add($unitId); $clock.Now = $clock.Now.AddMinutes(25) } `
+        -CheckpointUnit { param($unitId) $checkpointed.Add($unitId) }
+    Assert-True (($executed -join ',') -eq 'P2T7' -and ($checkpointed -join ',') -eq 'P2T7' -and $engineResult.NextUnit -eq 'P2T8') 'current running unit is not hard-killed by a soft deadline'
+
+    $reviewPending = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $reviewPending.tasks[0].lastSuccessfulReviewVerdict = 'SAFE'
+    $reviewNext = Get-M1NextUnit -State $reviewPending
+    Assert-True ($reviewNext.RouteId -eq 'P2T4-REVIEW') 'P2T4 remains unresolved until review status and evidence are complete'
+
+    $seed = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $seedNext = Get-M1NextUnit -State $seed
+    Assert-True ($seedNext.RouteId -eq 'P2T5') 'seed state identifies P2T5 as next unresolved implementation unit'
+
+    $runBackend = Initialize-RemotePair -Root $tempRoot -Name 'run-backend'
+    $runFrontend = Initialize-RemotePair -Root $tempRoot -Name 'run-frontend'
+    $runStatePath = Join-Path $tempRoot 'run-state.json'
+    $runState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $runBackend.Sha -FrontendSha $runFrontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    Write-M1StateAtomic -State $runState -Path $runStatePath
+
+    $commonM1Args = @(
+        '-Task', 'M1-REMAINING', '-DryRun', '-TestMode',
+        '-StatePath', $runStatePath, '-RoutingPath', $routingPath,
+        '-BackendPath', $runBackend.Home, '-FrontendPath', $runFrontend.Home,
+        '-TestNow', '2026-09-06T12:00:00+05:30'
+    )
+    $maxStop = Invoke-SpaRun ($commonM1Args + @('-MaxMinutes', '10'))
+    Assert-True ($maxStop.Code -eq 0) 'M1-REMAINING MaxMinutes soft stop succeeds'
+    Assert-Match $maxStop.Output 'SOFT STOP\s+SAFETY BUFFER REACHED' 'MaxMinutes soft stop does not start the next unit'
+    Assert-Match $maxStop.Output '(?ms)^COMPLETED\s+NONE\r?$.*^LAST SAFE\s+.*\r?$.*^NEXT\s+P2T4-REVIEW\r?$.*^REMOTE\s+SYNCED\r?$.*^STOP REASON\s+TIME WINDOW\r?$.*^RESUME\s+spa-run M1-REMAINING\r?$' 'MaxMinutes soft stop prints the required session recovery fields'
+    Assert-FinalSessionSummary $maxStop.Output 'MaxMinutes soft stop prints exactly one session summary at the bottom'
+    $untilStop = Invoke-SpaRun ($commonM1Args + @('-Until', '12:10'))
+    Assert-True ($untilStop.Code -eq 0) 'M1-REMAINING Until soft stop succeeds'
+    Assert-Match $untilStop.Output 'SOFT STOP\s+SAFETY BUFFER REACHED' 'Until soft stop does not start the next unit'
+    $runBackendStatus = Invoke-Git $runBackend.Home @('status', '--porcelain=v1')
+    $runFrontendStatus = Invoke-Git $runFrontend.Home @('status', '--porcelain=v1')
+    $runBackendCounts = Invoke-Git $runBackend.Home @('rev-list', '--left-right', '--count', ('HEAD...origin/' + $expectedBranch))
+    $runFrontendCounts = Invoke-Git $runFrontend.Home @('rev-list', '--left-right', '--count', ('HEAD...origin/' + $expectedBranch))
+    Assert-True ([string]::IsNullOrWhiteSpace($runBackendStatus) -and [string]::IsNullOrWhiteSpace($runFrontendStatus) -and $runBackendCounts -match '^0\s+0$' -and $runFrontendCounts -match '^0\s+0$') 'simulated planned stop leaves both repositories clean and synchronized'
+
+    $codexShimDir = Join-Path $tempRoot 'codex-shim'
+    $tokenMarker = Join-Path $tempRoot 'MODEL_WAS_CALLED.txt'
+    New-Item -ItemType Directory -Path $codexShimDir -Force | Out-Null
+    @"
+@echo off
+echo called>"$tokenMarker"
+exit /b 99
+"@ | Set-Content -LiteralPath (Join-Path $codexShimDir 'codex.cmd') -Encoding ASCII
+    $secretSentinel = 'resume-secret-never-print'
+    $oldPath = $env:PATH
+    $oldSecret = $env:DEEPSEEK_API_KEY
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldPath
+    $env:DEEPSEEK_API_KEY = $secretSentinel
+    try {
+        $dryRun = Invoke-SpaRun @(
+            '-Task', 'M1-REMAINING', '-DryRun', '-TestMode',
+            '-StatePath', $runStatePath, '-RoutingPath', $routingPath,
+            '-BackendPath', $runBackend.Home, '-FrontendPath', $runFrontend.Home
+        )
+    }
+    finally {
+        $env:PATH = $oldPath
+        $env:DEEPSEEK_API_KEY = $oldSecret
+    }
+    Assert-True ($dryRun.Code -eq 0) 'M1-REMAINING dry-run succeeds on the verified current checkpoint'
+    Assert-Match $dryRun.Output 'NEXT\s+P2T4-REVIEW' 'M1-REMAINING dry-run identifies P2T4-REVIEW'
+    Assert-True (-not (Test-Path -LiteralPath $tokenMarker)) 'tests and dry-runs consume no model tokens'
+    Assert-True ($dryRun.Output.IndexOf($secretSentinel, [System.StringComparison]::Ordinal) -lt 0) 'dry-run prints no secrets'
+    Assert-Match $dryRun.Output '(?ms)^COMPLETED\s+NONE\r?$.*^NEXT\s+P2T4-REVIEW\r?$.*^REMOTE\s+SYNCED\r?$.*^STOP REASON\s+DRY RUN\r?$.*^RESUME\s+spa-run M1-REMAINING\r?$' 'M1-REMAINING dry-run prints the required session fields'
+    Assert-FinalSessionSummary $dryRun.Output 'M1-REMAINING dry-run prints exactly one session summary at the bottom'
+
+    $applyBackend = Initialize-RemotePair -Root $tempRoot -Name 'apply-backend'
+    $applyFrontend = Initialize-RemotePair -Root $tempRoot -Name 'apply-frontend'
+    $applyStatePath = Join-Path $applyFrontend.Home 'state.json'
+    $applyState = New-TestState @(
+        (New-TestTask -Id 'P2T4' -Status 'REVIEW_PENDING' -BackendSha $applyBackend.Sha -FrontendSha $applyFrontend.Sha -ReviewRequired $true -ReviewRoute 'P2T4-REVIEW'),
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $applyState.tasks[0].remediationCommitSha = $applyBackend.Sha
+    $applyState.repositories.backend.lastVerifiedSha = $applyBackend.Sha
+    $applyState.repositories.frontend.lastVerifiedSha = $applyFrontend.Sha
+    Write-M1StateAtomic -State $applyState -Path $applyStatePath
+    Invoke-Git $applyFrontend.Home @('add', '-A') | Out-Null
+    Invoke-Git $applyFrontend.Home @('commit', '-q', '-m', 'checkpoint state') | Out-Null
+    Invoke-Git $applyFrontend.Home @('push', '-q', 'origin', $expectedBranch) | Out-Null
+
+    $oldApplyPath = $env:PATH
+    $oldApplySecret = $env:DEEPSEEK_API_KEY
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldApplyPath
+    $env:DEEPSEEK_API_KEY = $secretSentinel
+    try {
+        $applyReview = Invoke-SpaRun @(
+            '-Task', 'P2T4', '-ApplyReview', '-ReviewVerdict', 'SAFE WITH NON-BLOCKING OBSERVATIONS', '-TestMode',
+            '-StatePath', $applyStatePath, '-BackendPath', $applyBackend.Home, '-FrontendPath', $applyFrontend.Home
+        )
+    }
+    finally {
+        $env:PATH = $oldApplyPath
+        $env:DEEPSEEK_API_KEY = $oldApplySecret
+    }
+    Assert-True ($applyReview.Code -eq 0) 'already-valid P2T4 review applies once through the generic transition'
+    Assert-Match $applyReview.Output 'STATE\s+COMPLETE' 'applied P2T4 review marks the task complete'
+    Assert-Match $applyReview.Output 'VERDICT\s+SAFE WITH NON-BLOCKING OBSERVATIONS' 'applied P2T4 review preserves the exact verdict'
+    Assert-Match $applyReview.Output 'NEXT\s+P2T5' 'applied P2T4 review exposes P2T5 as the next task'
+    Assert-Match $applyReview.Output 'TOKENS\s+NONE' 'applied P2T4 review consumes no model tokens'
+    Assert-True (-not (Test-Path -LiteralPath $tokenMarker)) 'apply-review does not invoke the reviewer CLI'
+
+    $appliedState = Read-M1State -Path $applyStatePath
+    Assert-True (([string]$appliedState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'applied P2T4 state is durable'
+    Assert-True ([string]$appliedState.tasks[0].lastSuccessfulReviewVerdict -eq 'SAFE WITH NON-BLOCKING OBSERVATIONS') 'applied P2T4 verdict is durable'
+
+    $oldAfterPath = $env:PATH
+    $oldAfterSecret = $env:DEEPSEEK_API_KEY
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldAfterPath
+    $env:DEEPSEEK_API_KEY = $secretSentinel
+    try {
+        $afterDryRun = Invoke-SpaRun @(
+            '-Task', 'M1-REMAINING', '-DryRun', '-TestMode',
+            '-StatePath', $applyStatePath, '-RoutingPath', $routingPath,
+            '-BackendPath', $applyBackend.Home, '-FrontendPath', $applyFrontend.Home
+        )
+    }
+    finally {
+        $env:PATH = $oldAfterPath
+        $env:DEEPSEEK_API_KEY = $oldAfterSecret
+    }
+
+    # REVIEW-only completion semantics: a self-referential milestone-review
+    # task (action: REVIEW, e.g. M1-FINAL-SOL/M1-FINAL-CLAUDE) has no
+    # IMPLEMENT stage, so COMPLETE must be reachable on review evidence alone
+    # -- without fabricating implementationSucceeded/testsSucceeded/
+    # relevantCommitsPushed -- while IMPLEMENT tasks keep the full,
+    # unchanged requirement.
+    $reviewOnlyAcceptedState = New-TestState @(
+        (New-TestTask -Id 'M1-FINAL-TEST' -Status 'REVIEW_PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'M1-FINAL-TEST' -Action 'REVIEW')
+    )
+    Complete-M1ReviewTransition -State $reviewOnlyAcceptedState -TaskId 'M1-FINAL-TEST' -ReviewRoute 'M1-FINAL-TEST' -Verdict 'SAFE WITH NON-BLOCKING OBSERVATIONS' `
+        -ReviewerProvider 'openai' -ReviewerModel 'gpt-5.6-sol' `
+        -BackendHead $backend.Sha -FrontendHead $frontend.Sha -ReviewedCommitSha $backend.Sha | Out-Null
+    Assert-True (([string]$reviewOnlyAcceptedState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'REVIEW-only task with a successful review completes (test 1)'
+    Assert-True (-not [bool]$reviewOnlyAcceptedState.tasks[0].evidence.implementationSucceeded) 'REVIEW-only completion does not fabricate implementationSucceeded'
+    Assert-True (-not [bool]$reviewOnlyAcceptedState.tasks[0].evidence.testsSucceeded) 'REVIEW-only completion does not fabricate testsSucceeded'
+    Assert-True (-not [bool]$reviewOnlyAcceptedState.tasks[0].evidence.relevantCommitsPushed) 'REVIEW-only completion does not fabricate relevantCommitsPushed'
+    $reviewOnlyAcceptedValid = $true
+    try { Assert-M1State -State $reviewOnlyAcceptedState | Out-Null } catch { $reviewOnlyAcceptedValid = $false }
+    Assert-True $reviewOnlyAcceptedValid 'REVIEW-only COMPLETE task with a successful review is a valid state (test 1)'
+
+    $reviewOnlyUnsuccessfulState = New-TestState @(
+        (New-TestTask -Id 'M1-FINAL-TEST' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -ReviewRequired $true -ReviewRoute 'M1-FINAL-TEST' -Action 'REVIEW')
+    )
+    $reviewOnlyUnsuccessfulState.tasks[0].evidence.reviewSucceeded = $false
+    $reviewOnlyUnsuccessfulFailed = $false
+    try { Assert-M1State -State $reviewOnlyUnsuccessfulState | Out-Null } catch { $reviewOnlyUnsuccessfulFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $reviewOnlyUnsuccessfulFailed 'REVIEW-only COMPLETE task without a successful review still fails closed (test 2)'
+
+    $implementIncompleteState = New-TestState @((New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha))
+    $implementIncompleteState.tasks[0].evidence.implementationSucceeded = $false
+    $implementIncompleteFailed = $false
+    try { Assert-M1State -State $implementIncompleteState | Out-Null } catch { $implementIncompleteFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $implementIncompleteFailed 'IMPLEMENT task COMPLETE without implementationSucceeded still fails closed (test 3)'
+
+    $implementNoTestsState = New-TestState @((New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha))
+    $implementNoTestsState.tasks[0].evidence.testsSucceeded = $false
+    $implementNoTestsFailed = $false
+    try { Assert-M1State -State $implementNoTestsState | Out-Null } catch { $implementNoTestsFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $implementNoTestsFailed 'IMPLEMENT task COMPLETE without testsSucceeded still fails closed (test 3)'
+
+    $implementNoPushState = New-TestState @((New-TestTask -Id 'P2T5' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha))
+    $implementNoPushState.tasks[0].evidence.relevantCommitsPushed = $false
+    $implementNoPushFailed = $false
+    try { Assert-M1State -State $implementNoPushState | Out-Null } catch { $implementNoPushFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $implementNoPushFailed 'IMPLEMENT task COMPLETE without relevantCommitsPushed still fails closed (test 3)'
+    Assert-Match $afterDryRun.Output 'NEXT\s+P2T5' 'M1 dry-run identifies P2T5 after P2T4 is applied'
+    Assert-True (-not (Test-Path -LiteralPath $tokenMarker)) 'post-apply M1 dry-run consumes no model tokens'
+
+    # HUMAN_GATE completion semantics: the original M1 design requires an
+    # explicit, non-bypassable human approval to close a HUMAN_GATE task
+    # (e.g. M1-FINAL-CLAUDE) -- no automated/model review can substitute.
+    $humanGateUnapprovedState = New-TestState @(
+        (New-TestTask -Id 'M1-GATE-TEST' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Action 'HUMAN_GATE')
+    )
+    $humanGateUnapprovedFailed = $false
+    try { Assert-M1State -State $humanGateUnapprovedState | Out-Null } catch { $humanGateUnapprovedFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $humanGateUnapprovedFailed 'HUMAN_GATE cannot COMPLETE without explicit human approval'
+
+    $humanGateReviewSubstituteState = New-TestState @(
+        (New-TestTask -Id 'M1-GATE-TEST' -Status 'COMPLETE' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Action 'HUMAN_GATE')
+    )
+    $humanGateReviewSubstituteState.tasks[0].evidence.reviewSucceeded = $true
+    $humanGateReviewSubstituteFailed = $false
+    try { Assert-M1State -State $humanGateReviewSubstituteState | Out-Null } catch { $humanGateReviewSubstituteFailed = ($_.Exception.Message -match 'required objective evidence') }
+    Assert-True $humanGateReviewSubstituteFailed 'automated/model review evidence cannot substitute for HUMAN_GATE approval'
+
+    $humanGateApprovedState = New-TestState @(
+        (New-TestTask -Id 'M1-GATE-TEST' -Status 'PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Action 'HUMAN_GATE')
+    )
+    Complete-M1HumanGateTransition -State $humanGateApprovedState -TaskId 'M1-GATE-TEST' -Reason 'All P1-P5 tasks and the independent M1-FINAL-SOL review are complete; I approve the M1 release.' | Out-Null
+    Assert-True (([string]$humanGateApprovedState.tasks[0].status).Equals('COMPLETE', [System.StringComparison]::OrdinalIgnoreCase)) 'explicit human approval completes a HUMAN_GATE task'
+    Assert-True ([bool]$humanGateApprovedState.tasks[0].humanGateApproved) 'human gate approval records the approval flag'
+    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$humanGateApprovedState.tasks[0].humanGateApprovalReason)) 'human gate approval records the reason'
+    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$humanGateApprovedState.tasks[0].humanGateApprovedAtUtc)) 'human gate approval records an approval timestamp'
+    Assert-True ([string]::IsNullOrWhiteSpace([string]$humanGateApprovedState.tasks[0].activeRoute)) 'human gate approval clears activeRoute'
+    Assert-True (-not [bool]$humanGateApprovedState.tasks[0].evidence.implementationSucceeded) 'human gate approval does not fabricate implementationSucceeded'
+    Assert-True (-not [bool]$humanGateApprovedState.tasks[0].evidence.testsSucceeded) 'human gate approval does not fabricate testsSucceeded'
+    Assert-True (-not [bool]$humanGateApprovedState.tasks[0].evidence.reviewSucceeded) 'human gate approval does not fabricate reviewSucceeded'
+    $humanGateApprovedValid = $true
+    try { Assert-M1State -State $humanGateApprovedState | Out-Null } catch { $humanGateApprovedValid = $false }
+    Assert-True $humanGateApprovedValid 'human-approved HUMAN_GATE task is a valid COMPLETE state'
+
+    $humanGateWrongActionState = New-TestState @(
+        (New-TestTask -Id 'P2T5' -Status 'PENDING' -BackendSha $null -FrontendSha $null)
+    )
+    $humanGateWrongActionFailed = $false
+    try { Complete-M1HumanGateTransition -State $humanGateWrongActionState -TaskId 'P2T5' -Reason 'Approved.' | Out-Null } catch { $humanGateWrongActionFailed = ($_.Exception.Message -match 'requires a HUMAN_GATE task') }
+    Assert-True $humanGateWrongActionFailed 'human gate approval refuses a non-HUMAN_GATE task'
+
+    $humanGateNoReasonState = New-TestState @(
+        (New-TestTask -Id 'M1-GATE-TEST' -Status 'PENDING' -BackendSha $backend.Sha -FrontendSha $frontend.Sha -Action 'HUMAN_GATE')
+    )
+    $humanGateNoReasonFailed = $false
+    try { Complete-M1HumanGateTransition -State $humanGateNoReasonState -TaskId 'M1-GATE-TEST' -Reason '   ' | Out-Null } catch { $humanGateNoReasonFailed = ($_.Exception.Message -match 'approval reason') }
+    Assert-True $humanGateNoReasonFailed 'human gate approval without a reason is rejected'
+
+    # End-to-end CLI proof: the same -ApproveHumanGate/-ApprovalReason path
+    # the operator will actually run, dispatching no model.
+    $gateBackend = Initialize-RemotePair -Root $tempRoot -Name 'gate-backend'
+    $gateFrontend = Initialize-RemotePair -Root $tempRoot -Name 'gate-frontend'
+    $gateStatePath = Join-Path $gateFrontend.Home 'state.json'
+    $gateState = New-TestState @(
+        (New-TestTask -Id 'M1-GATE-TEST' -Status 'PENDING' -BackendSha $gateBackend.Sha -FrontendSha $gateFrontend.Sha -Action 'HUMAN_GATE')
+    )
+    $gateState.repositories.backend.lastVerifiedSha = $gateBackend.Sha
+    $gateState.repositories.frontend.lastVerifiedSha = $gateFrontend.Sha
+    Write-M1StateAtomic -State $gateState -Path $gateStatePath
+    Invoke-Git $gateFrontend.Home @('add', '-A') | Out-Null
+    Invoke-Git $gateFrontend.Home @('commit', '-q', '-m', 'checkpoint state') | Out-Null
+    Invoke-Git $gateFrontend.Home @('push', '-q', 'origin', $expectedBranch) | Out-Null
+
+    $oldGatePath = $env:PATH
+    $oldGateSecret = $env:DEEPSEEK_API_KEY
+    $env:PATH = $codexShimDir + [System.IO.Path]::PathSeparator + $oldGatePath
+    $env:DEEPSEEK_API_KEY = $secretSentinel
+    try {
+        $gateApproval = Invoke-SpaRun @(
+            '-Task', 'M1-GATE-TEST', '-ApproveHumanGate', '-ApprovalReason', 'I have reviewed the complete M1 evidence and approve the release.', '-TestMode',
+            '-StatePath', $gateStatePath, '-BackendPath', $gateBackend.Home, '-FrontendPath', $gateFrontend.Home
+        )
+    }
+    finally {
+        $env:PATH = $oldGatePath
+        $env:DEEPSEEK_API_KEY = $oldGateSecret
+    }
+    Assert-True ($gateApproval.Code -eq 0) 'human gate approval applies once through the CLI'
+    Assert-Match $gateApproval.Output 'STATE\s+COMPLETE' 'CLI-applied human gate approval marks the task complete'
+    Assert-Match $gateApproval.Output 'TOKENS\s+NONE' 'CLI-applied human gate approval consumes no model tokens'
+    Assert-True (-not (Test-Path -LiteralPath $tokenMarker)) 'human gate approval does not invoke any model CLI'
+}
+finally {
+    if (Test-Path -LiteralPath $tempRoot) {
+        Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Write-Host ''
+if ($failures.Count -eq 0) {
+    Write-Host 'GREEN: all SPA resumability tests passed.'
+    exit 0
+}
+
+Write-Host "RED: $($failures.Count) SPA resumability test(s) failed."
+$failures | ForEach-Object { Write-Host " - $_" }
+exit 1

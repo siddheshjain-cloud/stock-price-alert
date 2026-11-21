@@ -1,0 +1,330 @@
+SPA DEVELOPMENT TOOLING — IMPLEMENT MINIMAL `spa-run` ORCHESTRATOR
+IMPLEMENTATION MODEL: GPT-5.6 SOL
+REASONING: HIGH
+
+ROLE
+Implement the already-approved minimal SPA task runner in the frontend/docs repository.
+This is development tooling only. Do not modify SPA product behavior, backend research models, migrations, APIs, frontend application code, deployment configuration, secrets, or live systems.
+
+REPOSITORIES
+Tooling repo:
+C:\GitHub\stock-price-alert
+
+Backend repo:
+C:\GitHub\backendtest
+
+ACTIVE BRANCH
+feature/investment-operating-system-m1
+
+PURPOSE
+Replace manual provider/model switching and repeated task boilerplate with one deterministic command:
+
+    spa-run <TASK-ID>
+
+The runner must:
+1. map a task ID to the predefined implementation/review model,
+2. select/use the correct provider/model/reasoning without asking the user to remember routing,
+3. run the existing SPA preflight,
+4. fail closed if actual model/provider/reasoning do not match,
+5. load the correct task/review prompt or governing plan reference,
+6. invoke the task,
+7. report the result clearly,
+8. never silently proceed under the wrong model.
+
+THIS IS PHASE 1 ONLY
+Do NOT build the full M1 autonomous orchestrator yet.
+Do NOT build resume/checkpoint state yet.
+Do NOT auto-chain all remaining tasks yet.
+First prove single-task deterministic routing.
+
+============================================================
+APPROVED DESIGN
+============================================================
+
+Keep the implementation small.
+
+Target files:
+- dev-tools\spa-run.ps1
+- dev-tools\m1-model-routing.psd1
+- modify dev-tools\spa-check.ps1 only if a tiny compatibility improvement is genuinely needed
+- focused tooling tests if a suitable existing pattern exists
+
+Do not create a database, GUI, daemon, scheduler, service, or large framework.
+
+The user-facing command should be approximately:
+
+    & C:\GitHub\stock-price-alert\dev-tools\spa-run.ps1 -Task P2T4-REVIEW
+
+Future usage should support task IDs such as:
+- P2T4-REVIEW
+- P2T5
+- P2T6
+- P2T9
+- P3T6
+- P4T8-REVIEW
+- M1-FINAL-CLAUDE
+
+But Phase 1 only needs enough routing infrastructure to make the current P2T4-REVIEW real and to make adding later entries trivial.
+
+============================================================
+CURRENT IMMEDIATE ROUTE
+============================================================
+
+P2T4-REVIEW:
+- PURPOSE: independent review of Task 4 remediation commit
+- IMPLEMENTER OF REMEDIATION: GPT-5.6 Sol High
+- INDEPENDENT REVIEWER MUST THEREFORE BE DIFFERENT
+- REVIEW MODEL: DeepSeek V4-Pro
+- PROVIDER: deepseek
+- REASONING: high
+- SANDBOX: read-only for repository, but tests must have a writable temp location if possible
+- REPO: C:\GitHub\backendtest
+- BASE TASK4 IMPLEMENTATION COMMIT:
+  0ed2831a7d64a8bf70d72f9ef7d1e8b4bbe69b79
+- REMEDIATION COMMIT:
+  6c417294e5a060346c2294666a10a4cff610ee82
+- REVIEW SCOPE:
+  exact Task 4 implementation plus remediation; ignore unrelated later hygiene/tooling commits
+- FINAL REVIEW VERDICT:
+  SAFE
+  SAFE WITH NON-BLOCKING OBSERVATIONS
+  CHANGES REQUIRED
+
+Do not formally close Task 4 automatically in Phase 1.
+The runner should only execute and report the review.
+
+============================================================
+FROZEN M1 MODEL ROUTING
+============================================================
+
+Encode the agreed routing table in m1-model-routing.psd1 so the user never has to remember it.
+
+Implementation routes:
+
+PLAN 1
+P1T1 Flash High
+P1T2 Flash High
+P1T3 Flash High
+P1T4 Flash High
+P1T5 Pro High
+P1T6 Pro High
+
+PLAN 2
+P2T1 Flash High
+P2T2 Flash High
+P2T3 Flash High
+P2T4 Pro High
+P2T5 Flash High
+P2T6 Flash High
+P2T7 Flash High
+P2T8 Flash High
+P2T9 Pro High
+
+PLAN 3
+P3T1 Flash High
+P3T2 Flash High
+P3T3 Flash High
+P3T4 Flash High
+P3T5 Flash High
+P3T6 Pro High
+
+PLAN 4
+P4T1 Flash High
+P4T2 Flash High
+P4T3 Flash High
+P4T4 Pro High
+P4T5 Pro High
+P4T6 Pro High
+P4T7 Pro High
+P4T8 Flash High
+
+PLAN 5
+P5T1 Pro High
+P5T2 Flash High
+P5T3 Flash High
+P5T4 Flash High
+P5T5 Pro High
+P5T6 Pro High
+P5T7 Flash High
+P5T8 Pro High
+
+Independent review gates:
+- P2T4-REVIEW: DeepSeek Pro High because Sol implemented remediation
+- P2T9-REVIEW: Sol High unless Sol implemented the task; then choose DeepSeek Pro/Claude
+- P3T6-REVIEW: Sol High unless same-model conflict
+- P4-FINAL-REVIEW: Sol High unless same-model conflict
+- P5T1-REVIEW: Sol High unless same-model conflict
+- M1-FINAL-SOL: Sol High
+- M1-FINAL-CLAUDE: Claude Opus High
+
+IMPORTANT:
+The routing data must distinguish IMPLEMENT vs REVIEW.
+Never let the same model/provider both implement and independently certify the same remediation when a different reviewer is available.
+
+============================================================
+MODEL / PROVIDER SELECTION
+============================================================
+
+Do not guess command-line flags.
+
+FIRST inspect the actual installed tooling:
+- codex --help
+- codex version
+- current ~/.codex/config.toml or equivalent
+- existing dev-tools spa-check implementation
+- any existing DeepSeek configuration/profile mechanism
+- whether `claude` CLI exists and `claude --help` if present
+
+Prefer deterministic per-run model/provider selection over repeatedly rewriting global config.
+
+If Codex supports:
+- per-run model selection,
+- provider override,
+- CODEX_HOME/profile isolation,
+use the narrowest reliable mechanism.
+
+Do NOT:
+- embed API keys/secrets
+- print secrets
+- copy credentials into the repo
+- modify unrelated global user configuration permanently unless no safer method exists
+- use the DeepSeek installer interactively from spa-run if a deterministic noninteractive configuration already exists
+
+If current tooling cannot safely and deterministically switch one of the providers, FAIL CLOSED with a precise message instead of pretending it selected the right model.
+
+Claude support may be recorded in routing now, but if the installed Claude CLI cannot be validated during this task, leave that route as explicitly NOT YET ENABLED rather than faking support.
+
+============================================================
+PREFLIGHT
+============================================================
+
+Reuse existing:
+C:\GitHub\stock-price-alert\dev-tools\spa-check.ps1
+
+The runner should verify at minimum:
+- target repository
+- correct branch
+- clean worktree
+- local/remote sync
+- backend dependency fingerprint when backend is target
+- actual model
+- provider
+- reasoning
+- READY YES
+
+The runner must fail if expected and actual routing differ.
+
+Before task execution print a concise decision block such as:
+
+SPA TASK RUNNER
+TASK       P2T4-REVIEW
+ACTION     REVIEW
+REPO       backendtest
+MODEL      deepseek-v4-pro
+PROVIDER   deepseek
+REASONING  high
+SANDBOX    read-only
+READY      YES
+
+Starting...
+
+============================================================
+PROMPT RESOLUTION
+============================================================
+
+For P2T4-REVIEW, create or reuse one prompt file under dev-tools/prompts or another small deterministic tooling path.
+
+The review prompt must instruct the reviewer to:
+- inspect the exact Task 4 implementation and remediation
+- verify the three previously confirmed defects are fixed:
+  1. ORM immutability
+  2. transaction/session cleanup
+  3. constraint-specific IntegrityError translation
+- inspect concurrency safety and explicitly distinguish:
+  locally proven uniqueness behavior
+  from deployment-dialect-dependent FOR UPDATE semantics
+- run tests if the sandbox permits writable temp storage
+- if test execution is blocked by sandbox/temp constraints, report NOT PROVEN rather than pretending pass
+- inspect efficiency/complexity as well as correctness
+- make no edits
+- make no commits/pushes
+- output one of:
+  SAFE
+  SAFE WITH NON-BLOCKING OBSERVATIONS
+  CHANGES REQUIRED
+
+The runner must not auto-accept prose alone as proof.
+Phase 1 only reports the review result.
+
+============================================================
+TESTING
+============================================================
+
+Use TDD for spa-run behavior.
+
+At minimum test or otherwise deterministically verify:
+1. known task ID resolves expected route
+2. unknown task ID fails closed
+3. expected model mismatch fails closed
+4. dirty worktree fails closed
+5. wrong branch fails closed
+6. missing prompt fails closed
+7. no secrets are written to repo
+8. command construction is displayed or inspectable without executing where practical
+9. P2T4-REVIEW resolves to DeepSeek Pro High
+10. same-model implementation/reviewer conflict cannot silently pass if routing metadata contains implementer information
+
+Do not overbuild a PowerShell test framework if none exists; focused deterministic self-tests are acceptable if simpler.
+
+============================================================
+SAFETY
+============================================================
+
+- No active/deployment database.
+- No migrations.
+- No Kite.
+- No Telegram.
+- No websocket/live trading.
+- No production deployment.
+- No secrets changes.
+- No permissions/ACL changes.
+- No main/master.
+- Preserve unrelated work.
+- No git reset/clean/discard.
+- No broad refactor.
+
+============================================================
+VERIFICATION
+============================================================
+
+Before completion:
+- run focused tooling tests/checks
+- run existing spa-check
+- run git diff --check
+- verify worktree only contains intended tooling changes
+- inspect generated routing file for secrets
+- if practical, run spa-run in DRY-RUN mode for P2T4-REVIEW and show the resolved route without consuming model tokens
+- do not execute the actual expensive P2T4 review as part of implementation unless explicitly required for validation
+
+============================================================
+COMMIT / PUSH
+============================================================
+
+If green:
+Commit:
+chore: add deterministic SPA task runner
+
+Push feature/investment-operating-system-m1.
+
+Report:
+- exact files changed
+- routing mechanism chosen
+- how provider/model isolation works
+- what is supported now
+- what is deliberately deferred
+- test/check evidence
+- commit SHA
+- whether P2T4-REVIEW is ready to run through spa-run
+
+Do not start P2T5.
+Do not declare Task 4 closed.

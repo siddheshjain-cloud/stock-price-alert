@@ -1,0 +1,27 @@
+Perform an independent, read-only, whole-milestone review of SPA Investment Operating System Milestone 1 (Plans 1-5, all tasks) in C:\GitHub\backendtest. This is the final release gate for the entire milestone, not a re-review of any single task -- every task in every plan has already individually passed its own required review.
+
+Read the governing index document first: C:\GitHub\stock-price-alert\docs\superpowers\plans\2026-09-04-investment-operating-system-milestone-1-index.md. Verify the "Global release conditions" section holds across the whole codebase, not just within any one plan's own files:
+- The approved specification file is unchanged during implementation planning and execution unless a separately approved design change is requested.
+- No frontend application file is part of Milestone 1.
+- No migration alters a legacy table (user, ticker, trade, tag, telegram_verification, trade_tags).
+- Research code does not enter Kite, websocket, ticker update, trade evaluation, alert, Telegram, or authentication paths.
+- Free users receive no premium values; stale JWT tier claims have no authority.
+- Premium/admin research access does not grant document redistribution rights.
+- Restricted/private documents and derived values cannot leak through fields, snippets, hashes, counts, ranges, aggregates, or existence-sensitive errors.
+- storage_key is never exposed.
+- No file ingestion, PDF processing, automated discovery, institutional analysis/consensus, forecast/valuation engine, SOTP component model, billing, or frontend research feature is implemented.
+
+Also verify each plan's own completion gate from the index's table is actually met, not merely asserted: Plan 1 (repository/baseline gate), Plan 2 (domain tests, legacy regression, revision transaction/concurrency rules), Plan 3 (entitlement/security-matrix correctness), Plan 4 (rights and deduplication suites, no leakage, atomic rollback), Plan 5 (full pytest run, both migration upgrade paths, only new tables added, no out-of-scope endpoint/model/legacy change).
+
+Specifically confirm the Plan 5 Task 1 migration amendment is properly authorized and consistent, not a defect: the additive revision creates exactly the 20-table set in migrations/m1_table_inventory.py (Task 1's original frozen 18 plus document_content and document_storage_location), and this is documented as a human-authorized, dated superseding change in both the plan file (the "Approved amendment (2026-09-25)" note under Plan 5 Task 1 Step 2) and the migration's own docstring -- not an unexplained scope expansion.
+
+Read the five plan documents in docs/superpowers/plans/ (2026-09-04-investment-operating-system-m1-foundation-test-migration.md, -core-research-domain.md, -entitlement-query-projection.md, -document-library-rights-deduplication.md, -api-seed-regression.md) as needed to check specific task-level claims, but focus your effort on cross-plan coherence and the global conditions above -- do not re-litigate individual tasks' already-reviewed implementation details unless you find something that actually violates a global condition or a plan's completion gate.
+
+Run the full backend test suite and the full migration suite if this read-only sandbox permits writable temporary storage; report NOT PROVEN with the specific blocking evidence if not, and note any equivalent independent verification you were able to perform instead. A sandbox's inability to execute the official test runner is an environment limitation to disclose, not by itself a defect to report as CHANGES REQUIRED -- reserve CHANGES REQUIRED for an actual defect you identify in the code, tests, or migration behavior.
+
+Make no edits, commits, or pushes. Do not close M1-FINAL-SOL.
+
+End with exactly one review verdict on its own line:
+SAFE
+SAFE WITH NON-BLOCKING OBSERVATIONS
+CHANGES REQUIRED

@@ -1,0 +1,229 @@
+EXTEND EXISTING SPA-RUN WITH SAFE CROSS-PC RESUME — DELTA ONLY
+
+MODEL: GPT-5.6 Sol
+REASONING: High
+
+REPOSITORY
+C:\GitHub\stock-price-alert
+
+SIBLING BACKEND
+C:\GitHub\backendtest
+
+BRANCH
+feature/investment-operating-system-m1
+
+IMPORTANT CURRENT STATE
+The first deterministic `spa-run` foundation is already implemented, committed, pushed, and dry-run verified.
+Current tooling commit short SHA observed: 0fe92b9
+Do NOT rebuild or replace working model-routing/provider-selection behavior.
+
+Existing dry-run proof:
+P2T4-REVIEW
+ACTION     REVIEW
+REPO       backendtest
+MODEL      deepseek-v4-pro
+PROVIDER   deepseek
+REASONING  high
+SANDBOX    read-only
+READY      NOT CHECKED (DRY RUN)
+
+The repo also contains the approved plan:
+docs/superpowers/plans/2026-09-06-spa-run-resumable-m1-orchestrator.md
+
+Read first:
+- AGENTS.md if present
+- existing dev-tools/spa-run.ps1
+- existing dev-tools/m1-model-routing.psd1
+- existing dev-tools/spa-check.ps1
+- existing dev-tools/tests/*
+- docs/superpowers/plans/2026-09-06-spa-run-resumable-m1-orchestrator.md
+
+PURPOSE
+Add only the missing resumability/orchestration layer to the already-working spa-run foundation.
+
+DO NOT
+- rewrite working provider/model routing
+- add dashboards/UI/cloud/WIP branches
+- execute real M1 product tasks
+- execute the real P2T4 review while implementing this tooling
+- touch backend product code, migrations, APIs, live systems, secrets, permissions, main/master
+- use destructive git reset/clean/discard
+
+============================================================
+REQUIRED NEW CAPABILITIES
+============================================================
+
+1. DURABLE M1 STATE
+Create a small machine-readable tracked state file under:
+dev-tools/state/m1-state.json
+
+Statuses may include:
+PENDING
+RUNNING_LOCAL
+IMPLEMENTED
+REVIEW_PENDING
+REMEDIATION_REQUIRED
+COMPLETE
+
+A task becomes COMPLETE only after objective evidence:
+- required implementation succeeded
+- required tests/regressions succeeded
+- required review gate succeeded
+- relevant commit(s) pushed
+- checkpoint state pushed
+
+RUNNING_LOCAL is never durable completion.
+
+State writes must be atomic.
+
+2. GITHUB AS CROSS-PC CHECKPOINT
+On startup of M1-REMAINING:
+- require correct branch
+- require clean worktrees
+- fetch both repos
+- if remote is ahead and local has no divergence, fast-forward only
+- if local ahead/diverged/dirty unexpectedly, fail closed
+- validate recorded completed SHAs exist
+- find first task not COMPLETE
+
+Never use destructive recovery.
+
+3. POWER-FAILURE RECOVERY
+Required scenario:
+
+Office:
+P2T5 COMPLETE and pushed
+P2T6 COMPLETE and pushed
+P2T7 RUNNING_LOCAL
+power fails
+
+Home:
+spa-run M1-REMAINING
+
+Expected:
+- fetch / ff-only pull clean repos
+- P2T5/P2T6 remain complete
+- P2T7 is first unfinished task
+- restart P2T7 from last verified Git checkpoint
+- do not rerun completed tasks
+- do not infer completion from stale RUNNING_LOCAL prose/state
+
+4. PLANNED SOFT STOP
+Support:
+spa-run M1-REMAINING -MaxMinutes 120
+spa-run M1-REMAINING -Until "18:30"
+
+Default safety buffer: 15 minutes.
+
+Before starting each new unit:
+- if remaining time is inside safety buffer, stop cleanly
+- report last verified checkpoint and next task
+- leave repos clean/synced
+
+If a unit is already running, do not kill it merely because soft time expires.
+Finish current safe unit, checkpoint, then stop.
+
+5. M1-REMAINING SEQUENTIAL MODE
+Add:
+spa-run M1-REMAINING
+spa-run M1-REMAINING -DryRun
+
+Sequential only. Do not parallelize dependent tasks.
+
+For each unit:
+- resolve frozen route
+- preflight
+- implement/review/remediate as required
+- required verification
+- commit/push
+- update durable state
+- next unit
+
+Hard-stop for human attention:
+- frozen spec/architecture conflict
+- unknown route
+- unexplained test failure
+- repeated remediation failure after 2 attempts
+- deployment/active DB boundary
+- production/secrets/permissions/broker/capital actions
+- unavailable required model/provider
+- final M1 release human gate
+
+6. CURRENT M1 STATE SEED
+Verify before writing:
+- Plan 1 complete
+- Plan 2 Tasks 1-3 complete
+- P2T4 remediation commit exists:
+  6c417294e5a060346c2294666a10a4cff610ee82
+- P2T4 independent re-certification still pending
+- P2T5 onward pending
+
+Therefore:
+spa-run M1-REMAINING -DryRun
+must identify P2T4-REVIEW as the next unresolved gate.
+
+Do NOT declare P2T4 complete until the independent review actually runs and passes.
+
+============================================================
+TDD / TESTS
+============================================================
+
+First inspect existing test style and extend it.
+
+RED then GREEN for at least:
+
+- state atomic write/read
+- malformed state fails closed
+- completed task advances to next
+- RUNNING_LOCAL resumes same task
+- recorded SHA missing fails closed
+- dirty repo fails closed
+- wrong branch fails closed
+- divergence fails closed
+- clean behind repo permits ff-only recovery
+- Office→Home simulated power failure resumes P2T7
+- MaxMinutes inside safety buffer does not start next unit
+- Until inside safety buffer does not start next unit
+- current running unit is not hard-killed by soft deadline
+- P2T4 remains unresolved until independent review verdict exists
+- M1-REMAINING dry-run identifies P2T4-REVIEW
+- no actual model tokens consumed by tests/dry-runs
+- no secrets written or printed
+
+Use fake/temp git repos for recovery tests where practical.
+Do not touch live/deployment systems.
+
+============================================================
+VERIFICATION
+============================================================
+
+Before completion:
+
+1. all existing spa-run tests still pass
+2. all new resumability tests pass
+3. existing spa-check still works
+4. `spa-run P2T4-REVIEW -DryRun` still resolves:
+   deepseek-v4-pro / deepseek / high / REVIEW
+5. `spa-run M1-REMAINING -DryRun` says next unresolved gate is P2T4-REVIEW
+6. simulated power failure resumes unfinished task only
+7. simulated planned stop leaves clean verified checkpoint
+8. git diff --check
+9. secret scan of changed tooling files
+10. commit and push
+11. final worktree clean and local/remote divergence 0/0
+
+COMMIT
+chore: add resumable SPA M1 orchestration
+
+FINAL REPORT
+- exact files changed
+- what existing spa-run behavior was preserved
+- state/checkpoint format
+- Office→Home recovery behavior
+- MaxMinutes/Until behavior
+- tests/dry-run results
+- commit SHA/push result
+- whether first real P2T4-REVIEW is ready
+
+Do not run P2T4-REVIEW for real.
+Do not start P2T5.

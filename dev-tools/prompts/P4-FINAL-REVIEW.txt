@@ -1,0 +1,14 @@
+Perform an independent, read-only review of SPA Milestone 1 Plan 4 (Document Library, Rights, and Deduplication) as a whole in C:\GitHub\backendtest — all 8 tasks, not P4T8 alone.
+
+Verify Plan 4's stated acceptance criteria are met: rights and deduplication test suites pass; no private data, counts, or storage keys leak to an unentitled caller through any document/institution surface; aggregate and audit transactions roll back completely on conflict. Also verify: Document/Institution/DocumentCompanyLink/InstitutionalReportMetadata/DocumentAuditEvent models, the disclosure Document FK, rights enforcement, metadata-fingerprint deduplication, and atomic create/link/update/query services are all present and coherent as a single body of work — not just individually-passing tasks.
+
+Inspect relevant Plan 4 code, tests, and the governing plan document (docs/superpowers/plans/2026-09-04-investment-operating-system-m1-document-library-rights-deduplication.md). Ignore unrelated later hygiene or tooling changes.
+
+Run focused and relevant tests if this read-only sandbox permits writable temporary storage; report NOT PROVEN with blocking evidence if not.
+
+Make no edits, commits, or pushes. Do not close P4-FINAL-REVIEW.
+
+End with exactly one review verdict on its own line:
+SAFE
+SAFE WITH NON-BLOCKING OBSERVATIONS
+CHANGES REQUIRED

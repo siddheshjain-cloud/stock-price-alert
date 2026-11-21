@@ -1,0 +1,128 @@
+SPA M1 — INDEPENDENT REVIEW
+PLAN 2 TASK 4: NARRATIVE RESEARCH REVISIONS + CONCURRENCY
+
+ROLE
+Act as an independent senior backend reviewer. This is a READ-ONLY review.
+Do not modify files, commit, push, install packages, change configuration, or run any active/live database action.
+
+REPOSITORY
+C:\GitHub\backendtest
+
+BRANCH
+feature/investment-operating-system-m1
+
+REVIEW RANGE
+Base commit:
+1bc32cfc49f00036946e044c2c386330b0919704
+
+Task 4 implementation commit:
+0ed2831a7d64a8bf70d72f9ef7d1e8b4bbe69b79
+
+Review exactly the Task 4 delta between those commits.
+Later hygiene/tooling commits are outside the review scope.
+
+PLAN / REQUIREMENTS
+Use the frozen Plan 2 Task 4 requirements from:
+C:\GitHub\stock-price-alert\docs\superpowers\plans\2026-09-04-investment-operating-system-m1-core-research-domain.md
+
+Governing specification:
+C:\GitHub\stock-price-alert\docs\superpowers\specs\2026-09-04-investment-operating-system-milestone-1-design.md
+
+TASK 4 CONTRACT TO VERIFY
+
+ResearchRevision:
+- immutable append-only revision stream
+- first revision_number = 1
+- first revision has no supersedes/base revision
+- subsequent revisions require the caller's base revision to equal the current revision
+- current revision is highest revision_number
+- stale base raises exactly:
+  ResearchConflictError("revision_conflict", "Research revision changed")
+- change_reason required after first revision
+- effective_at is business-effective timezone-aware timestamp
+- created_at remains audit-creation timestamp
+- no substantive update/delete command
+
+ResearchPoint:
+- immutable child rows
+- kind = CATALYST or RISK
+- title required
+- sort_order nonnegative
+- unique (research_revision_id, kind, sort_order)
+- invalid child input must not leave partial parent/child rows
+
+Concurrency / transaction semantics:
+- current revision selection and locking are appropriate
+- two writers from same base cannot both successfully create the same next revision
+- database uniqueness race is translated to the same typed revision conflict
+- no retry that can silently accept a stale write
+- rollback is complete on validation/conflict/integrity failure
+- unrelated IntegrityError must not be incorrectly translated as revision_conflict
+- prior revisions and points cannot be mutated by later writes
+
+Explicitly NOT part of Task 4:
+- evidence graph/cutoff
+- generic confidence fields
+- methodology_version
+- APIs
+- migrations
+- frontend
+- Task 5 ownership models
+
+REVIEW FOCUS
+
+1. Read the exact diff:
+   git diff 1bc32cfc49f00036946e044c2c386330b0919704..0ed2831a7d64a8bf70d72f9ef7d1e8b4bbe69b79
+
+2. Inspect the resulting Task 4 code/tests at the Task 4 commit as needed.
+
+3. Pay special attention to:
+   - SELECT/current-row logic
+   - with_for_update behavior and limits
+   - first-writer vs existing-stream concurrent-writer cases
+   - unique constraint coverage
+   - IntegrityError classification
+   - session rollback/atomicity
+   - immutable-history guarantees
+   - timestamp semantics
+   - SQLite test limitations versus production-dialect assumptions
+
+4. Run focused tests if the local environment permits, using the established project environment from AGENTS.md.
+   Do not provision another Python/environment.
+
+5. Do not treat SQLite's lack of real row-level locking as proof of production correctness.
+   Distinguish:
+   - code-level correctness,
+   - tests that actually prove behavior,
+   - behavior that remains deployment-dialect dependent.
+
+OUTPUT FORMAT
+
+A. VERDICT
+Choose exactly one:
+- SAFE
+- SAFE WITH NON-BLOCKING OBSERVATIONS
+- CHANGES REQUIRED
+
+B. BLOCKERS
+Only defects that must be fixed before Plan 2 Task 5.
+
+C. IMPORTANT FINDINGS
+Correctness/concurrency/atomicity/immutability issues that are real but not release blockers.
+
+D. NON-BLOCKING OBSERVATIONS
+Testing gaps, portability cautions, maintainability notes.
+
+E. REQUIREMENT-BY-REQUIREMENT CHECK
+Brief PASS / FAIL / NOT PROVEN for each Task 4 contract item above.
+
+F. TEST EVIDENCE
+List commands actually run and results.
+If something could not be executed, say so explicitly.
+
+G. RECOMMENDATION
+State whether Task 4 can be formally closed and whether Plan 2 Task 5 may proceed.
+
+Do not propose broad refactors.
+Do not review unrelated later commits.
+Do not modify the repository.

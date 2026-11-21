@@ -1,0 +1,483 @@
+SPA DEVELOPMENT SOP — SIMPLIFIED ONE-COMMAND PREFLIGHT
+OFFICE PC / CURRENT M1
+
+Repository to modify:
+C:\GitHub\stock-price-alert
+
+Backend repo:
+C:\GitHub\backendtest
+
+Frontend/docs repo:
+C:\GitHub\stock-price-alert
+
+Permanent Python already installed and validated:
+C:\venvs\spa-m1\Scripts\python.exe
+
+Current M1 branch:
+feature/investment-operating-system-m1
+
+IMPORTANT:
+Python 3.12, the permanent venv, pytest, repo locations, and Windows execution policy
+are MACHINE SETUP. They are already established on this Office PC.
+
+DO NOT repeatedly revalidate them in normal spa-check runs.
+DO NOT change Windows execution policy.
+DO NOT install Python.
+DO NOT create another venv.
+
+USER GOAL:
+A non-developer runs ONE normal command before a development task:
+
+& C:\GitHub\stock-price-alert\dev-tools\spa-check.ps1
+
+For current M1, Backend is the default target.
+
+The command checks ONLY state that can realistically drift between tasks:
+1. active repo Git state;
+2. remote synchronization;
+3. dependency-manifest fingerprint;
+4. actual Codex model/provider/reasoning.
+
+Then it prints one verdict:
+READY YES
+or
+READY NO
+
+============================================================
+0. SCOPE / SAFETY
+============================================================
+
+Do not modify SPA product behavior.
+
+Do not modify:
+- backend application source
+- frontend application source
+- migrations
+- auth
+- Kite
+- Telegram
+- websocket/live trading
+- deployment
+- secrets
+- Windows execution policy
+- Codex model/configuration
+
+Before edits:
+- cd C:\GitHub\stock-price-alert
+- verify branch is feature/investment-operating-system-m1
+- inspect git status
+- if unexpected changes exist outside dev-tools, STOP
+- do not reset/stash/clean/switch/pull user work
+
+Use TDD:
+RED -> verify correct RED -> minimal GREEN -> regression.
+
+Approved files only:
+
+dev-tools/spa-check.ps1
+dev-tools/spa-deps-sync.ps1
+dev-tools/agent-prompt-header.txt
+dev-tools/README.md
+dev-tools/tests/test-spa-check.ps1
+
+If older/incomplete dev-tools files exist from a previous attempt, inspect them.
+Remove obsolete dev-tools/spa-model-check.ps1 ONLY if it is an uncommitted file from
+this incomplete tooling attempt and no committed/user work depends on it.
+Do not delete any committed or unrelated user file.
+
+============================================================
+1. spa-check.ps1 — ONE USER-FACING COMMAND
+============================================================
+
+Parameters:
+
+-Target Backend|Frontend
+Default: Backend
+
+Normal current-M1 command remains:
+
+& C:\GitHub\stock-price-alert\dev-tools\spa-check.ps1
+
+Optional Frontend use later:
+
+& C:\GitHub\stock-price-alert\dev-tools\spa-check.ps1 -Target Frontend
+
+Do not require any second command for model verification.
+
+------------------------------------------------------------
+A. ACTIVE REPO GIT CHECK
+------------------------------------------------------------
+
+For Backend:
+C:\GitHub\backendtest
+
+For Frontend:
+C:\GitHub\stock-price-alert
+
+Check only the selected target repo.
+
+Verify:
+- it is a Git repo;
+- current branch equals feature/investment-operating-system-m1;
+- working tree is clean using git status --porcelain;
+- capture local HEAD short SHA.
+
+Do NOT check the inactive repo.
+Do NOT re-check fixed repo paths as a separate readiness ceremony.
+If the selected path is unexpectedly unavailable, report that failure naturally.
+
+------------------------------------------------------------
+B. REMOTE SYNC CHECK — READ ONLY
+------------------------------------------------------------
+
+The Home and Office PCs use GitHub as sync authority, so this state can drift.
+
+Do NOT run git pull, fetch, reset, switch, checkout, merge, rebase, commit, push, or clean.
+
+Instead use a READ-ONLY remote query such as:
+
+git ls-remote origin refs/heads/<current-branch>
+
+Compare the returned remote branch SHA with local HEAD.
+
+Report:
+REMOTE SYNCED
+or
+REMOTE DIFFERENT
+
+If remote differs:
+READY NO
+
+If the remote cannot be queried:
+report REMOTE CHECK FAILED and READY NO.
+Do not repair automatically.
+
+This remote query must not modify the repo or Git refs.
+
+------------------------------------------------------------
+C. DEPENDENCY FINGERPRINT — BACKEND ONLY
+------------------------------------------------------------
+
+Dependencies are stable infrastructure unless requirements manifests change.
+
+Do NOT run Python, pip, or pytest on every spa-check when the fingerprint is current.
+
+For Backend target:
+- deterministically hash the backend-root requirements*.txt files;
+- compare with marker stored under:
+  C:\venvs\spa-m1\
+- if marker matches:
+  DEPS CURRENT
+- if marker missing or differs:
+  DEPS SYNC NEEDED
+  READY NO
+
+For Frontend target:
+- M1 frontend development is currently out of scope;
+- do not invent Node/npm dependency management now;
+- print:
+  DEPS NOT APPLICABLE TO CURRENT M1 FRONTEND CHECK
+- do not fail solely for that.
+
+ONE-TIME INITIAL REGISTRATION:
+If the dependency fingerprint marker does not yet exist, spa-check itself must NOT
+silently trust it and must NOT reinstall packages.
+Print:
+DEPS REGISTRATION NEEDED
+READY NO
+and tell the user to run spa-deps-sync.ps1 once.
+
+------------------------------------------------------------
+D. ACTUAL CODEX MODEL CHECK — INSIDE spa-check
+------------------------------------------------------------
+
+This is volatile and MUST be checked before an AI development run.
+
+Do not create a separate user-facing model-check step.
+
+Resolve a usable Codex launcher robustly on Windows:
+- normal codex command/executable if usable;
+- support codex.cmd where appropriate;
+- never change execution policy.
+
+Run one tiny read-only Codex request with EXACT prompt:
+
+Reply with exactly: MODEL_CHECK_OK. Do not inspect, modify, or execute anything in the repository.
+
+Use:
+--ask-for-approval never
+--sandbox read-only
+exec
+--skip-git-repo-check
+-
+
+Capture and display:
+- MODEL
+- PROVIDER
+- REASONING effort if emitted
+- APPROVAL
+- SANDBOX
+
+Require MODEL_CHECK_OK.
+
+If Codex invocation/header parsing fails:
+READY NO
+
+Never:
+- switch models
+- edit Codex config
+- use danger-full-access
+- write repo files
+
+------------------------------------------------------------
+E. FINAL OUTPUT
+------------------------------------------------------------
+
+Keep output compact.
+
+Example:
+
+SPA DEVELOPMENT PREFLIGHT
+------------------------------------------------------------
+TARGET     BACKEND
+BRANCH     OK   feature/investment-operating-system-m1
+WORKTREE   OK   CLEAN
+LOCAL      0ed2831a
+REMOTE     OK   SYNCED
+DEPS       OK   CURRENT
+MODEL      deepseek-v4-flash
+PROVIDER   deepseek
+REASONING  high
+APPROVAL   never
+SANDBOX    read-only
+------------------------------------------------------------
+READY      YES
+
+READY YES requires:
+- correct selected-repo branch
+- clean selected working tree
+- local HEAD equals current remote branch SHA
+- backend dependency fingerprint current (when Backend)
+- Codex model check successful
+
+No Python-version check.
+No pytest-version check.
+No full test suite.
+No second repo check.
+No execution-policy check.
+No automatic repair.
+
+Exit 0 for READY YES.
+Exit nonzero for READY NO.
+
+============================================================
+2. spa-deps-sync.ps1 — RARE/EXPLICIT USE ONLY
+============================================================
+
+This is NOT part of the normal per-task command.
+
+Defaults:
+BackendPath = C:\GitHub\backendtest
+PythonPath = C:\venvs\spa-m1\Scripts\python.exe
+
+Purpose:
+- first-time fingerprint registration;
+- dependency refresh only when requirements manifests changed.
+
+Parameters:
+-RegisterCurrent
+-Force
+
+Rules:
+
+RegisterCurrent:
+1. verify fixed Python exists;
+2. run only:
+   C:\venvs\spa-m1\Scripts\python.exe -m pip check
+3. if pip check succeeds:
+   write current deterministic requirements*.txt fingerprint marker under C:\venvs\spa-m1
+4. do NOT reinstall packages.
+
+Normal sync when fingerprint changed:
+1. run:
+   <PythonPath> -m pip install -r <BackendPath>\requirements-dev.txt
+2. run:
+   <PythonPath> -m pip check
+3. only after success, update fingerprint marker.
+
+If fingerprint already current and not Force:
+print DEPENDENCIES CURRENT and exit successfully without pip install.
+
+Never:
+- install/download Python
+- create venv
+- auto-upgrade pip
+- modify repository files
+- change execution policy
+
+============================================================
+3. agent-prompt-header.txt
+============================================================
+
+Keep this SHORT to save AI tokens.
+
+Include:
+
+Backend:
+C:\GitHub\backendtest
+
+Frontend/docs:
+C:\GitHub\stock-price-alert
+
+Python:
+C:\venvs\spa-m1\Scripts\python.exe
+
+Canonical full test:
+C:\venvs\spa-m1\Scripts\python.exe -m pytest -q
+
+Rules:
+- permanent Python only;
+- do not search/download/install/provision another Python unless demonstrably unusable;
+- do not reinstall dependencies as exploration;
+- TDD RED -> verify RED -> minimal GREEN -> regression;
+- inspect active repo branch/status before edits;
+- no active DB, Kite, Telegram, websocket/live trading, deployment, secrets,
+  ACL/config, main/master unless explicitly authorized;
+- commit/push only after fresh verification.
+
+Do not include long generic explanations or task-specific SHAs.
+
+============================================================
+4. README.md — FOR A NON-DEVELOPER
+============================================================
+
+Keep it short.
+
+Normal current-M1 workflow:
+
+1.
+& C:\GitHub\stock-price-alert\dev-tools\spa-check.ps1
+
+2.
+If READY YES -> run approved task prompt.
+
+3.
+If READY NO -> stop and fix only the named issue.
+
+Explain:
+- this ONE command includes actual Codex model verification;
+- stable machine setup is not rechecked every task;
+- spa-check never changes code or Git history;
+- spa-check never changes execution policy;
+- spa-check never changes the selected model;
+- remote Git check is read-only;
+- dependencies are only touched if their manifest changed.
+
+One-time dependency registration command:
+
+& C:\GitHub\stock-price-alert\dev-tools\spa-deps-sync.ps1 -RegisterCurrent
+
+Do not present separate model-check as normal workflow.
+
+============================================================
+5. TESTS
+============================================================
+
+Create/use:
+dev-tools/tests/test-spa-check.ps1
+
+Dependency-free PowerShell tests.
+
+RED:
+First add/update tests for this simplified contract and run them.
+Record the correct failure before implementation.
+
+GREEN tests must verify at minimum:
+
+- required approved files exist;
+- spa-check default target is Backend;
+- inactive repo is not required for Backend readiness;
+- prohibited mutation commands are absent:
+  git pull/fetch/reset/switch/checkout/merge/rebase/clean/commit/push;
+- Set-ExecutionPolicy absent;
+- Python/pytest version checks absent from normal spa-check;
+- remote check uses read-only ls-remote or equivalent;
+- dependency fingerprint check does not invoke pip/pytest when current;
+- model check is integrated into spa-check;
+- model invocation is approval-never + read-only and never danger-full-access;
+- no separate model-check is required by README;
+- spa-deps-sync RegisterCurrent runs pip check before writing marker;
+- spa-deps-sync contains no Python installer/winget/choco/msiexec behavior;
+- prompt header contains exact repo/Python/full-test paths.
+
+Functional Git test:
+- create temporary local Git repo;
+- commit on expected branch;
+- use a local bare remote so remote-sync logic can be tested without external network;
+- assert synced clean repo passes the Git portion;
+- dirty repo fails;
+- remote-different repo fails;
+- clean up only temp files created by test.
+
+Automated tests must NOT call a real AI model.
+Provide a test seam/mocked Codex output for functional spa-check tests if needed.
+
+Run:
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .\dev-tools\tests\test-spa-check.ps1
+
+============================================================
+6. ONE-TIME OFFICE-PC DEPENDENCY REGISTRATION
+============================================================
+
+After tooling tests are green but before final real spa-check:
+
+Run exactly once:
+
+& .\dev-tools\spa-deps-sync.ps1 -RegisterCurrent
+
+This must run pip check and create the marker without reinstalling dependencies.
+
+Then run the REAL normal command:
+
+& .\dev-tools\spa-check.ps1
+
+This real command may spend the tiny Codex model-check token cost.
+
+Expected:
+READY YES
+provided repo/remote/model state is healthy.
+
+============================================================
+7. GIT / COMPLETION
+============================================================
+
+Before commit:
+- tests green
+- git diff --check
+- verify only approved dev-tools files changed
+
+Commit:
+chore: standardize simplified spa preflight
+
+Push the existing feature branch.
+
+After push:
+- working tree clean
+- local/remote branch synced
+- rerun:
+  & .\dev-tools\spa-check.ps1
+
+Final report:
+- RED evidence
+- GREEN test result
+- dependency registration result
+- actual spa-check summary
+- READY YES/NO
+- model/provider/reasoning actually detected
+- commit SHA
+- push result
+- exact files changed
+- any real limitation
+
+Do not claim completion without fresh verification.
