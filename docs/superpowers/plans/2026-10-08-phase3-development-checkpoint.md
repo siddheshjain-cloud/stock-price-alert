@@ -501,6 +501,63 @@ every new session here before it touches code. Git/worktree state and
 test evidence are authoritative over this note if they ever disagree
 — reconcile before acting, don't just trust the prose below.
 
+- **EXTRACTION CADENCE TIGHTENED (EX-083) + SHEETS-TO-BACKEND BRIDGE GAP
+  FOUND, FIXED, AND DRAINED LIVE (EX-084) — 2026-11-23** (`C:\GitHub\backendtest`,
+  branch `feature/autonomous-research-pipeline`, commits `fd41dbd`,
+  `4d95bfa`; fix itself in `C:\SPARS-release\backendtest`, branch
+  `release/market-data-service`, commit `e938495`). Full detail in
+  `docs/SPARS_EXCEPTION_BACKLOG.md` EX-083/EX-084 — this is the
+  cross-repo pointer and summary.
+  - **Context:** owner asked for a full ingestion/extraction/promotion
+    coverage audit (95-100 companies, 6 quarters from 2026-04-01). Found
+    the pipeline is three genuinely separate systems/schedules
+    (Cloud Run ingestion → Windows Task `SPARS_PipelineCycle` extraction
+    → Windows Task `SPARS_SpaBridgeCatchup` bridge → manual-gated
+    promotion), and a ~34% gap between Sheets-`STORED` rows (3,620) and
+    backend-DB-registered documents (2,397) at the bridge stage
+    specifically, with XBRL coverage looking stuck.
+  - **EX-083:** `SPARS_PipelineCycle`'s extraction trigger tightened
+    from a 6-hour to a 30-minute repeating interval (`Set-ScheduledTask`,
+    config only). Raw-document deletion (mirroring the market-data
+    CSV→Parquet→delete pattern) was proposed by the owner and explicitly
+    declined: filing URLs aren't reliably re-fetchable later (BSE
+    UUID-rotation, NSE domain migration, both confirmed), dedup needs
+    the real bytes, and PDF storage cost is trivial next to market-data
+    volume — no code changed for this.
+  - **EX-084, three compounding bridge causes found and fixed:**
+    (1) `run_spa_bridge_catchup.bat` had a stale, hardcoded 69-ticker
+    `--only-tickers` allowlist from 2026-11-02 (missing RELIANCE/SBIN/
+    HDFCBANK and everyone onboarded since) — removed entirely;
+    (2) EX-002 (Drive-download timeout aborting the whole batch) had a
+    patch file that had gone stale and never actually applied — hand-
+    applied the equivalent fix (`num_retries=2` + isolate-and-continue
+    for `DRIVE_METADATA_TIMEOUT`/`DRIVE_DOWNLOAD_TIMEOUT`) against
+    current code; (3) found only after fixing #1/#2: `--limit 200` had
+    no resume cursor, so every run re-scanned the same already-
+    registered leading rows forever — changed to `--limit 0`. Also
+    raised `SPARS_SpaBridgeCatchup` from a single daily shot to a
+    2-hour repeating trigger. Checked and ruled out: the bridge's
+    `QUARTERLY_RESULTS_XBRL`→`QUARTERLY_RESULTS` type mapping was
+    already correct and deliberate — not a cause.
+  - **Live verified (DB backed up first —
+    `trading_app.db.bak_pre_bridge_fix_20261123.db`):** a full
+    `--limit 0` sweep of all 3,781 `STORED` rows completed in ~30
+    minutes, registering **91 new documents (69 of them
+    `QUARTERLY_RESULTS_XBRL`)** — `trading_app.db` document count
+    2,447 → 2,538. One real `DRIVE_DOWNLOAD_TIMEOUT` (sheet row 4324)
+    was correctly isolated with the batch continuing — first live
+    proof the EX-002 fix works, not just in tests. Confirmed harmless:
+    EX-072/073's XBRL staging dedup-gate fixes (2026-11-21) are a
+    separate, later pipeline layer applied uniformly regardless of
+    registration date, made before any real XBRL document existed —
+    no historical corrupted state for this sweep to interact with.
+  - **Not yet done:** the 91 newly-registered documents are not yet
+    extracted (expected — `SPARS_PipelineCycle`'s 30-min cycle will
+    pick them up automatically, no separate action needed). Worth a
+    glance at the next few `SPARS_SpaBridgeCatchup` runs to confirm
+    `--limit 0` keeps completing well within the 2-hour window as the
+    manifest keeps growing.
+
 - **XBRL EXTRACTION DEEPENED END TO END (EX-067→EX-075), branch merged
   forward against `origin` and re-verified — 2026-11-21**
   (`C:\GitHub\backendtest`, branch `feature/autonomous-research-pipeline`).
